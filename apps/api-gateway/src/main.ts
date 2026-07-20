@@ -58,6 +58,7 @@ async function bootstrap() {
     .addTag('notifications', 'Push notifications')
     .addTag('search', 'Search and discovery')
     .addTag('admin', 'Admin panel')
+    .addTag('crypto', 'End-to-end encryption key management')
     .build();
 
   const document = SwaggerModule.createDocument(app, config);

@@ -13,6 +13,7 @@ import { PaymentsModule } from './modules/payments/payments.module';
 import { NotificationsModule } from './modules/notifications/notifications.module';
 import { SearchModule } from './modules/search/search.module';
 import { AdminModule } from './modules/admin/admin.module';
+import { CryptoModule } from './modules/crypto/crypto.module';
 import { RequestIdMiddleware } from './middleware/request-id.middleware';
 import { DeviceInfoMiddleware } from './middleware/device-info.middleware';
 import { RequestLoggingInterceptor } from './interceptors/request-logging.interceptor';
@@ -37,6 +38,7 @@ import { ResponseTransformInterceptor } from './interceptors/response-transform.
     NotificationsModule,
     SearchModule,
     AdminModule,
+    CryptoModule,
   ],
   providers: [
     RequestLoggingInterceptor,
