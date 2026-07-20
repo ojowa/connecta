@@ -5,6 +5,11 @@
 **Version:** 1.0.0
 **Date:** July 2026
 
+> **Implementation Note (July 2026):** This spec describes a Python/FastAPI ML-based architecture.
+> The current implementation uses TypeScript/NestJS with algorithmic heuristic logic (no ML models).
+> See [Doc 22: AI Matchmaking Audit](22-AI-Matchmaking-Audit.md) for the spec-vs-implementation gap
+> analysis and known issues.
+
 ---
 
 ## 1. Architecture Overview
@@ -566,6 +571,81 @@ graph LR
 | Conversation length | Measure match quality | Aggregated |
 | Report flags | Train scam/toxic models | Anonymized |
 | Photo verification | Train fake detection | Processed on-device |
+
+---
+
+## 9. Python ML Implementation Roadmap
+
+The current implementation uses TypeScript/NestJS with algorithmic heuristics. This section outlines the planned upgrade to Python/FastAPI with ML models as specified in earlier sections.
+
+### 9.1 Migration Strategy
+
+| Phase | Trigger | Scope | Infrastructure |
+|-------|---------|-------|----------------|
+| **V1 (Current)** | Now | TypeScript heuristics | NestJS monorepo |
+| **V2** | 1,000+ active users | Python sidecar for embeddings + scam NLP | FastAPI + Redis |
+| **V3** | 10,000+ users | Full ML pipeline (compatibility, fake detection) | TensorFlow + MLflow |
+
+### 9.2 V2: Python Sidecar Service
+
+When user data is sufficient for training, add a `recommendation-engine/` Python microservice:
+
+```
+recommendation-engine/
+├── app/
+│   ├── main.py                  # FastAPI app
+│   ├── models/
+│   │   ├── compatibility.py     # TensorFlow compatibility model
+│   │   ├── scam_detector.py     # NLP scam classifier
+│   │   └── embeddings.py        # Sentence-transformer embeddings
+│   ├── services/
+│   │   ├── candidate_generator.py
+│   │   ├── behavioral_analyzer.py
+│   │   └── icebreaker_generator.py
+│   └── training/
+│       ├── pipeline.py          # Model training pipeline
+│       └── data_loader.py       # Training data extraction
+├── requirements.txt
+├── Dockerfile
+└── docker-compose.yml
+```
+
+**Key dependencies:**
+```
+tensorflow>=2.15.0
+sentence-transformers>=2.2.0
+fastapi>=0.104.0
+uvicorn>=0.24.0
+redis>=5.0.0
+scikit-learn>=1.3.0
+```
+
+### 9.3 V3: Full ML Pipeline
+
+When sufficient training data exists:
+
+1. **Data collection** — Anonymized swipe patterns, match outcomes, conversation metrics
+2. **Feature engineering** — User embeddings from profile text, behavioral features from interaction logs
+3. **Model training** — TensorFlow neural network for compatibility scoring (as specified in Section 2.3)
+4. **Evaluation** — A/B testing against heuristic baseline
+5. **Deployment** — Model serving via FastAPI with Redis caching
+6. **Monitoring** — Model drift detection, retraining triggers
+
+### 9.4 Inter-Service Communication
+
+NestJS gateway communicates with Python sidecar via:
+- **HTTP/gRPC** for synchronous scoring requests
+- **Redis pub/sub** for async behavioral analysis
+- **Shared PostgreSQL** for training data access
+
+### 9.5 Decision Criteria for V2
+
+Proceed with Python sidecar when:
+- [ ] 1,000+ daily active users
+- [ ] 10,000+ match outcomes collected
+- [ ] 50,000+ messages for scam training data
+- [ ] Conversion rate metrics established (heuristic baseline)
+- [ ] Infrastructure budget approved for Python runtime
 
 ---
 

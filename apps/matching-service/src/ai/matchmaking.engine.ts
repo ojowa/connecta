@@ -59,30 +59,39 @@ export class MatchmakingEngine {
 
     const candidates = await this.candidateGenerator.generate(userId, 200);
 
-    const ranked: RankedCandidate[] = [];
-    for (const candidate of candidates) {
-      try {
-        const compatibility = await this.compatibilityEngine.score(userId, candidate.userId);
-        ranked.push({
-          ...candidate,
-          compatibilityScore: compatibility.overallScore,
-          compatibility,
-          finalScore: compatibility.overallScore,
-        });
-      } catch (err) {
-        this.logger.warn(`Failed to score ${candidate.userId}: ${err.message}`);
-      }
-    }
+    // C3: Parallelize compatibility scoring instead of sequential await loop
+    const scoreResults = await Promise.all(
+      candidates.map(candidate =>
+        this.compatibilityEngine.score(userId, candidate.userId)
+          .then(compatibility => ({ candidate, compatibility }))
+          .catch((err: Error) => {
+            this.logger.warn(`Failed to score ${candidate.userId}: ${err.message}`);
+            return null;
+          })
+      )
+    );
+
+    const ranked: RankedCandidate[] = scoreResults
+      .filter((r): r is { candidate: CandidateProfile; compatibility: CompatibilityResult } => r !== null)
+      .map(({ candidate, compatibility }) => ({
+        ...candidate,
+        compatibilityScore: compatibility.overallScore,
+        compatibility,
+        finalScore: compatibility.overallScore,
+      }));
 
     const diversified = this.diversityInjector.inject(ranked, 0.3, limit + skip + 10);
 
     const sliced = diversified.slice(skip, skip + limit);
 
+    // H2: Fetch current user profile once, not per loop iteration
+    const userProfile = await this.getUserProfile(userId);
+
     const feed: MatchFeedItem[] = [];
     for (const item of sliced) {
       const behavioral = await this.behaviorAnalyzer.analyze(item.userId);
       const icebreakers = await this.icebreakerGenerator.generate(
-        await this.getUserProfile(userId),
+        userProfile,
         item,
         item.compatibility,
       );

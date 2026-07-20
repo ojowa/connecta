@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, Not, In } from 'typeorm';
+import { Repository, In } from 'typeorm';
 import { User, Profile, UserPreference, Like, Pass, Block, Photo, ProfileInterest, Interest } from '@app/common/entities';
 
 export interface CandidateProfile {
@@ -41,42 +41,46 @@ export class CandidateGenerator {
     const userLat = userProfile?.latitude;
     const userLon = userProfile?.longitude;
 
+    // C4: Bounded queries — cap at 10000 to prevent memory issues for active users
     const [likedIds, passedIds, blockedByMeIds, blockedMeIds] = await Promise.all([
-      this.likeRepo.find({ where: { userId }, select: ['likedUserId'] }).then(likes => likes.map(l => l.likedUserId)),
-      this.passRepo.find({ where: { userId }, select: ['passedUserId'] }).then(passes => passes.map(p => p.passedUserId)),
-      this.blockRepo.find({ where: { blockerId: userId }, select: ['blockedId'] }).then(blocks => blocks.map(b => b.blockedId)),
-      this.blockRepo.find({ where: { blockedId: userId }, select: ['blockerId'] }).then(blocks => blocks.map(b => b.blockerId)),
+      this.likeRepo.find({ where: { userId }, select: ['likedUserId'], take: 10000 }).then(likes => likes.map(l => l.likedUserId)),
+      this.passRepo.find({ where: { userId }, select: ['passedUserId'], take: 10000 }).then(passes => passes.map(p => p.passedUserId)),
+      this.blockRepo.find({ where: { blockerId: userId }, select: ['blockedId'], take: 10000 }).then(blocks => blocks.map(b => b.blockedId)),
+      this.blockRepo.find({ where: { blockedId: userId }, select: ['blockerId'], take: 10000 }).then(blocks => blocks.map(b => b.blockerId)),
     ]);
 
     const excludeIds = new Set([userId, ...likedIds, ...passedIds, ...blockedByMeIds, ...blockedMeIds]);
 
     const genderFilter = this.resolveGenderFilter(prefs.showMe);
 
+    // C2: Replace innerJoin with subquery since Profile.userId is a plain column, not a relation
     const candidates = await this.profileRepo
       .createQueryBuilder('p')
-      .innerJoin('p.user', 'u')
-      .where('p.userId != :userId', { userId })
-      .andWhere('p.isActive = true')
-      .andWhere('u.status = :status', { status: 'active' })
-      .andWhere(prefs.showVerifiedOnly ? 'p.verified = true' : '1=1')
+      .where('p."userId" != :userId', { userId })
+      .andWhere('p."isActive" = true')
+      .andWhere('p."userId" IN (SELECT u.id FROM users u WHERE u.status = :status)', { status: 'active' })
+      .andWhere(prefs.showVerifiedOnly ? 'p."verified" = true' : '1=1')
       .andWhere(prefs.showProfilesWithPhotosOnly ? 'p.id IN (SELECT ph."profileId" FROM photos ph)' : '1=1')
       .andWhere(genderFilter ? 'p.gender = :gender' : '1=1', { gender: genderFilter })
-      .orderBy('p.completionPercentage', 'DESC')
+      .orderBy('p."completionPercentage"', 'DESC')
       .take(limit * 2)
       .getMany();
 
     const filtered = candidates.filter(c => !excludeIds.has(c.userId));
 
-    const withDistance = filtered.map(c => ({
-      ...c,
-      distanceKm: (userLat && userLon && c.latitude && c.longitude)
-        ? this.haversineDistance(userLat, userLon, c.latitude, c.longitude)
-        : 9999,
-    })).filter(c => c.distanceKm <= prefs.maxDistanceKm);
+    // M2: Fix falsy zero — use != null instead of && (which treats 0 as falsy)
+    const withDistance = filtered
+      .filter(c => c.dateOfBirth != null) // M3: Reject candidates without DOB
+      .map(c => ({
+        ...c,
+        distanceKm: (userLat != null && userLon != null && c.latitude != null && c.longitude != null)
+          ? this.haversineDistance(userLat, userLon, c.latitude, c.longitude)
+          : 9999,
+      }))
+      .filter(c => c.distanceKm <= prefs.maxDistanceKm);
 
     const ageFiltered = withDistance.filter(c => {
-      if (!c.dateOfBirth) return true;
-      const age = this.calculateAge(c.dateOfBirth);
+      const age = this.calculateAge(c.dateOfBirth!);
       return age >= prefs.ageMin && age <= prefs.ageMax;
     });
 
@@ -84,6 +88,7 @@ export class CandidateGenerator {
       .sort((a, b) => b.completionPercentage - a.completionPercentage)
       .slice(0, limit);
 
+    // H1: Pass distanceKm into enrichCandidate so it's not lost
     return Promise.all(sorted.map(c => this.enrichCandidate(c)));
   }
 
@@ -122,7 +127,8 @@ export class CandidateGenerator {
     return age;
   }
 
-  private async enrichCandidate(profile: Profile): Promise<CandidateProfile> {
+  // H1: Accept distanceKm as parameter instead of discarding it
+  private async enrichCandidate(profile: Profile & { distanceKm?: number }): Promise<CandidateProfile> {
     const [user, photos, interests] = await Promise.all([
       this.userRepo.findOne({ where: { id: profile.userId } }),
       this.photoRepo.find({ where: { profileId: profile.id }, order: { order: 'ASC' }, take: 5 }),
@@ -139,7 +145,7 @@ export class CandidateGenerator {
       bio: profile.bio || '',
       jobTitle: profile.jobTitle || '',
       city: profile.city || '',
-      distanceKm: 0,
+      distanceKm: profile.distanceKm ?? 0,
       verified: profile.verified,
       completionPercentage: profile.completionPercentage,
       photos: photos.map(p => ({ url: p.url, isPrimary: p.isPrimary })),

@@ -33,9 +33,22 @@ export class MatchingService {
     if (!target) throw new NotFoundException('User not found');
     const like = this.likeRepo.create({ userId, likedUserId: targetUserId, isSuperLike: likeType === 'super' });
     await this.likeRepo.save(like);
+    // H4: Atomic increment to prevent race condition
+    await this.dailyLikeRepo
+      .createQueryBuilder()
+      .insert()
+      .into(DailyLike)
+      .values({ userId, date: new Date(), likesGiven: 1 })
+      .orUpdate(['likesGiven'], ['userId', 'date'])
+      .execute();
+    // Also increment atomically
+    await this.dailyLikeRepo
+      .createQueryBuilder()
+      .update(DailyLike)
+      .set({ likesGiven: () => 'likesGiven + 1' })
+      .where('userId = :userId AND date = CURRENT_DATE', { userId })
+      .execute();
     const daily = await this.dailyLikeRepo.findOne({ where: { userId, date: new Date() } });
-    if (daily) { await this.dailyLikeRepo.update(daily.id, { likesGiven: daily.likesGiven + 1 }); }
-    else { await this.dailyLikeRepo.save(this.dailyLikeRepo.create({ userId, likesGiven: 1 })); }
     const mutualLike = await this.likeRepo.findOne({ where: { userId: targetUserId, likedUserId: userId } });
     if (mutualLike) {
       const conv = await this.convRepo.save(this.convRepo.create({ type: 'direct' }));
@@ -62,6 +75,25 @@ export class MatchingService {
   async undo(userId: string) {
     const lastLike = await this.likeRepo.findOne({ where: { userId }, order: { createdAt: 'DESC' } });
     if (!lastLike) throw new BadRequestException('Nothing to undo');
+
+    // H3: Check if this like created a mutual match — if so, clean it up
+    const mutualLike = await this.likeRepo.findOne({
+      where: { userId: lastLike.likedUserId, likedUserId: userId },
+    });
+    if (mutualLike) {
+      const match = await this.matchRepo.findOne({
+        where: [
+          { userAId: userId, userBId: lastLike.likedUserId },
+          { userAId: lastLike.likedUserId, userBId: userId },
+        ],
+      });
+      if (match) {
+        await this.partRepo.delete({ conversationId: match.conversationId });
+        await this.convRepo.delete({ id: match.conversationId });
+        await this.matchRepo.remove(match);
+      }
+    }
+
     await this.likeRepo.remove(lastLike);
     return { undone: true, previousAction: lastLike.isSuperLike ? 'super_like' : 'like', remainingUndos: 2 };
   }

@@ -22,7 +22,7 @@ export class DiversityInjector {
     const sorted = [...candidates].sort((a, b) => b.finalScore - a.finalScore);
 
     const diverse: RankedCandidate[] = [];
-    const seenEducation = new Set<string>();
+    const seenJobCategories = new Set<string>();
     const seenCities = new Set<string>();
     const seenGoalBuckets = new Map<string, number>();
 
@@ -31,7 +31,7 @@ export class DiversityInjector {
 
       const diversityScore = this.calculateDiversityScore(
         candidate,
-        seenEducation,
+        seenJobCategories,
         seenCities,
         seenGoalBuckets,
       );
@@ -48,16 +48,16 @@ export class DiversityInjector {
 
   private calculateDiversityScore(
     candidate: RankedCandidate,
-    seenEducation: Set<string>,
+    seenJobCategories: Set<string>,
     seenCities: Set<string>,
     seenGoalBuckets: Map<string, number>,
   ): number {
     let score = 0;
 
-    const education = candidate.jobTitle || 'unknown';
-    if (!seenEducation.has(education)) {
+    const jobCategory = candidate.jobTitle || 'unknown';
+    if (!seenJobCategories.has(jobCategory)) {
       score += 0.4;
-      seenEducation.add(education);
+      seenJobCategories.add(jobCategory);
     }
 
     const city = candidate.city || 'unknown';

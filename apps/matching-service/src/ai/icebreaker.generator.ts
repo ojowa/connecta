@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { CandidateProfile } from './candidate.generator';
 import { CompatibilityResult } from './compatibility.engine';
+import { Profile } from '@app/common/entities';
 
 export interface IceBreaker {
   id: string;
@@ -12,7 +13,7 @@ export interface IceBreaker {
 @Injectable()
 export class IcebreakerGenerator {
   async generate(
-    userProfile: any,
+    userProfile: Profile | null,
     candidateProfile: CandidateProfile,
     compatibility: CompatibilityResult,
   ): Promise<IceBreaker[]> {

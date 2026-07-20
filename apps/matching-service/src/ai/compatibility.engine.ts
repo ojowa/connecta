@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { Profile, ProfileInterest, Interest, UserPreference } from '@app/common/entities';
+import { Profile, ProfileInterest, UserPreference } from '@app/common/entities';
 
 export interface CompatibilityBreakdown {
   interestOverlap: number;
@@ -31,7 +31,6 @@ export class CompatibilityEngine {
   constructor(
     @InjectRepository(Profile) private profileRepo: Repository<Profile>,
     @InjectRepository(ProfileInterest) private profileInterestRepo: Repository<ProfileInterest>,
-    @InjectRepository(Interest) private interestRepo: Repository<Interest>,
     @InjectRepository(UserPreference) private prefRepo: Repository<UserPreference>,
   ) {}
 
@@ -73,7 +72,8 @@ export class CompatibilityEngine {
   }
 
   private interestScore(userInterests: string[], candidateInterests: string[]): number {
-    if (!userInterests.length || !candidateInterests.length) return 0.5;
+    // M1: Return 0 when either list is empty instead of defaulting to 0.5
+    if (!userInterests.length || !candidateInterests.length) return 0;
     const userSet = new Set(userInterests.map(i => i.toLowerCase()));
     const candSet = new Set(candidateInterests.map(i => i.toLowerCase()));
     const intersection = [...userSet].filter(i => candSet.has(i));
@@ -83,7 +83,6 @@ export class CompatibilityEngine {
 
   private lifestyleScore(user: Profile, candidate: Profile): number {
     let score = 0.5;
-    const factors = 0;
 
     if (user.school && candidate.school && user.school === candidate.school) {
       score += 0.15;

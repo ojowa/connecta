@@ -118,12 +118,11 @@ export class ScamDetector {
       riskScore += 0.4;
     }
 
-    if (totalConversationLength < 10) {
-      const loveBombCount = LOVE_BOMBING_PATTERNS.filter(p => p.test(fullText)).length;
-      if (loveBombCount >= 2) {
-        flags.push('rapid_emotional_escalation');
-        riskScore += 0.35;
-      }
+    // H5: Detect love bombing regardless of conversation length
+    const loveBombCount = LOVE_BOMBING_PATTERNS.filter(p => p.test(fullText)).length;
+    if (loveBombCount >= 2) {
+      flags.push('rapid_emotional_escalation');
+      riskScore += 0.35;
     }
 
     const sobCount = SOB_STORY_PATTERNS.filter(p => p.test(fullText)).length;

@@ -11,7 +11,7 @@ import { BehaviorAnalyzer } from './ai/behavior.analyzer';
 import { ScamDetector } from './ai/scam.detector';
 import { IcebreakerGenerator } from './ai/icebreaker.generator';
 import { MatchmakingEngine } from './ai/matchmaking.engine';
-import { User, Profile, Like, Pass, Match, DailyLike, Photo, Conversation, ConversationParticipant, UserPreference, Notification, Block, Report, Interest, ProfileInterest, Session } from '@app/common/entities';
+import { User, Profile, Like, Pass, Match, DailyLike, Photo, Conversation, ConversationParticipant, UserPreference, Notification, Block, Report, Interest, ProfileInterest, Session, Message } from '@app/common/entities';
 
 @Module({
   imports: [
@@ -21,7 +21,7 @@ import { User, Profile, Like, Pass, Match, DailyLike, Photo, Conversation, Conve
       username: process.env.DB_USERNAME || 'postgres', password: process.env.DB_PASSWORD || 'Aarinola',
       database: process.env.DB_NAME || 'connecta_db', autoLoadEntities: true, synchronize: true,
     }),
-    TypeOrmModule.forFeature([User, Profile, Like, Pass, Match, DailyLike, Photo, Conversation, ConversationParticipant, UserPreference, Notification, Block, Report, Interest, ProfileInterest, Session]),
+    TypeOrmModule.forFeature([User, Profile, Like, Pass, Match, DailyLike, Photo, Conversation, ConversationParticipant, UserPreference, Notification, Block, Report, Interest, ProfileInterest, Session, Message]),
   ],
   controllers: [MatchingController],
   providers: [

@@ -42,7 +42,8 @@ export class BehaviorAnalyzer {
       this.likeRepo.count({ where: { userId } }),
       this.reportRepo.count({ where: { reportedId: userId } }),
       this.photoRepo.count({ where: { profileId: profile?.id || '' } }),
-      this.sessionRepo.count({ where: { userId } }),
+      // M5: Only count active sessions, not all historical sessions
+      this.sessionRepo.count({ where: { userId, isActive: true } }),
     ]);
 
     if (messages24h > 200) {

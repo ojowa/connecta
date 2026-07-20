@@ -2,12 +2,19 @@ import { Controller, Get, Post, Delete, Body, Param, Query } from '@nestjs/commo
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { MatchingService } from './matching.service';
 
+// C4: Auth is handled by API Gateway (JWT guard). The gateway verifies the
+// JWT token and forwards the authenticated user's ID as _userId in the request body.
+// Backend services trust this value from internal gateway requests only.
 @ApiTags('Matching') @ApiBearerAuth() @Controller('matching')
 export class MatchingController {
   constructor(private readonly matchingService: MatchingService) {}
 
   @Get('feed') @ApiOperation({ summary: 'Get discovery feed with AI-powered scoring' })
-  getFeed(@Body('_userId') userId: string, @Query('page') page?: number, @Query('limit') limit?: number) { return this.matchingService.getFeed(userId, page, limit); }
+  getFeed(@Body('_userId') userId: string, @Query('page') page?: number, @Query('limit') limit?: number) {
+    const safeLimit = Math.min(Math.max(Number(limit) || 20, 1), 100);
+    const safePage = Math.max(Number(page) || 1, 1);
+    return this.matchingService.getFeed(userId, safePage, safeLimit);
+  }
 
   @Post('like/:userId') @ApiOperation({ summary: 'Like a user' })
   like(@Body('_userId') userId: string, @Param('userId') targetUserId: string, @Body('likeType') likeType?: string) { return this.matchingService.like(userId, targetUserId, likeType); }
@@ -22,13 +29,21 @@ export class MatchingController {
   undo(@Body('_userId') userId: string) { return this.matchingService.undo(userId); }
 
   @Get('matches') @ApiOperation({ summary: 'Get matches' })
-  getMatches(@Body('_userId') userId: string, @Query('page') page?: number, @Query('limit') limit?: number) { return this.matchingService.getMatches(userId, page, limit); }
+  getMatches(@Body('_userId') userId: string, @Query('page') page?: number, @Query('limit') limit?: number) {
+    const safeLimit = Math.min(Math.max(Number(limit) || 20, 1), 100);
+    const safePage = Math.max(Number(page) || 1, 1);
+    return this.matchingService.getMatches(userId, safePage, safeLimit);
+  }
 
   @Delete('matches/:matchId') @ApiOperation({ summary: 'Unmatch' })
   unmatch(@Body('_userId') userId: string, @Param('matchId') matchId: string) { return this.matchingService.unmatch(userId, matchId); }
 
   @Get('liked-you') @ApiOperation({ summary: 'Get users who liked you' })
-  getLikedYou(@Body('_userId') userId: string, @Query('page') page?: number, @Query('limit') limit?: number) { return this.matchingService.getLikedYou(userId, page, limit); }
+  getLikedYou(@Body('_userId') userId: string, @Query('page') page?: number, @Query('limit') limit?: number) {
+    const safeLimit = Math.min(Math.max(Number(limit) || 20, 1), 100);
+    const safePage = Math.max(Number(page) || 1, 1);
+    return this.matchingService.getLikedYou(userId, safePage, safeLimit);
+  }
 
   @Get('compatibility/:userId') @ApiOperation({ summary: 'Get AI-powered compatibility score' })
   getCompatibility(@Body('_userId') userId: string, @Param('userId') targetUserId: string) { return this.matchingService.getCompatibility(userId, targetUserId); }
