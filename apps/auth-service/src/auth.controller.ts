@@ -1,6 +1,7 @@
 import { Controller, Post, Body, Get, Delete, Param, HttpCode, HttpStatus } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { AuthService } from './auth.service';
+import { RegisterDto, LoginDto, ForgotPasswordDto, ResetPasswordDto } from './dto';
 
 @ApiTags('Auth')
 @Controller('auth')
@@ -10,14 +11,14 @@ export class AuthController {
   @Post('register')
   @ApiOperation({ summary: 'Register a new user' })
   @HttpCode(HttpStatus.CREATED)
-  register(@Body() body: any) {
-    return this.authService.register(body);
+  register(@Body() registerDto: RegisterDto) {
+    return this.authService.register(registerDto);
   }
 
   @Post('login')
   @ApiOperation({ summary: 'Login with credentials' })
-  login(@Body() body: any) {
-    return this.authService.login(body);
+  login(@Body() loginDto: LoginDto) {
+    return this.authService.login(loginDto);
   }
 
   @Post('otp/send')
@@ -81,13 +82,13 @@ export class AuthController {
 
   @Post('password/forgot')
   @ApiOperation({ summary: 'Request password reset' })
-  forgotPassword(@Body() body: any) {
-    return this.authService.forgotPassword(body);
+  forgotPassword(@Body() forgotPasswordDto: ForgotPasswordDto) {
+    return this.authService.forgotPassword(forgotPasswordDto);
   }
 
   @Post('password/reset')
   @ApiOperation({ summary: 'Reset password' })
-  resetPassword(@Body() body: any) {
-    return this.authService.resetPassword(body);
+  resetPassword(@Body() resetPasswordDto: ResetPasswordDto) {
+    return this.authService.resetPassword(resetPasswordDto);
   }
 }
