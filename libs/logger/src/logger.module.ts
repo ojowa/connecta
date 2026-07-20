@@ -1,9 +1,10 @@
 import { Module, Global } from '@nestjs/common';
-import { LoggerService } from './logger.service';
+import { AppLoggerService } from './logger.service';
+import { LoggingInterceptor } from './logging.interceptor';
 
 @Global()
 @Module({
-  providers: [LoggerService],
-  exports: [LoggerService],
+  providers: [AppLoggerService, LoggingInterceptor],
+  exports: [AppLoggerService, LoggingInterceptor],
 })
 export class LoggerLibModule {}

@@ -1,9 +1,12 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
+import { JwtModule } from '@nestjs/jwt';
 import { CallsController } from './calls.controller';
 import { CallsService } from './calls.service';
+import { CallsGateway } from './calls.gateway';
 import { CallSession, User } from '@app/common/entities';
+import { AppConfigService } from '@app/config/config.service';
 
 @Module({
   imports: [
@@ -14,8 +17,12 @@ import { CallSession, User } from '@app/common/entities';
       database: process.env.DB_NAME || 'connecta_db', autoLoadEntities: true, synchronize: true,
     }),
     TypeOrmModule.forFeature([CallSession, User]),
+    JwtModule.register({
+      secret: process.env.JWT_SECRET || 'connecta-dev-secret-key-2026',
+      signOptions: { expiresIn: '15m' },
+    }),
   ],
   controllers: [CallsController],
-  providers: [CallsService],
+  providers: [CallsService, CallsGateway],
 })
 export class AppModule {}

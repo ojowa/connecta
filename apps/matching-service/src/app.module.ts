@@ -3,7 +3,8 @@ import { ConfigModule } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { MatchingController } from './matching.controller';
 import { MatchingService } from './matching.service';
-import { User, Profile, Like, Pass, Match, DailyLike, Photo, Conversation, ConversationParticipant, UserPreference } from '@app/common/entities';
+import { MatchEventsHandler } from './events/match-events.handler';
+import { User, Profile, Like, Pass, Match, DailyLike, Photo, Conversation, ConversationParticipant, UserPreference, Notification } from '@app/common/entities';
 
 @Module({
   imports: [
@@ -13,9 +14,9 @@ import { User, Profile, Like, Pass, Match, DailyLike, Photo, Conversation, Conve
       username: process.env.DB_USERNAME || 'postgres', password: process.env.DB_PASSWORD || 'Aarinola',
       database: process.env.DB_NAME || 'connecta_db', autoLoadEntities: true, synchronize: true,
     }),
-    TypeOrmModule.forFeature([User, Profile, Like, Pass, Match, DailyLike, Photo, Conversation, ConversationParticipant, UserPreference]),
+    TypeOrmModule.forFeature([User, Profile, Like, Pass, Match, DailyLike, Photo, Conversation, ConversationParticipant, UserPreference, Notification]),
   ],
   controllers: [MatchingController],
-  providers: [MatchingService],
+  providers: [MatchingService, MatchEventsHandler],
 })
 export class AppModule {}

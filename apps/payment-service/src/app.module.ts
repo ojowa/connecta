@@ -3,7 +3,8 @@ import { ConfigModule } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { PaymentsController } from './payments.controller';
 import { PaymentsService } from './payments.service';
-import { Plan, Subscription, Transaction, User } from '@app/common/entities';
+import { PaymentEventsHandler } from './events/payment-events.handler';
+import { Plan, Subscription, Transaction, User, Notification } from '@app/common/entities';
 
 @Module({
   imports: [
@@ -13,9 +14,9 @@ import { Plan, Subscription, Transaction, User } from '@app/common/entities';
       username: process.env.DB_USERNAME || 'postgres', password: process.env.DB_PASSWORD || 'Aarinola',
       database: process.env.DB_NAME || 'connecta_db', autoLoadEntities: true, synchronize: true,
     }),
-    TypeOrmModule.forFeature([Plan, Subscription, Transaction, User]),
+    TypeOrmModule.forFeature([Plan, Subscription, Transaction, User, Notification]),
   ],
   controllers: [PaymentsController],
-  providers: [PaymentsService],
+  providers: [PaymentsService, PaymentEventsHandler],
 })
 export class AppModule {}

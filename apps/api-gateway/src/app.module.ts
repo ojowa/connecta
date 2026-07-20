@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { Module, MiddlewareConsumer, NestModule } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { ThrottlerModule } from '@nestjs/throttler';
 import { HealthModule } from './health/health.module';
@@ -13,6 +13,11 @@ import { PaymentsModule } from './modules/payments/payments.module';
 import { NotificationsModule } from './modules/notifications/notifications.module';
 import { SearchModule } from './modules/search/search.module';
 import { AdminModule } from './modules/admin/admin.module';
+import { RequestIdMiddleware } from './middleware/request-id.middleware';
+import { DeviceInfoMiddleware } from './middleware/device-info.middleware';
+import { RequestLoggingInterceptor } from './interceptors/request-logging.interceptor';
+import { TimeoutInterceptor } from './interceptors/timeout.interceptor';
+import { ResponseTransformInterceptor } from './interceptors/response-transform.interceptor';
 
 @Module({
   imports: [
@@ -33,5 +38,14 @@ import { AdminModule } from './modules/admin/admin.module';
     SearchModule,
     AdminModule,
   ],
+  providers: [
+    RequestLoggingInterceptor,
+    TimeoutInterceptor,
+    ResponseTransformInterceptor,
+  ],
 })
-export class AppModule {}
+export class AppModule implements NestModule {
+  configure(consumer: MiddlewareConsumer) {
+    consumer.apply(RequestIdMiddleware, DeviceInfoMiddleware).forRoutes('*');
+  }
+}

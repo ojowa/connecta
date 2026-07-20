@@ -3,7 +3,8 @@ import { ConfigModule } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { ProfilesController } from './profiles.controller';
 import { ProfilesService } from './profiles.service';
-import { Profile, Photo, Interest, ProfileInterest } from '@app/common/entities';
+import { ProfileEventsHandler } from './events/profile-events.handler';
+import { Profile, Photo, Interest, ProfileInterest, User, Notification } from '@app/common/entities';
 
 @Module({
   imports: [
@@ -13,9 +14,9 @@ import { Profile, Photo, Interest, ProfileInterest } from '@app/common/entities'
       username: process.env.DB_USERNAME || 'postgres', password: process.env.DB_PASSWORD || 'Aarinola',
       database: process.env.DB_NAME || 'connecta_db', autoLoadEntities: true, synchronize: true,
     }),
-    TypeOrmModule.forFeature([Profile, Photo, Interest, ProfileInterest]),
+    TypeOrmModule.forFeature([Profile, Photo, Interest, ProfileInterest, User, Notification]),
   ],
   controllers: [ProfilesController],
-  providers: [ProfilesService],
+  providers: [ProfilesService, ProfileEventsHandler],
 })
 export class AppModule {}

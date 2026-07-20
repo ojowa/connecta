@@ -3,7 +3,8 @@ import { ConfigModule } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { UsersController } from './users.controller';
 import { UsersService } from './users.service';
-import { User, Profile, UserPreference, Block, Report, Photo } from '@app/common/entities';
+import { UserEventsHandler } from './events/user-events.handler';
+import { User, Profile, UserPreference, Block, Report, Photo, Notification } from '@app/common/entities';
 
 @Module({
   imports: [
@@ -14,9 +15,9 @@ import { User, Profile, UserPreference, Block, Report, Photo } from '@app/common
       database: process.env.DB_NAME || 'connecta_db', autoLoadEntities: true, synchronize: true,
       logging: process.env.NODE_ENV !== 'production',
     }),
-    TypeOrmModule.forFeature([User, Profile, UserPreference, Block, Report, Photo]),
+    TypeOrmModule.forFeature([User, Profile, UserPreference, Block, Report, Photo, Notification]),
   ],
   controllers: [UsersController],
-  providers: [UsersService],
+  providers: [UsersService, UserEventsHandler],
 })
 export class AppModule {}

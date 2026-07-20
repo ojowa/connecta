@@ -1,2 +1,5 @@
-export * from './logger.module';
-export * from './logger.service';
+import { AppLoggerService } from './logger.service';
+import { LoggerLibModule } from './logger.module';
+import { LoggingInterceptor } from './logging.interceptor';
+
+export { AppLoggerService, LoggerLibModule, LoggingInterceptor };

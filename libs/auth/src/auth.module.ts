@@ -1,22 +1,22 @@
 import { Module } from '@nestjs/common';
 import { JwtModule } from '@nestjs/jwt';
 import { PassportModule } from '@nestjs/passport';
-import { ConfigModule, ConfigService } from '@nestjs/config';
 import { JwtStrategy } from './jwt.strategy';
+import { RefreshTokenStrategy } from './refresh-token.strategy';
+import { AppConfigService } from '@app/config/config.service';
 
 @Module({
   imports: [
     PassportModule.register({ defaultStrategy: 'jwt' }),
     JwtModule.registerAsync({
-      imports: [ConfigModule],
-      useFactory: (configService: ConfigService) => ({
-        secret: configService.get('JWT_SECRET', 'connecta-dev-secret-key-2026'),
-        signOptions: { expiresIn: '15m' },
+      useFactory: (configService: AppConfigService) => ({
+        secret: configService.jwt.secret,
+        signOptions: { expiresIn: configService.jwt.accessExpiresIn },
       }),
-      inject: [ConfigService],
+      inject: [AppConfigService],
     }),
   ],
-  providers: [JwtStrategy],
+  providers: [JwtStrategy, RefreshTokenStrategy],
   exports: [JwtModule, PassportModule],
 })
 export class AuthLibModule {}

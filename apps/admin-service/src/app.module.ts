@@ -4,7 +4,8 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { JwtModule } from '@nestjs/jwt';
 import { AdminController } from './admin.controller';
 import { AdminService } from './admin.service';
-import { AdminUser, AdminSession, AuditLog, SystemSetting, User, Report, Subscription, Transaction, Plan } from '@app/common/entities';
+import { ModerationEventsHandler } from './events/moderation-events.handler';
+import { AdminUser, AdminSession, AuditLog, SystemSetting, User, Report, Subscription, Transaction, Plan, Profile, Notification } from '@app/common/entities';
 
 @Module({
   imports: [
@@ -14,10 +15,10 @@ import { AdminUser, AdminSession, AuditLog, SystemSetting, User, Report, Subscri
       username: process.env.DB_USERNAME || 'postgres', password: process.env.DB_PASSWORD || 'Aarinola',
       database: process.env.DB_NAME || 'connecta_db', autoLoadEntities: true, synchronize: true,
     }),
-    TypeOrmModule.forFeature([AdminUser, AdminSession, AuditLog, SystemSetting, User, Report, Subscription, Transaction, Plan]),
+    TypeOrmModule.forFeature([AdminUser, AdminSession, AuditLog, SystemSetting, User, Report, Subscription, Transaction, Plan, Profile, Notification]),
     JwtModule.register({ secret: process.env.JWT_SECRET || 'connecta_admin_secret', signOptions: { expiresIn: '15m' } }),
   ],
   controllers: [AdminController],
-  providers: [AdminService],
+  providers: [AdminService, ModerationEventsHandler],
 })
 export class AppModule {}
