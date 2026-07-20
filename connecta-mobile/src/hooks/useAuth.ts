@@ -47,7 +47,7 @@ export function useAuth() {
 
   const logout = async () => {
     if (user) {
-      try { await authApi.logout(user.id); } catch {}
+      try { await authApi.logout(user.id); } catch (error) { console.warn('Logout failed:', error); }
     }
     storeLogout();
   };

@@ -16,7 +16,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
 
   const handleLogin = async () => {
     if (!identifier || !password) return;
-    try { await login(identifier, password); } catch {}
+    try { await login(identifier, password); } catch (error) { console.warn('Login failed:', error); }
   };
 
   return (

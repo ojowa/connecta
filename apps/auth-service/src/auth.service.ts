@@ -234,8 +234,8 @@ export class AuthService {
   private async generateTokens(user: User) {
     const payload = { sub: user.id, email: user.email, role: user.role };
     const [accessToken, refreshToken] = await Promise.all([
-      this.jwtService.signAsync(payload, { expiresIn: '15m', secret: process.env.JWT_SECRET || 'connecta-dev-secret-key-2026' }),
-      this.jwtService.signAsync(payload, { expiresIn: '30d', secret: process.env.JWT_REFRESH_SECRET || 'connecta-refresh-secret-2026' }),
+      this.jwtService.signAsync(payload, { expiresIn: '15m', secret: process.env.JWT_SECRET || '' }),
+      this.jwtService.signAsync(payload, { expiresIn: '30d', secret: process.env.JWT_REFRESH_SECRET || '' }),
     ]);
     return { accessToken, refreshToken };
   }

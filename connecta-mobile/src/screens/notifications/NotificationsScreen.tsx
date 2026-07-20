@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useCallback } from 'react';
 import {
   View,
   Text,
@@ -8,6 +8,8 @@ import {
   SafeAreaView,
   RefreshControl,
 } from 'react-native';
+import { useQuery } from '@tanstack/react-query';
+import { apiClient } from '../../services/api/apiClient';
 import { colors } from '../../theme/colors';
 import { typography } from '../../theme/typography';
 import { spacing } from '../../theme/spacing';
@@ -23,49 +25,6 @@ interface Notification {
   timestamp: string;
   read: boolean;
 }
-
-const MOCK_NOTIFICATIONS: Notification[] = [
-  {
-    id: '1',
-    type: 'match',
-    title: 'New Match!',
-    subtitle: 'You and Sarah liked each other',
-    timestamp: '2m ago',
-    read: false,
-  },
-  {
-    id: '2',
-    type: 'message',
-    title: 'New Message',
-    subtitle: 'Alex sent you a message',
-    timestamp: '15m ago',
-    read: false,
-  },
-  {
-    id: '3',
-    type: 'like',
-    title: 'New Like',
-    subtitle: 'Jordan liked your profile',
-    timestamp: '1h ago',
-    read: true,
-  },
-  {
-    id: '4',
-    type: 'match',
-    title: 'New Match!',
-    subtitle: 'You and Casey liked each other',
-    timestamp: '3h ago',
-    read: true,
-  },
-  {
-    id: '5',
-    type: 'system',
-    title: 'System Update',
-    subtitle: 'Connecta has been updated to version 1.0.1',
-    timestamp: '1d ago',
-    read: true,
-  },
-];
 
 const TYPE_COLORS: Record<NotificationType, string> = {
   match: colors.primary,
@@ -88,20 +47,13 @@ const getIcon = (type: NotificationType): string => {
 };
 
 const NotificationsScreen: React.FC = () => {
-  const [notifications, setNotifications] = useState<Notification[]>(MOCK_NOTIFICATIONS);
-  const [refreshing, setRefreshing] = useState(false);
-
-  const onRefresh = useCallback(() => {
-    setRefreshing(true);
-    setTimeout(() => {
-      setRefreshing(false);
-    }, 1500);
-  }, []);
+  const { data: notifications = [], isLoading, refetch } = useQuery({
+    queryKey: ['notifications'],
+    queryFn: () => apiClient.get('/notifications').then((r) => r.data),
+  });
 
   const markAllAsRead = useCallback(() => {
-    setNotifications((prev) =>
-      prev.map((n) => ({ ...n, read: true }))
-    );
+    // TODO: Implement mark-all-as-read API call
   }, []);
 
   const renderNotification = ({ item }: { item: Notification }) => (
@@ -140,7 +92,7 @@ const NotificationsScreen: React.FC = () => {
     </TouchableOpacity>
   );
 
-  const unreadCount = notifications.filter((n) => !n.read).length;
+  const unreadCount = notifications.filter((n: Notification) => !n.read).length;
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -164,8 +116,8 @@ const NotificationsScreen: React.FC = () => {
         ItemSeparatorComponent={() => <View style={styles.separator} />}
         refreshControl={
           <RefreshControl
-            refreshing={refreshing}
-            onRefresh={onRefresh}
+            refreshing={isLoading}
+            onRefresh={refetch}
             tintColor={colors.primary}
             colors={[colors.primary]}
           />

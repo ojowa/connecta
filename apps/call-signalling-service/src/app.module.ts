@@ -17,7 +17,7 @@ import { CallSession, User } from '@app/common/entities';
       host: process.env.DB_HOST || 'localhost',
       port: parseInt(process.env.DB_PORT || '5432', 10),
       username: process.env.DB_USERNAME || 'postgres',
-      password: process.env.DB_PASSWORD || 'Aarinola',
+      password: process.env.DB_PASSWORD || '',
       database: process.env.DB_NAME || 'connecta_db',
       autoLoadEntities: true,
       synchronize: true,
@@ -25,7 +25,7 @@ import { CallSession, User } from '@app/common/entities';
     TypeOrmModule.forFeature([CallSession, User]),
     PassportModule.register({ defaultStrategy: 'jwt' }),
     JwtModule.register({
-      secret: process.env.JWT_SECRET || 'connecta-jwt-secret-key-2026',
+      secret: process.env.JWT_SECRET || '',
       signOptions: { expiresIn: '15m' },
     }),
   ],

@@ -55,7 +55,7 @@ export class NotificationManager {
         platform: Platform.OS,
         deviceId: Constants.installationId,
       });
-    } catch {}
+    } catch (error) { console.warn('Failed to register token:', error); }
   }
 
   private async setupAndroidChannels(): Promise<void> {

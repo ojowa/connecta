@@ -17,7 +17,7 @@ export const ForgotPasswordScreen: React.FC<ForgotPasswordProps> = ({ navigation
   const handleSubmit = async () => {
     if (!email) return;
     setLoading(true);
-    try { await authApi.forgotPassword(email); setSent(true); } catch {}
+    try { await authApi.forgotPassword(email); setSent(true); } catch (error) { console.warn('Password reset failed:', error); }
     finally { setLoading(false); }
   };
 

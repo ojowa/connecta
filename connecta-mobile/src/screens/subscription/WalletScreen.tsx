@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import {
   View,
   Text,
@@ -7,7 +7,10 @@ import {
   TouchableOpacity,
   FlatList,
   SafeAreaView,
+  Alert,
 } from 'react-native';
+import { useQuery } from '@tanstack/react-query';
+import { apiClient } from '../../services/api/apiClient';
 import { colors } from '../../theme/colors';
 import { typography } from '../../theme/typography';
 import { spacing } from '../../theme/spacing';
@@ -28,6 +31,7 @@ interface Transaction {
   type: 'purchase' | 'usage' | 'refund';
 }
 
+// TODO: In production, purchase options should come from the API
 const PURCHASE_OPTIONS: PurchaseOption[] = [
   { id: 'sl10', title: '10 Super Likes', price: '$4.99' },
   { id: 'boost5', title: '5 Boosts', price: '$7.99' },
@@ -36,51 +40,6 @@ const PURCHASE_OPTIONS: PurchaseOption[] = [
     title: 'Bundle (15 Super Likes + 5 Boosts)',
     price: '$9.99',
     isBestValue: true,
-  },
-];
-
-const MOCK_TRANSACTIONS: Transaction[] = [
-  {
-    id: '1',
-    date: 'Jul 18, 2026',
-    description: 'Premium Subscription',
-    amount: '-$9.99',
-    type: 'purchase',
-  },
-  {
-    id: '2',
-    date: 'Jul 15, 2026',
-    description: '10 Super Likes Pack',
-    amount: '-$4.99',
-    type: 'purchase',
-  },
-  {
-    id: '3',
-    date: 'Jul 10, 2026',
-    description: 'Super Like Used',
-    amount: '1 Super Like',
-    type: 'usage',
-  },
-  {
-    id: '4',
-    date: 'Jul 8, 2026',
-    description: 'Boost Activated',
-    amount: '1 Boost',
-    type: 'usage',
-  },
-  {
-    id: '5',
-    date: 'Jul 5, 2026',
-    description: 'Bundle Pack',
-    amount: '-$9.99',
-    type: 'purchase',
-  },
-  {
-    id: '6',
-    date: 'Jul 1, 2026',
-    description: 'Refund - Duplicate Charge',
-    amount: '+$4.99',
-    type: 'refund',
   },
 ];
 
@@ -140,12 +99,22 @@ const TransactionItem: React.FC<{ transaction: Transaction }> = ({ transaction }
 };
 
 const WalletScreen: React.FC = () => {
-  const [credits] = useState(245);
-  const [superLikes] = useState(8);
-  const [boosts] = useState(3);
+  const { data: walletData } = useQuery({
+    queryKey: ['wallet'],
+    queryFn: () => apiClient.get('/payments/wallet').then((r) => r.data),
+  });
+
+  const { data: transactions = [] } = useQuery({
+    queryKey: ['transactions'],
+    queryFn: () => apiClient.get('/payments/transactions').then((r) => r.data),
+  });
+
+  const credits = walletData?.credits ?? 0;
+  const superLikes = walletData?.superLikes ?? 0;
+  const boosts = walletData?.boosts ?? 0;
 
   const handleBuy = (optionId: string) => {
-    // TODO: Integrate with in-app purchase SDK
+    Alert.alert('Coming soon', 'In-app purchases will be available soon.');
   };
 
   return (
@@ -192,7 +161,7 @@ const WalletScreen: React.FC = () => {
 
         <Text style={styles.sectionTitle}>Transaction History</Text>
         <View style={styles.transactionSection}>
-          {MOCK_TRANSACTIONS.map((transaction) => (
+          {transactions.map((transaction: Transaction) => (
             <TransactionItem key={transaction.id} transaction={transaction} />
           ))}
         </View>

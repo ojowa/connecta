@@ -21,7 +21,7 @@ export const RegisterScreen: React.FC<RegisterScreenProps> = ({ navigation }) =>
   const handleRegister = async () => {
     if (!fullName || !email || !password || !dateOfBirth || !gender) return;
     if (password !== confirmPassword) return;
-    try { await register({ email, password, fullName, dateOfBirth, gender }); } catch {}
+    try { await register({ email, password, fullName, dateOfBirth, gender }); } catch (error) { console.warn('Registration failed:', error); }
   };
 
   return (
