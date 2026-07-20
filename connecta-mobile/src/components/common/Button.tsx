@@ -11,7 +11,7 @@ interface ButtonProps {
   size?: 'small' | 'medium' | 'large';
   loading?: boolean;
   disabled?: boolean;
-  style?: ViewStyle;
+  style?: ViewStyle | ViewStyle[];
 }
 
 export const Button: React.FC<ButtonProps> = ({

@@ -16,7 +16,7 @@ export const ChatBubble: React.FC<ChatBubbleProps> = ({ message, isOwn }) => (
 );
 
 const styles = StyleSheet.create({
-  container: { maxWidth: '80%', marginVertical: 4, padding: spacing.sm, borderRadius: borderRadius.lg },
+  container: { maxWidth: '80%', marginVertical: 4, padding: spacing.sm, borderRadius: borderRadius.card },
   own: { alignSelf: 'flex-end', backgroundColor: colors.primary, borderBottomRightRadius: 4 },
   other: { alignSelf: 'flex-start', backgroundColor: colors.gray100, borderBottomLeftRadius: 4 },
   text: { ...typography.body },

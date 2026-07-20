@@ -22,7 +22,7 @@ export const ChatInput: React.FC<ChatInputProps> = ({ onSend, onTyping }) => {
 
 const styles = StyleSheet.create({
   container: { flexDirection: 'row', alignItems: 'flex-end', padding: spacing.sm, borderTopWidth: 1, borderTopColor: colors.border, backgroundColor: colors.white },
-  input: { flex: 1, ...typography.body, borderWidth: 1, borderColor: colors.border, borderRadius: borderRadius.xl, paddingHorizontal: spacing.md, paddingVertical: spacing.sm, maxHeight: 100, marginRight: spacing.sm },
+  input: { flex: 1, ...typography.body, borderWidth: 1, borderColor: colors.border, borderRadius: borderRadius.input, paddingHorizontal: spacing.md, paddingVertical: spacing.sm, maxHeight: 100, marginRight: spacing.sm },
   sendButton: { backgroundColor: colors.primary, borderRadius: borderRadius.full, paddingHorizontal: spacing.md, paddingVertical: spacing.sm },
   sendDisabled: { opacity: 0.5 },
   sendText: { ...typography.button, color: colors.white },

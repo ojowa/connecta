@@ -27,7 +27,7 @@ export const ProfileCard: React.FC<ProfileCardProps> = ({ profile, onPress }) =>
 };
 
 const styles = StyleSheet.create({
-  card: { borderRadius: borderRadius.lg, overflow: 'hidden', backgroundColor: colors.white, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.1, shadowRadius: 4, elevation: 3 },
+  card: { borderRadius: borderRadius.card, overflow: 'hidden', backgroundColor: colors.white, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.1, shadowRadius: 4, elevation: 3 },
   image: { width: '100%', height: 200, resizeMode: 'cover' },
   info: { padding: spacing.md },
   name: { ...typography.h3, marginBottom: spacing.xs },

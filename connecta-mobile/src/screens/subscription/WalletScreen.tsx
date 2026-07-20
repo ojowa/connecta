@@ -1,0 +1,386 @@
+import React, { useState } from 'react';
+import {
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  TouchableOpacity,
+  FlatList,
+  SafeAreaView,
+} from 'react-native';
+import { colors } from '../../theme/colors';
+import { typography } from '../../theme/typography';
+import { spacing } from '../../theme/spacing';
+import { borderRadius } from '../../theme/borderRadius';
+
+interface PurchaseOption {
+  id: string;
+  title: string;
+  price: string;
+  isBestValue?: boolean;
+}
+
+interface Transaction {
+  id: string;
+  date: string;
+  description: string;
+  amount: string;
+  type: 'purchase' | 'usage' | 'refund';
+}
+
+const PURCHASE_OPTIONS: PurchaseOption[] = [
+  { id: 'sl10', title: '10 Super Likes', price: '$4.99' },
+  { id: 'boost5', title: '5 Boosts', price: '$7.99' },
+  {
+    id: 'bundle',
+    title: 'Bundle (15 Super Likes + 5 Boosts)',
+    price: '$9.99',
+    isBestValue: true,
+  },
+];
+
+const MOCK_TRANSACTIONS: Transaction[] = [
+  {
+    id: '1',
+    date: 'Jul 18, 2026',
+    description: 'Premium Subscription',
+    amount: '-$9.99',
+    type: 'purchase',
+  },
+  {
+    id: '2',
+    date: 'Jul 15, 2026',
+    description: '10 Super Likes Pack',
+    amount: '-$4.99',
+    type: 'purchase',
+  },
+  {
+    id: '3',
+    date: 'Jul 10, 2026',
+    description: 'Super Like Used',
+    amount: '1 Super Like',
+    type: 'usage',
+  },
+  {
+    id: '4',
+    date: 'Jul 8, 2026',
+    description: 'Boost Activated',
+    amount: '1 Boost',
+    type: 'usage',
+  },
+  {
+    id: '5',
+    date: 'Jul 5, 2026',
+    description: 'Bundle Pack',
+    amount: '-$9.99',
+    type: 'purchase',
+  },
+  {
+    id: '6',
+    date: 'Jul 1, 2026',
+    description: 'Refund - Duplicate Charge',
+    amount: '+$4.99',
+    type: 'refund',
+  },
+];
+
+const SuperLikeIcon: React.FC = () => (
+  <View style={styles.iconContainer}>
+    <Text style={styles.iconStar}>★</Text>
+  </View>
+);
+
+const BoostIcon: React.FC = () => (
+  <View style={styles.iconContainer}>
+    <Text style={styles.iconBolt}>⚡</Text>
+  </View>
+);
+
+const PurchaseCard: React.FC<{
+  option: PurchaseOption;
+  onBuy: () => void;
+}> = ({ option, onBuy }) => (
+  <TouchableOpacity
+    style={[styles.purchaseCard, option.isBestValue && styles.purchaseCardBest]}
+    onPress={onBuy}
+    activeOpacity={0.7}
+  >
+    {option.isBestValue && (
+      <View style={styles.bestValueBadge}>
+        <Text style={styles.bestValueBadgeText}>Best Value</Text>
+      </View>
+    )}
+    <Text style={styles.purchaseTitle}>{option.title}</Text>
+    <Text style={styles.purchasePrice}>{option.price}</Text>
+    <TouchableOpacity style={styles.buyButton} onPress={onBuy} activeOpacity={0.7}>
+      <Text style={styles.buyButtonText}>Buy</Text>
+    </TouchableOpacity>
+  </TouchableOpacity>
+);
+
+const TransactionItem: React.FC<{ transaction: Transaction }> = ({ transaction }) => {
+  const typeColor =
+    transaction.type === 'refund'
+      ? colors.success
+      : transaction.type === 'usage'
+        ? colors.warning
+        : colors.textPrimary;
+
+  return (
+    <View style={styles.transactionRow}>
+      <View style={styles.transactionInfo}>
+        <Text style={styles.transactionDescription}>{transaction.description}</Text>
+        <Text style={styles.transactionDate}>{transaction.date}</Text>
+      </View>
+      <Text style={[styles.transactionAmount, { color: typeColor }]}>
+        {transaction.amount}
+      </Text>
+    </View>
+  );
+};
+
+const WalletScreen: React.FC = () => {
+  const [credits] = useState(245);
+  const [superLikes] = useState(8);
+  const [boosts] = useState(3);
+
+  const handleBuy = (optionId: string) => {
+    // TODO: Integrate with in-app purchase SDK
+  };
+
+  return (
+    <SafeAreaView style={styles.safeArea}>
+      <ScrollView
+        style={styles.container}
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={styles.contentContainer}
+      >
+        <View style={styles.header}>
+          <Text style={styles.headerTitle}>Wallet</Text>
+        </View>
+
+        <View style={styles.balanceCard}>
+          <Text style={styles.balanceLabel}>Current Balance</Text>
+          <Text style={styles.balanceAmount}>{credits}</Text>
+          <Text style={styles.balanceUnit}>credits</Text>
+        </View>
+
+        <Text style={styles.sectionTitle}>Your Power-Ups</Text>
+        <View style={styles.powerUpsRow}>
+          <View style={styles.powerUpCard}>
+            <SuperLikeIcon />
+            <Text style={styles.powerUpCount}>{superLikes}</Text>
+            <Text style={styles.powerUpLabel}>Super Likes</Text>
+          </View>
+          <View style={styles.powerUpCard}>
+            <BoostIcon />
+            <Text style={styles.powerUpCount}>{boosts}</Text>
+            <Text style={styles.powerUpLabel}>Boosts</Text>
+          </View>
+        </View>
+
+        <Text style={styles.sectionTitle}>Purchase</Text>
+        <View style={styles.purchaseSection}>
+          {PURCHASE_OPTIONS.map((option) => (
+            <PurchaseCard
+              key={option.id}
+              option={option}
+              onBuy={() => handleBuy(option.id)}
+            />
+          ))}
+        </View>
+
+        <Text style={styles.sectionTitle}>Transaction History</Text>
+        <View style={styles.transactionSection}>
+          {MOCK_TRANSACTIONS.map((transaction) => (
+            <TransactionItem key={transaction.id} transaction={transaction} />
+          ))}
+        </View>
+
+        <View style={styles.bottomSpacer} />
+      </ScrollView>
+    </SafeAreaView>
+  );
+};
+
+export default WalletScreen;
+
+const styles = StyleSheet.create({
+  safeArea: {
+    flex: 1,
+    backgroundColor: colors.background,
+  },
+  container: {
+    flex: 1,
+    backgroundColor: colors.surface,
+  },
+  contentContainer: {
+    paddingBottom: spacing.xxl,
+  },
+  header: {
+    paddingHorizontal: spacing.lg,
+    paddingTop: spacing.md,
+    paddingBottom: spacing.sm,
+    backgroundColor: colors.background,
+  },
+  headerTitle: {
+    ...typography.h1,
+    color: colors.textPrimary,
+  },
+  balanceCard: {
+    backgroundColor: colors.primary,
+    marginHorizontal: spacing.lg,
+    marginTop: spacing.lg,
+    borderRadius: borderRadius.card,
+    padding: spacing.xl,
+    alignItems: 'center',
+  },
+  balanceLabel: {
+    ...typography.caption,
+    color: 'rgba(255,255,255,0.8)',
+    marginBottom: spacing.xs,
+  },
+  balanceAmount: {
+    fontSize: 48,
+    fontWeight: '700',
+    color: colors.white,
+    lineHeight: 56,
+  },
+  balanceUnit: {
+    ...typography.body,
+    color: 'rgba(255,255,255,0.9)',
+    marginTop: spacing.xs,
+  },
+  sectionTitle: {
+    ...typography.caption,
+    color: colors.textSecondary,
+    fontWeight: '600',
+    paddingHorizontal: spacing.lg,
+    paddingTop: spacing.xl,
+    paddingBottom: spacing.sm,
+    textTransform: 'uppercase',
+    letterSpacing: 1,
+  },
+  powerUpsRow: {
+    flexDirection: 'row',
+    paddingHorizontal: spacing.lg,
+    gap: spacing.md,
+  },
+  powerUpCard: {
+    flex: 1,
+    backgroundColor: colors.background,
+    borderRadius: borderRadius.card,
+    padding: spacing.lg,
+    alignItems: 'center',
+  },
+  iconContainer: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: colors.surface,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: spacing.sm,
+  },
+  iconStar: {
+    fontSize: 24,
+    color: colors.warning,
+  },
+  iconBolt: {
+    fontSize: 24,
+    color: colors.secondary,
+  },
+  powerUpCount: {
+    ...typography.h2,
+    color: colors.textPrimary,
+  },
+  powerUpLabel: {
+    ...typography.caption,
+    color: colors.textSecondary,
+    marginTop: spacing.xs,
+  },
+  purchaseSection: {
+    paddingHorizontal: spacing.lg,
+    gap: spacing.sm,
+  },
+  purchaseCard: {
+    backgroundColor: colors.background,
+    borderRadius: borderRadius.card,
+    padding: spacing.md,
+    borderWidth: 1.5,
+    borderColor: colors.border,
+  },
+  purchaseCardBest: {
+    borderColor: colors.success,
+  },
+  bestValueBadge: {
+    position: 'absolute',
+    top: -10,
+    right: spacing.md,
+    backgroundColor: colors.success,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 2,
+    borderRadius: borderRadius.full,
+  },
+  bestValueBadgeText: {
+    ...typography.small,
+    color: colors.white,
+    fontWeight: '600',
+  },
+  purchaseTitle: {
+    ...typography.body,
+    color: colors.textPrimary,
+    fontWeight: '600',
+    marginBottom: spacing.xs,
+  },
+  purchasePrice: {
+    ...typography.h3,
+    color: colors.primary,
+    marginBottom: spacing.sm,
+  },
+  buyButton: {
+    backgroundColor: colors.primary,
+    paddingVertical: spacing.sm,
+    borderRadius: borderRadius.button,
+    alignItems: 'center',
+  },
+  buyButtonText: {
+    ...typography.button,
+    color: colors.white,
+  },
+  transactionSection: {
+    backgroundColor: colors.background,
+    marginHorizontal: spacing.lg,
+    borderRadius: borderRadius.card,
+    overflow: 'hidden',
+  },
+  transactionRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.md,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: colors.border,
+  },
+  transactionInfo: {
+    flex: 1,
+  },
+  transactionDescription: {
+    ...typography.body,
+    color: colors.textPrimary,
+  },
+  transactionDate: {
+    ...typography.caption,
+    color: colors.textSecondary,
+    marginTop: 2,
+  },
+  transactionAmount: {
+    ...typography.body,
+    fontWeight: '600',
+    marginLeft: spacing.md,
+  },
+  bottomSpacer: {
+    height: spacing.xxl,
+  },
+});
