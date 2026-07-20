@@ -1,0 +1,10 @@
+export { SyncEngine } from './SyncEngine';
+export { NetworkManager } from './NetworkManager';
+export { VectorClock } from './VectorClock';
+export { Outbox } from './Outbox';
+export { MediaSyncStrategy, MediaPriority } from './MediaSyncStrategy';
+export { registerBackgroundSync, unregisterBackgroundSync } from './BackgroundSync';
+export { ConflictResolver, STRATEGY_MATRIX } from './strategies/conflictResolution';
+export type { ResolutionStrategy, SyncRecord } from './strategies/conflictResolution';
+export type { SyncOperation } from './Outbox';
+export type { SyncConfig } from './SyncEngine';

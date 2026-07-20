@@ -7,7 +7,7 @@ import { ErrorBoundary } from '../components/common/ErrorBoundary';
 import { useNetworkStatus } from '../hooks/useNetworkStatus';
 import { useNotifications } from '../hooks/useNotifications';
 import { useSocket } from '../hooks/useSocket';
-import SyncEngine from '../sync/SyncEngine';
+import { SyncEngine } from '../sync/SyncEngine';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -19,7 +19,7 @@ const AppInner: React.FC = () => {
   useNetworkStatus();
   useNotifications();
   useSocket();
-  React.useEffect(() => { SyncEngine.getInstance(); }, []);
+  React.useEffect(() => { SyncEngine.getInstance().initialize(); }, []);
   return <RootNavigator />;
 };
 

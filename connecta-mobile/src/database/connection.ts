@@ -29,6 +29,7 @@ async function runMigrations(db: SQLite.SQLiteDatabase): Promise<void> {
     { version: 2, up: migration002 },
     { version: 3, up: migration003 },
     { version: 4, up: migration004 },
+    { version: 5, up: migration005 },
   ];
 
   for (const migration of migrations) {
@@ -170,6 +171,91 @@ async function migration004(db: SQLite.SQLiteDatabase) {
       entity_type TEXT NOT NULL,
       synced_at TEXT DEFAULT (datetime('now')),
       PRIMARY KEY (local_id, entity_type)
+    );
+  `);
+}
+
+async function migration005(db: SQLite.SQLiteDatabase) {
+  await db.execAsync(`
+    CREATE TABLE IF NOT EXISTS local_conversations (
+      id TEXT PRIMARY KEY,
+      match_id TEXT,
+      other_user_id TEXT NOT NULL,
+      other_user_name TEXT,
+      other_user_photo TEXT,
+      last_message TEXT,
+      last_message_at INTEGER,
+      unread_count INTEGER DEFAULT 0,
+      is_archived INTEGER DEFAULT 0,
+      created_at INTEGER NOT NULL,
+      updated_at INTEGER NOT NULL
+    );
+
+    CREATE TABLE IF NOT EXISTS local_messages (
+      id TEXT PRIMARY KEY,
+      conversation_id TEXT NOT NULL,
+      sender_id TEXT NOT NULL,
+      content TEXT,
+      content_type TEXT NOT NULL DEFAULT 'text',
+      media_url TEXT,
+      media_local_path TEXT,
+      reply_to_id TEXT,
+      is_deleted INTEGER DEFAULT 0,
+      is_sent INTEGER DEFAULT 0,
+      is_read INTEGER DEFAULT 0,
+      created_at INTEGER NOT NULL,
+      sent_at INTEGER,
+      updated_at INTEGER NOT NULL,
+      FOREIGN KEY (conversation_id) REFERENCES local_conversations(id)
+    );
+
+    CREATE TABLE IF NOT EXISTS local_profile_cache (
+      user_id TEXT PRIMARY KEY,
+      data TEXT NOT NULL,
+      version INTEGER DEFAULT 1,
+      cached_at INTEGER NOT NULL
+    );
+
+    CREATE TABLE IF NOT EXISTS local_feed_cache (
+      user_id TEXT PRIMARY KEY,
+      data TEXT NOT NULL,
+      score REAL,
+      cached_at INTEGER NOT NULL
+    );
+
+    CREATE TABLE IF NOT EXISTS local_preferences (
+      key TEXT PRIMARY KEY,
+      value TEXT NOT NULL,
+      updated_at INTEGER NOT NULL,
+      synced INTEGER DEFAULT 0
+    );
+
+    CREATE TABLE IF NOT EXISTS local_sync_outbox (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      operation TEXT NOT NULL,
+      entity_type TEXT NOT NULL,
+      entity_id TEXT NOT NULL,
+      payload TEXT,
+      created_at INTEGER NOT NULL,
+      retry_count INTEGER DEFAULT 0,
+      last_retry_at INTEGER,
+      status TEXT DEFAULT 'pending'
+    );
+
+    CREATE TABLE IF NOT EXISTS local_encryption_keys (
+      id TEXT PRIMARY KEY,
+      key_type TEXT NOT NULL,
+      key_data TEXT NOT NULL,
+      associated_data TEXT,
+      created_at INTEGER NOT NULL,
+      rotated_at INTEGER,
+      expires_at INTEGER
+    );
+
+    CREATE TABLE IF NOT EXISTS sync_metadata (
+      key TEXT PRIMARY KEY,
+      value TEXT NOT NULL,
+      updated_at INTEGER NOT NULL
     );
   `);
 }
