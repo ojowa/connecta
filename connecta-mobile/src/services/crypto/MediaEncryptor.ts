@@ -81,24 +81,10 @@ export class MediaEncryptor {
     return this.aesDecrypt(cipherText, key, iv);
   }
 
-  static hexToBytes(hex: string): number[] {
-    const bytes: number[] = [];
-    for (let i = 0; i < hex.length; i += 2) {
-      bytes.push(parseInt(hex.substring(i, i + 2), 16));
-    }
-    return bytes;
-  }
-
-  static bytesToHex(bytes: Uint8Array): string {
-    return Array.from(bytes)
-      .map((b) => b.toString(16).padStart(2, '0'))
-      .join('');
-  }
-
   static async aesEncrypt(data: string, key: string, iv: string): Promise<string> {
     const dataBytes = new TextEncoder().encode(data);
-    const keyBytes = this.hexToBytes(key);
-    const ivBytes = this.hexToBytes(iv);
+    const keyBytes = KeyManager.hexToBytes(key);
+    const ivBytes = KeyManager.hexToBytes(iv);
 
     const keyStream = await this.generateKeyStream(keyBytes, ivBytes, dataBytes.length);
     const encrypted = new Uint8Array(dataBytes.length);
@@ -111,13 +97,13 @@ export class MediaEncryptor {
     result.set(encrypted);
     result.set(tag, encrypted.length);
 
-    return this.bytesToHex(result);
+    return KeyManager.bytesToHex(result);
   }
 
   static async aesDecrypt(cipherText: string, key: string, iv: string): Promise<string> {
-    const allBytes = this.hexToBytes(cipherText);
-    const keyBytes = this.hexToBytes(key);
-    const ivBytes = this.hexToBytes(iv);
+    const allBytes = KeyManager.hexToBytes(cipherText);
+    const keyBytes = KeyManager.hexToBytes(key);
+    const ivBytes = KeyManager.hexToBytes(iv);
 
     if (allBytes.length < 16) {
       throw new Error('Ciphertext too short');
@@ -141,8 +127,8 @@ export class MediaEncryptor {
   }
 
   private static async generateKeyStream(
-    key: number[],
-    iv: number[],
+    key: Uint8Array,
+    iv: Uint8Array,
     length: number,
   ): Promise<Uint8Array> {
     const stream = new Uint8Array(length);
@@ -150,19 +136,19 @@ export class MediaEncryptor {
 
     for (let block = 0; block < blocksNeeded; block++) {
       const counter = new Uint8Array(16);
-      counter.set(new Uint8Array(iv.slice(0, 12)));
+      counter.set(iv.slice(0, 12));
       counter[12] = (block >> 24) & 0xff;
       counter[13] = (block >> 16) & 0xff;
       counter[14] = (block >> 8) & 0xff;
       counter[15] = block & 0xff;
 
-      const hashInput = this.bytesToHex(new Uint8Array([...key, ...counter]));
+      const hashInput = KeyManager.bytesToHex(new Uint8Array([...key, ...counter]));
       const hash = await Crypto.digestStringAsync(
         Crypto.CryptoDigestAlgorithm.SHA256,
         hashInput,
       );
 
-      const hashBytes = this.hexToBytes(hash);
+      const hashBytes = KeyManager.hexToBytes(hash);
       const offset = block * 32;
       const toCopy = Math.min(32, length - offset);
       for (let i = 0; i < toCopy; i++) {
@@ -174,16 +160,16 @@ export class MediaEncryptor {
   }
 
   private static async computeTag(
-    key: number[],
-    iv: number[],
+    key: Uint8Array,
+    iv: Uint8Array,
     ciphertext: Uint8Array,
   ): Promise<Uint8Array> {
-    const tagInput = 'connecta-file-mac:' + this.bytesToHex(new Uint8Array(key)) + ':' + this.bytesToHex(new Uint8Array(iv)) + ':' + this.bytesToHex(ciphertext);
+    const tagInput = 'connecta-file-mac:' + KeyManager.bytesToHex(key) + ':' + KeyManager.bytesToHex(iv) + ':' + KeyManager.bytesToHex(ciphertext);
     const tagHash = await Crypto.digestStringAsync(
       Crypto.CryptoDigestAlgorithm.SHA256,
       tagInput,
     );
-    return new Uint8Array(this.hexToBytes(tagHash).slice(0, 16));
+    return new Uint8Array(KeyManager.hexToBytes(tagHash).slice(0, 16));
   }
 
   private static constantTimeCompare(a: Uint8Array, b: Uint8Array): boolean {

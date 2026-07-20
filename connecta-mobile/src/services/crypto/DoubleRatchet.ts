@@ -12,7 +12,7 @@ export class DoubleRatchet {
     const rootKey = sharedSecret;
     const { rootKey: newRootKey, chainKey: sendingChainKey } = await this.kdfRK(
       rootKey,
-      localEphemeralKeyPair.privateKey + remoteSignedPreKey,
+      await KeyManager.computeDH(localEphemeralKeyPair.privateKey, remoteSignedPreKey),
     );
 
     const receivingChainKey = await Crypto.digestStringAsync(
@@ -31,6 +31,7 @@ export class DoubleRatchet {
       remoteSignedPreKey,
       localEphemeralKeyPair,
       lastRemoteEphemeralKey: '',
+      skippedMessageKeys: [],
       timestamp: Date.now(),
     };
   }
@@ -44,7 +45,7 @@ export class DoubleRatchet {
     const rootKey = sharedSecret;
     const { rootKey: newRootKey, chainKey: receivingChainKey } = await this.kdfRK(
       rootKey,
-      localSignedPreKeyPair.privateKey + remoteEphemeralKey,
+      await KeyManager.computeDH(localSignedPreKeyPair.privateKey, remoteEphemeralKey),
     );
 
     const sendingChainKey = await Crypto.digestStringAsync(
@@ -63,6 +64,7 @@ export class DoubleRatchet {
       remoteSignedPreKey: '',
       localEphemeralKeyPair: localSignedPreKeyPair,
       lastRemoteEphemeralKey: remoteEphemeralKey,
+      skippedMessageKeys: [],
       timestamp: Date.now(),
     };
   }
@@ -99,11 +101,11 @@ export class DoubleRatchet {
     messageNumber: number,
     senderEphemeralKey?: string,
   ): Promise<{ plaintext: string; newState: RatchetState }> {
-    let workingState = { ...state };
+    let workingState = { ...state, skippedMessageKeys: [...state.skippedMessageKeys] };
 
     if (senderEphemeralKey && senderEphemeralKey !== state.lastRemoteEphemeralKey) {
-      const dhOutput = await this.computeDH(
-        state.localEphemeralKeyPair.privateKey,
+      const dhOutput = await KeyManager.computeDH(
+        workingState.localEphemeralKeyPair.privateKey,
         senderEphemeralKey,
       );
 
@@ -113,7 +115,7 @@ export class DoubleRatchet {
       );
 
       const newEphemeralKeyPair = await KeyManager.generateKeyPair();
-      const dhOutput2 = await this.computeDH(
+      const dhOutput2 = await KeyManager.computeDH(
         newEphemeralKeyPair.privateKey,
         senderEphemeralKey,
       );
@@ -136,9 +138,50 @@ export class DoubleRatchet {
       };
     }
 
-    const { messageKey, chainKey: newReceivingChainKey } = await this.kdfCK(
-      workingState.receivingChainKey,
+    const skippedKeyIndex = workingState.skippedMessageKeys.findIndex(
+      (k) => k.messageNumber === messageNumber,
     );
+
+    if (skippedKeyIndex >= 0) {
+      const { messageKey: skippedMessageKey } = await this.kdfCK(
+        workingState.skippedMessageKeys[skippedKeyIndex].chainKey,
+      );
+      workingState.skippedMessageKeys.splice(skippedKeyIndex, 1);
+
+      const expectedMac = await Crypto.digestStringAsync(
+        Crypto.CryptoDigestAlgorithm.SHA256,
+        skippedMessageKey + ':mac:' + ciphertext + ':' + iv,
+      );
+
+      if (mac !== expectedMac) {
+        throw new Error('MAC verification failed');
+      }
+
+      const plaintext = await this.aesDecrypt(ciphertext, skippedMessageKey, iv);
+      return {
+        plaintext,
+        newState: { ...workingState, timestamp: Date.now() },
+      };
+    }
+
+    if (messageNumber < workingState.receivingMessageNumber) {
+      throw new Error(`Message ${messageNumber} already received (expected ${workingState.receivingMessageNumber})`);
+    }
+
+    let currentChainKey = workingState.receivingChainKey;
+    let skippedKeysNeeded = messageNumber - workingState.receivingMessageNumber;
+
+    while (skippedKeysNeeded > 0) {
+      const { messageKey: skipMessageKey, chainKey: nextChainKey } = await this.kdfCK(currentChainKey);
+      workingState.skippedMessageKeys.push({
+        messageNumber: workingState.receivingMessageNumber + (messageNumber - skippedKeysNeeded),
+        chainKey: currentChainKey,
+      });
+      currentChainKey = nextChainKey;
+      skippedKeysNeeded--;
+    }
+
+    const { messageKey, chainKey: newReceivingChainKey } = await this.kdfCK(currentChainKey);
 
     const expectedMac = await Crypto.digestStringAsync(
       Crypto.CryptoDigestAlgorithm.SHA256,
@@ -159,13 +202,6 @@ export class DoubleRatchet {
     };
 
     return { plaintext, newState };
-  }
-
-  static async computeDH(privateKey: string, publicKey: string): Promise<string> {
-    return Crypto.digestStringAsync(
-      Crypto.CryptoDigestAlgorithm.SHA256,
-      'connecta-dh:' + privateKey + ':' + publicKey,
-    );
   }
 
   static async kdfRK(
@@ -200,8 +236,8 @@ export class DoubleRatchet {
 
   static async aesEncrypt(plaintext: string, key: string, iv: string): Promise<string> {
     const data = new TextEncoder().encode(plaintext);
-    const keyBytes = this.hexToBytes(key);
-    const ivBytes = this.hexToBytes(iv);
+    const keyBytes = KeyManager.hexToBytes(key);
+    const ivBytes = KeyManager.hexToBytes(iv);
 
     const keyStream = await this.generateKeyStream(keyBytes, ivBytes, data.length);
     const encrypted = new Uint8Array(data.length);
@@ -214,13 +250,13 @@ export class DoubleRatchet {
     result.set(encrypted);
     result.set(tag, encrypted.length);
 
-    return this.bytesToHex(result);
+    return KeyManager.bytesToHex(result);
   }
 
   static async aesDecrypt(cipherText: string, key: string, iv: string): Promise<string> {
-    const allBytes = this.hexToBytes(cipherText);
-    const keyBytes = this.hexToBytes(key);
-    const ivBytes = this.hexToBytes(iv);
+    const allBytes = KeyManager.hexToBytes(cipherText);
+    const keyBytes = KeyManager.hexToBytes(key);
+    const ivBytes = KeyManager.hexToBytes(iv);
 
     if (allBytes.length < 16) {
       throw new Error('Ciphertext too short');
@@ -244,8 +280,8 @@ export class DoubleRatchet {
   }
 
   private static async generateKeyStream(
-    key: number[],
-    iv: number[],
+    key: Uint8Array,
+    iv: Uint8Array,
     length: number,
   ): Promise<Uint8Array> {
     const stream = new Uint8Array(length);
@@ -253,23 +289,19 @@ export class DoubleRatchet {
 
     for (let block = 0; block < blocksNeeded; block++) {
       const counter = new Uint8Array(16);
-      counter.set(new Uint8Array(iv.slice(0, 12)));
+      counter.set(iv.slice(0, 12));
       counter[12] = (block >> 24) & 0xff;
       counter[13] = (block >> 16) & 0xff;
       counter[14] = (block >> 8) & 0xff;
       counter[15] = block & 0xff;
 
-      const keyInput = new Uint8Array(key);
-      const hashInput = new Uint8Array(keyInput.length + counter.length);
-      hashInput.set(keyInput);
-      hashInput.set(counter, keyInput.length);
-
+      const hashInput = KeyManager.bytesToHex(new Uint8Array([...key, ...counter]));
       const hash = await Crypto.digestStringAsync(
         Crypto.CryptoDigestAlgorithm.SHA256,
-        this.bytesToHex(hashInput),
+        hashInput,
       );
 
-      const hashBytes = this.hexToBytes(hash);
+      const hashBytes = KeyManager.hexToBytes(hash);
       const offset = block * 32;
       const toCopy = Math.min(32, length - offset);
       for (let i = 0; i < toCopy; i++) {
@@ -281,16 +313,16 @@ export class DoubleRatchet {
   }
 
   private static async computeGCMTag(
-    key: number[],
-    iv: number[],
+    key: Uint8Array,
+    iv: Uint8Array,
     ciphertext: Uint8Array,
   ): Promise<Uint8Array> {
-    const tagInput = `connecta-gcm:${this.bytesToHex(new Uint8Array(key))}:${this.bytesToHex(new Uint8Array(iv))}:${this.bytesToHex(ciphertext)}`;
+    const tagInput = `connecta-gcm:${KeyManager.bytesToHex(key)}:${KeyManager.bytesToHex(iv)}:${KeyManager.bytesToHex(ciphertext)}`;
     const tagHash = await Crypto.digestStringAsync(
       Crypto.CryptoDigestAlgorithm.SHA256,
       tagInput,
     );
-    return new Uint8Array(this.hexToBytes(tagHash).slice(0, 16));
+    return new Uint8Array(KeyManager.hexToBytes(tagHash).slice(0, 16));
   }
 
   private static constantTimeCompare(a: Uint8Array, b: Uint8Array): boolean {
@@ -300,19 +332,5 @@ export class DoubleRatchet {
       result |= a[i] ^ b[i];
     }
     return result === 0;
-  }
-
-  static hexToBytes(hex: string): number[] {
-    const bytes: number[] = [];
-    for (let i = 0; i < hex.length; i += 2) {
-      bytes.push(parseInt(hex.substring(i, i + 2), 16));
-    }
-    return bytes;
-  }
-
-  static bytesToHex(bytes: Uint8Array): string {
-    return Array.from(bytes)
-      .map((b) => b.toString(16).padStart(2, '0'))
-      .join('');
   }
 }

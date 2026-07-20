@@ -47,6 +47,7 @@ export interface RatchetState {
   remoteSignedPreKey: string;
   localEphemeralKeyPair: KeyPair;
   lastRemoteEphemeralKey: string;
+  skippedMessageKeys: { messageNumber: number; chainKey: string }[];
   timestamp: number;
 }
 
@@ -72,6 +73,7 @@ export interface EncryptedFile {
 
 export interface BackupData {
   encryptedBundle: string;
+  verificationMac: string;
   salt: string;
   iterations: number;
   deviceId: string;

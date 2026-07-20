@@ -27,8 +27,14 @@ export class SecureBackup {
       iv,
     );
 
+    const verificationMac = await Crypto.digestStringAsync(
+      Crypto.CryptoDigestAlgorithm.SHA256,
+      'connecta-backup-verify:' + backupKey + ':' + encryptedBundle,
+    );
+
     const backupData: BackupData = {
       encryptedBundle,
+      verificationMac,
       salt,
       iterations: 600000,
       deviceId: keysToBackup.deviceId,
@@ -65,22 +71,27 @@ export class SecureBackup {
     const lastBackup = await secureStorage.get(`${BACKUP_SERVICE}.last`);
     if (!lastBackup) return false;
 
-    try {
-      const backupData: BackupData = JSON.parse(lastBackup);
-      const backupKey = await this.deriveBackupKey(masterPassword, backupData.salt);
+    const backupData: BackupData = JSON.parse(lastBackup);
+    const backupKey = await this.deriveBackupKey(masterPassword, backupData.salt);
 
-      const iv = await KeyManager.generateRandomBytes(16);
-      const decrypted = await MediaEncryptor.aesDecrypt(
-        backupData.encryptedBundle,
-        backupKey,
-        iv,
-      );
+    const expectedMac = await Crypto.digestStringAsync(
+      Crypto.CryptoDigestAlgorithm.SHA256,
+      'connecta-backup-verify:' + backupKey + ':' + backupData.encryptedBundle,
+    );
 
-      const parsed = JSON.parse(decrypted);
-      return !!(parsed && parsed.identityKeyPair);
-    } catch {
-      return false;
+    return this.constantTimeCompare(
+      KeyManager.hexToBytes(backupData.verificationMac),
+      KeyManager.hexToBytes(expectedMac),
+    );
+  }
+
+  private constantTimeCompare(a: Uint8Array, b: Uint8Array): boolean {
+    if (a.length !== b.length) return false;
+    let result = 0;
+    for (let i = 0; i < a.length; i++) {
+      result |= a[i] ^ b[i];
     }
+    return result === 0;
   }
 
   async hasBackup(): Promise<boolean> {

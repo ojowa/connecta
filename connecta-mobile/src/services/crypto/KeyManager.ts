@@ -1,4 +1,5 @@
 import * as Crypto from 'expo-crypto';
+import { generateKeyPair, scalarMultBase, sharedKey } from '@stablelib/x25519';
 import { getDatabase } from '../../database/connection';
 import { secureStorage } from '../storage/secureStorage';
 import { KeyPair, IdentityKeyPair, SignedPreKey, OneTimePreKey } from '../../types/crypto';
@@ -6,25 +7,49 @@ import { KeyPair, IdentityKeyPair, SignedPreKey, OneTimePreKey } from '../../typ
 const KEY_SERVICE = 'com.connecta.crypto';
 
 export class KeyManager {
-  static async generateRandomBytes(length: number): Promise<string> {
-    const array = new Uint8Array(length);
-    Crypto.getRandomValues(array);
-    return Array.from(array)
+  static hexToBytes(hex: string): Uint8Array {
+    const bytes = new Uint8Array(hex.length / 2);
+    for (let i = 0; i < hex.length; i += 2) {
+      bytes[i / 2] = parseInt(hex.substring(i, i + 2), 16);
+    }
+    return bytes;
+  }
+
+  static bytesToHex(bytes: Uint8Array): string {
+    return Array.from(bytes)
       .map((b) => b.toString(16).padStart(2, '0'))
       .join('');
   }
 
+  static async generateRandomBytes(length: number): Promise<string> {
+    const array = new Uint8Array(length);
+    Crypto.getRandomValues(array);
+    return this.bytesToHex(array);
+  }
+
+  static generateKeyPairSync(): KeyPair {
+    const keyPair = generateKeyPair();
+    return {
+      privateKey: this.bytesToHex(keyPair.secretKey),
+      publicKey: this.bytesToHex(keyPair.publicKey),
+    };
+  }
+
   static async generateKeyPair(): Promise<KeyPair> {
-    const privateKey = await this.generateRandomBytes(32);
-    const publicKey = await this.derivePublicKey(privateKey);
-    return { publicKey, privateKey };
+    return this.generateKeyPairSync();
   }
 
   static async derivePublicKey(privateKey: string): Promise<string> {
-    return Crypto.digestStringAsync(
-      Crypto.CryptoDigestAlgorithm.SHA256,
-      'connecta-pubkey:' + privateKey,
-    );
+    const privateKeyBytes = this.hexToBytes(privateKey);
+    const publicKeyBytes = scalarMultBase(privateKeyBytes);
+    return this.bytesToHex(publicKeyBytes);
+  }
+
+  static async computeDH(privateKeyHex: string, publicKeyHex: string): Promise<string> {
+    const privateKeyBytes = this.hexToBytes(privateKeyHex);
+    const publicKeyBytes = this.hexToBytes(publicKeyHex);
+    const shared = sharedKey(privateKeyBytes, publicKeyBytes, true);
+    return this.bytesToHex(shared);
   }
 
   static async generateIdentityKeyPair(): Promise<IdentityKeyPair> {
