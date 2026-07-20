@@ -1,4 +1,5 @@
 import { NestFactory } from '@nestjs/core';
+import { Logger } from '@nestjs/common';
 import { AppModule } from './app.module';
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
@@ -8,6 +9,6 @@ async function bootstrap() {
   });
   const port = process.env.PORT || 3004;
   await app.listen(port);
-  console.log(`Matching Service running on port ${port}`);
+  new Logger('MatchingService').log(`Matching Service running on port ${port}`);
 }
 bootstrap();

@@ -313,4 +313,43 @@ interface AuditLogEntry {
 
 ---
 
+## 11. Implementation Status
+
+### V1 (Current) — Implemented
+
+| Feature | Status | Details |
+|---|---|---|
+| JWT authentication | ✅ Implemented | 15min access + 7d refresh tokens |
+| Password hashing (bcrypt) | ✅ Implemented | Cost factor 12, salt rounds |
+| Rate limiting | ✅ Implemented | ThrottlerModule on all 12 services via global guard |
+| CORS configuration | ✅ Implemented | All 12 services with credentials support |
+| E2EE (Signal Protocol) | ✅ Implemented | Curve25519 + AES-256-GCM |
+| Certificate pinning | ✅ Implemented | Mobile app via trustkit |
+| Secure keychain storage | ✅ Implemented | expo-secure-store |
+| Input validation | ⚠️ Partial | Basic pipe on auth; needs ClassValidator across all DTOs |
+| Helmet/CSP headers | ⚠️ Partial | Need helmet middleware on API gateway |
+| Security logging | ⚠️ Partial | NestJS Logger; no structured JSON audit log yet |
+| HIBP breach check | ❌ Not implemented | bcrypt only |
+| Token blacklist (Redis) | ❌ Not implemented | Logout invalidates refresh only |
+| OAuth 2.0 (Google/Apple) | ❌ Not implemented | Placeholder routes |
+| Admin audit log persistence | ❌ Not implemented | In-memory only |
+| Data at rest encryption | ❌ Not implemented | DB-level encryption |
+
+### V2 (Planned)
+
+- Token blacklist via Redis
+- OAuth 2.0 social login
+- HIBP password breach checking
+- Structured JSON security audit logging
+- Admin audit log persistence
+
+### V3 (Future)
+
+- Hardware security key (WebAuthn)
+- Zero-knowledge proof authentication
+- Quantum-resistant cryptography assessment
+- Formal security verification
+
+---
+
 *This document is part of the Connecta Software Design Document (SDD) package.*

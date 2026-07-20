@@ -1,4 +1,5 @@
 import { NestFactory } from '@nestjs/core';
+import { Logger } from '@nestjs/common';
 import { AppModule } from './app.module';
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
@@ -10,6 +11,6 @@ async function bootstrap() {
   });
   const port = process.env.PORT || 3005;
   await app.listen(port);
-  console.log(`Chat Service running on port ${port}`);
+  new Logger('ChatService').log(`Chat Service running on port ${port}`);
 }
 bootstrap();
