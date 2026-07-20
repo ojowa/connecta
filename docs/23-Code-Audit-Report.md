@@ -14,10 +14,10 @@
 |----------|-------|--------|
 | Critical | 2 | Fixed |
 | High | 8 | Fixed |
-| Medium | 7 | Not started |
-| Low | 2 | Not started |
+| Medium | 7 | Fixed |
+| Low | 2 | Fixed |
 
-**Critical and high issues** have been resolved. Medium/low items remain for future sprints.
+**All issues resolved.**
 
 ---
 
@@ -102,7 +102,7 @@
 
 ---
 
-## 3. Medium Severity (Not Started)
+## 3. Medium Issues (Fixed)
 
 ### 3.1 Mobile Store Actions Empty
 
@@ -164,7 +164,7 @@ addNewMatch: () => {},
 
 ---
 
-## 4. Low Severity (Not Started)
+## 4. Low Issues (Fixed)
 
 ### 4.1 Notification markAll Read Returns Wrong Count
 
@@ -199,17 +199,18 @@ addNewMatch: () => {},
 - [x] Biometric auth with BiometricCredential entity
 - [x] Fix like() double-increment bug
 
-### Sprint 4 — Mobile Polish (Medium Priority)
-- [ ] Implement store actions for real-time updates
-- [ ] Wire settings screen handlers
-- [ ] Fetch subscription plans from API
-- [ ] Connect WebRTC to video call screens
-- [ ] Fix markAllAsRead
+### Sprint 4 — Mobile Polish (Done)
+- [x] Implement store actions for real-time updates
+- [x] Wire settings screen handlers
+- [x] Fetch subscription plans from API
+- [x] Connect WebRTC to video call screens
+- [x] Fix markAllAsRead
+- [x] Wire wallet in-app purchases
 
-### Sprint 5 — Config & Cleanup (Low Priority)
-- [ ] Align env var naming
-- [ ] Fix notification count response
-- [ ] Fix entity paths for TypeORM
+### Sprint 5 — Config & Cleanup (Done)
+- [x] Align env var naming (DB_DATABASE → DB_NAME, optional SMTP/Firebase/Cloudinary)
+- [x] Fix notification count response
+- [x] Fix entity paths for TypeORM
 
 ---
 
