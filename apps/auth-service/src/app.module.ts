@@ -3,7 +3,7 @@ import { ConfigModule } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
-import { User, Session, OtpCode, Plan, Subscription } from '@app/common/entities';
+import { User, Session, OtpCode, Plan, Subscription, BiometricCredential } from '@app/common/entities';
 
 @Module({
   imports: [
@@ -19,7 +19,7 @@ import { User, Session, OtpCode, Plan, Subscription } from '@app/common/entities
       synchronize: true,
       logging: process.env.NODE_ENV !== 'production',
     }),
-    TypeOrmModule.forFeature([User, Session, OtpCode, Plan, Subscription]),
+    TypeOrmModule.forFeature([User, Session, OtpCode, Plan, Subscription, BiometricCredential]),
   ],
   controllers: [AuthController],
   providers: [AuthService],

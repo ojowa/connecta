@@ -11,7 +11,9 @@ export class Transaction {
   @Column({ default: 'pending' }) status: string;
   @Column({ nullable: true }) paymentMethod: string;
   @Column({ nullable: true }) gateway: string;
+  @Column({ nullable: true }) reference: string;
   @Column({ nullable: true }) gatewayRef: string;
+  @Column({ type: 'jsonb', nullable: true }) gatewayResponse: any;
   @Column({ type: 'jsonb', nullable: true }) metadata: any;
   @Column({ nullable: true }) completedAt: Date;
   @CreateDateColumn() createdAt: Date;

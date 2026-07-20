@@ -132,15 +132,56 @@ export class AdminService {
   }
 
   async getAnalytics(params: any) {
-    const metric = params.metric || 'registrations';
     const period = params.period || '30d';
-    const granularity = params.granularity || 'day';
+    const days = period === '24h' ? 1 : period === '7d' ? 7 : period === '30d' ? 30 : period === '90d' ? 90 : 365;
+    const startDate = new Date(Date.now() - days * 24 * 60 * 60 * 1000);
+
+    const totalUsers = await this.userRepo.count();
+    const newUsers = await this.userRepo.createQueryBuilder('u')
+      .where('u."createdAt" >= :startDate', { startDate }).getCount();
+
+    const previousPeriodStart = new Date(Date.now() - days * 2 * 24 * 60 * 60 * 1000);
+    const previousPeriodUsers = await this.userRepo.createQueryBuilder('u')
+      .where('u."createdAt" >= :start AND u."createdAt" < :end', { start: previousPeriodStart, end: startDate })
+      .getCount();
+    const userGrowthRate = previousPeriodUsers > 0
+      ? `${Math.round(((newUsers - previousPeriodUsers) / previousPeriodUsers) * 100)}%`
+      : 'N/A';
+
+    const totalRevenue = await this.txnRepo.createQueryBuilder('t')
+      .select('SUM(t.amount)', 'sum')
+      .where('t.status = :status AND t."createdAt" >= :startDate', { status: 'completed', startDate })
+      .getRawOne();
+    const activeSubscriptions = await this.subRepo.count({ where: { status: 'active' } });
+
+    const totalReports = await this.reportRepo.count();
+    const pendingReports = await this.reportRepo.count({ where: { status: 'pending' } });
+    const resolvedReports = await this.reportRepo.count({ where: { status: 'resolved' } });
+
+    const dataPoints = [];
+    for (let i = days; i >= 0; i--) {
+      const dayStart = new Date(Date.now() - i * 24 * 60 * 60 * 1000);
+      const dayEnd = new Date(dayStart.getTime() + 24 * 60 * 60 * 1000);
+      const dayUsers = await this.userRepo.createQueryBuilder('u')
+        .where('u."createdAt" >= :start AND u."createdAt" < :end', { start: dayStart, end: dayEnd })
+        .getCount();
+      const dayRevenue = await this.txnRepo.createQueryBuilder('t')
+        .select('SUM(t.amount)', 'sum')
+        .where('t.status = :status AND t."createdAt" >= :start AND t."createdAt" < :end', { status: 'completed', start: dayStart, end: dayEnd })
+        .getRawOne();
+      dataPoints.push({
+        date: dayStart.toISOString().split('T')[0],
+        users: dayUsers,
+        revenue: parseFloat(dayRevenue?.sum || '0') / 100,
+      });
+    }
+
     return {
-      metric,
-      period,
-      granularity,
-      dataPoints: [],
-      summary: { total: 0, average: 0, peak: null, growthRate: '0%' },
+      period, generatedAt: new Date(),
+      users: { total: totalUsers, newInPeriod: newUsers, growthRate: userGrowthRate },
+      revenue: { totalInPeriod: parseFloat(totalRevenue?.sum || '0') / 100, currency: 'NGN', activeSubscriptions },
+      safety: { totalReports, pendingReports, resolvedReports, resolutionRate: totalReports > 0 ? `${Math.round((resolvedReports / totalReports) * 100)}%` : 'N/A' },
+      dataPoints,
     };
   }
 

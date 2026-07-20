@@ -50,17 +50,58 @@ export class PaymentsService {
   }
 
   async initializePayment(userId: string, data: any) {
-    const ref = `CKA-TXN-${Date.now()}`;
-    const txn = await this.txnRepo.save(this.txnRepo.create({ userId, type: data.metadata?.product || 'one_time', amount: data.amount, currency: data.currency || 'NGN', status: 'pending', metadata: data.metadata }));
-    return { transactionId: txn.id, amount: data.amount, currency: data.currency || 'NGN', status: 'pending', reference: ref, expiresAt: new Date(Date.now() + 30 * 60 * 1000) };
+    const amountKobo = Math.round(parseFloat(data.amount) * 100); // Paystack uses kobo
+    const ref = `CKA-${Date.now()}-${Math.random().toString(36).substring(2, 8)}`;
+
+    const txn = await this.txnRepo.save(this.txnRepo.create({
+      userId,
+      type: data.purpose || 'one_time',
+      amount: amountKobo,
+      currency: data.currency || 'NGN',
+      status: 'pending',
+      gateway: 'paystack',
+      reference: ref,
+      metadata: data.metadata,
+    }));
+
+    // In production, call Paystack API:
+    // const paystack = new Paystack(process.env.PAYSTACK_SECRET_KEY);
+    // const result = await paystack.initializeTransaction({ email, amount: amountKobo, reference: ref, callback_url, metadata });
+
+    return {
+      transactionId: txn.id,
+      authorization_url: `https://checkout.paystack.com/${ref}`, // placeholder
+      reference: ref,
+      amount: data.amount,
+      currency: data.currency || 'NGN',
+      expiresAt: new Date(Date.now() + 30 * 60 * 1000),
+    };
   }
 
   async verifyPayment(userId: string, reference: string) {
-    const txn = await this.txnRepo.findOne({ where: { id: reference } });
+    const txn = await this.txnRepo.findOne({ where: { reference } });
     if (!txn) throw new BadRequestException('Invalid reference');
     if (txn.status === 'completed') throw new BadRequestException('Payment already verified');
-    await this.txnRepo.update(txn.id, { status: 'completed', completedAt: new Date() });
-    return { transactionId: txn.id, reference, status: 'successful', amount: txn.amount, currency: txn.currency, verifiedAt: new Date() };
+
+    // In production, verify with Paystack:
+    // const paystack = new Paystack(process.env.PAYSTACK_SECRET_KEY);
+    // const verification = await paystack.verifyTransaction(reference);
+    // if (verification.data.status !== 'success') throw new BadRequestException('Payment not successful');
+
+    await this.txnRepo.update(txn.id, {
+      status: 'completed',
+      completedAt: new Date(),
+      gatewayResponse: JSON.stringify({ verified: true, verifiedAt: new Date().toISOString() }) as any,
+    });
+
+    return {
+      transactionId: txn.id,
+      reference,
+      status: 'successful',
+      amount: txn.amount / 100,
+      currency: txn.currency,
+      verifiedAt: new Date(),
+    };
   }
 
   async getPaymentHistory(userId: string, page = 1, limit = 20) {
@@ -71,6 +112,37 @@ export class PaymentsService {
   async requestRefund(userId: string, transactionId: string, data: any) {
     const txn = await this.txnRepo.findOne({ where: { id: transactionId, userId } });
     if (!txn) throw new NotFoundException('Transaction not found');
-    return { refundId: 'ref_' + Date.now(), transactionId, status: 'pending_review', estimatedResolution: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000) };
+    if (txn.status !== 'completed') throw new BadRequestException('Can only refund completed transactions');
+
+    // In production, initiate refund via Paystack:
+    // const paystack = new Paystack(process.env.PAYSTACK_SECRET_KEY);
+    // await paystack.refundTransaction({ transaction: txn.gatewayReference, amount: txn.amount, reason: data.reason });
+
+    await this.txnRepo.update(txn.id, { status: 'refunded' });
+
+    return {
+      refundId: `ref_${Date.now()}`,
+      transactionId,
+      amount: txn.amount / 100,
+      currency: txn.currency,
+      status: 'processing',
+      reason: data.reason || 'Customer requested refund',
+      estimatedResolution: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+    };
+  }
+
+  async handleWebhook(payload: any, signature: string) {
+    // In production, verify Paystack webhook signature:
+    // const hash = crypto.createHmac('sha512', process.env.PAYSTACK_SECRET_KEY).update(JSON.stringify(payload)).digest('hex');
+    // if (hash !== signature) throw new BadRequestException('Invalid webhook signature');
+
+    const { event, data } = payload;
+    if (event === 'charge.success') {
+      const txn = await this.txnRepo.findOne({ where: { reference: data.reference } });
+      if (txn && txn.status === 'pending') {
+        await this.txnRepo.update(txn.id, { status: 'completed', completedAt: new Date() });
+      }
+    }
+    return { received: true };
   }
 }

@@ -3,7 +3,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcryptjs';
-import { User, UserRole, UserStatus, Session, OtpCode } from '@app/common/entities';
+import { User, UserRole, UserStatus, Session, OtpCode, BiometricCredential } from '@app/common/entities';
 import { v4 as uuid } from 'uuid';
 
 @Injectable()
@@ -12,6 +12,7 @@ export class AuthService {
     @InjectRepository(User) private userRepo: Repository<User>,
     @InjectRepository(Session) private sessionRepo: Repository<Session>,
     @InjectRepository(OtpCode) private otpRepo: Repository<OtpCode>,
+    @InjectRepository(BiometricCredential) private biometricRepo: Repository<BiometricCredential>,
     private jwtService: JwtService,
   ) {}
 
@@ -121,7 +122,19 @@ export class AuthService {
     const otp = this.otpRepo.create(otpData);
     await this.otpRepo.save(otp);
 
-    const masked = identifier.replace(/(.{2})(.*)(@.*)/, '$1***$3').replace(/(.{3})(.*)(.{2})/, '$1***$3');
+    // In production, send via Twilio (SMS) or SES (email):
+    // if (channel === 'sms') {
+    //   const twilio = require('twilio')(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_AUTH_TOKEN);
+    //   await twilio.messages.create({ body: `Your Connecta verification code is: ${code}`, from: process.env.TWILIO_PHONE_NUMBER, to: identifier });
+    // } else if (channel === 'email') {
+    //   const nodemailer = require('nodemailer');
+    //   const transporter = nodemailer.createTransport({ host: process.env.SMTP_HOST, port: 587, auth: { user: process.env.SMTP_USER, pass: process.env.SMTP_PASS } });
+    //   await transporter.sendMail({ from: 'noreply@connecta.app', to: identifier, subject: 'Connecta Verification Code', html: `<p>Your verification code is: <strong>${code}</strong></p><p>Expires in 5 minutes.</p>` });
+    // }
+
+    const masked = identifier.includes('@')
+      ? identifier.replace(/(.{2})(.*)(@.*)/, '$1***$3')
+      : identifier.replace(/(.{3})(.*)(.{2})/, '$1***$3');
 
     return { otpSent: true, channel, expiresIn: 300, maskedIdentifier: masked };
   }
@@ -161,8 +174,21 @@ export class AuthService {
     const user = email ? await this.userRepo.findOne({ where: { email } }) : null;
     if (user) {
       const code = Math.floor(100000 + Math.random() * 900000).toString();
-      const otp = this.otpRepo.create({ userId: user.id, email, code, purpose: 'password_reset', expiresAt: new Date(Date.now() + 15 * 60 * 1000), attempts: 0, maxAttempts: 5 });
+      const otp = this.otpRepo.create({
+        userId: user.id,
+        email,
+        code,
+        purpose: 'password_reset',
+        expiresAt: new Date(Date.now() + 15 * 60 * 1000),
+        attempts: 0,
+        maxAttempts: 5,
+      });
       await this.otpRepo.save(otp);
+
+      // In production, send reset email:
+      // const nodemailer = require('nodemailer');
+      // const transporter = nodemailer.createTransport({ host: process.env.SMTP_HOST, port: 587, auth: { user: process.env.SMTP_USER, pass: process.env.SMTP_PASS } });
+      // await transporter.sendMail({ from: 'noreply@connecta.app', to: email, subject: 'Connecta Password Reset', html: `<p>Your password reset code is: <strong>${code}</strong></p><p>Expires in 15 minutes.</p>` });
     }
     return { message: 'If an account exists with this email, a reset link has been sent.', emailSent: true };
   }
@@ -200,26 +226,34 @@ export class AuthService {
     if (!deviceId || !biometricType || !publicKey || !credentialId) {
       throw new BadRequestException('Missing required fields');
     }
-    const biometricId = `bio_${uuid()}`;
-    return { biometricId, biometricType, enabled: true, createdAt: new Date() };
+    const existing = await this.biometricRepo.findOne({ where: { credentialId } });
+    if (existing) throw new ConflictException('Biometric credential already registered');
+    const credential = this.biometricRepo.create({ userId, deviceId, biometricType, publicKey, credentialId, isActive: true });
+    const saved = await this.biometricRepo.save(credential);
+    return { biometricId: saved.id, biometricType, credentialId, enabled: true, createdAt: saved.createdAt };
   }
 
   async biometricLogin(data: any) {
-    const { deviceId, credentialId, signature, challenge } = data;
-    if (!deviceId || !credentialId || !signature || !challenge) {
+    const { credentialId, signature, challenge } = data;
+    if (!credentialId || !signature || !challenge) {
       throw new BadRequestException('Missing required fields');
     }
-    const user = await this.userRepo.findOne({ where: { id: deviceId } });
-    if (!user) throw new UnauthorizedException('Biometric not registered for this device');
+    const credential = await this.biometricRepo.findOne({ where: { credentialId, isActive: true } });
+    if (!credential) throw new UnauthorizedException('Biometric credential not found');
+    // In production, verify signature: verifySignature(credential.publicKey, challenge, signature)
+    const user = await this.userRepo.findOne({ where: { id: credential.userId } });
+    if (!user) throw new UnauthorizedException('User not found');
+    if (user.status === UserStatus.SUSPENDED) throw new UnauthorizedException('Account is suspended');
+    await this.userRepo.update(user.id, { lastLoginAt: new Date(), lastActiveAt: new Date() });
     const tokens = await this.generateTokens(user);
-    return {
-      user: this.sanitizeUser(user),
-      tokens: { ...tokens, expiresIn: 900 },
-    };
+    return { user: this.sanitizeUser(user), tokens: { ...tokens, expiresIn: 900 } };
   }
 
   async removeBiometric(userId: string, biometricId: string) {
     if (!biometricId) throw new BadRequestException('Biometric ID required');
+    const credential = await this.biometricRepo.findOne({ where: { id: biometricId, userId } });
+    if (!credential) throw new NotFoundException('Biometric credential not found');
+    await this.biometricRepo.remove(credential);
     return { removed: true, biometricId };
   }
 

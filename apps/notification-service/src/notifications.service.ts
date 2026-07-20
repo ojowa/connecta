@@ -33,33 +33,72 @@ export class NotificationsService {
   }
 
   async markAsRead(userId: string, data: any) {
-    if (data.markAll) {
-      await this.notifRepo.update({ userId, readAt: undefined as any }, { readAt: new Date() });
-      return { markedRead: 0, unreadCount: 0 };
+    if (data.markAs === 'all' || data.markAll) {
+      const result = await this.notifRepo.update({ userId, readAt: undefined as any }, { readAt: new Date() });
+      const unreadCount = await this.notifRepo.count({ where: { userId, readAt: undefined as any } });
+      return { markedRead: result.affected || 0, unreadCount };
     }
     if (data.notificationIds?.length) {
       await this.notifRepo.update(data.notificationIds, { readAt: new Date() });
-    const unreadCount = await this.notifRepo.count({ where: { userId, readAt: undefined as any } });
+      const unreadCount = await this.notifRepo.count({ where: { userId, readAt: undefined as any } });
       return { markedRead: data.notificationIds.length, unreadCount };
     }
     return { markedRead: 0, unreadCount: 0 };
   }
 
   async send(data: any) {
-    const notif = await this.notifRepo.save(this.notifRepo.create({ userId: data.userId, type: data.type, title: data.title, body: data.body, data: data.data, channel: data.channel || 'push', status: 'sent', sentAt: new Date() }));
+    const notif = await this.notifRepo.save(this.notifRepo.create({
+      userId: data.userId,
+      type: data.type,
+      title: data.title,
+      body: data.body,
+      data: data.data,
+      channel: data.channel || 'push',
+      status: 'sent',
+      sentAt: new Date(),
+    }));
+
+    // In production, send via Firebase Cloud Messaging:
+    // import * as admin from 'firebase-admin';
+    // if (!admin.apps.length) admin.initializeApp({ credential: admin.credential.cert(serviceAccount) });
+    // await admin.messaging().sendEach([{
+    //   token: data.deviceToken,
+    //   notification: { title: data.title, body: data.body },
+    //   data: data.data ? Object.fromEntries(Object.entries(data.data).map(([k, v]) => [k, String(v)])) : undefined,
+    //   android: { priority: 'high', notification: { channelId: data.type || 'general' } },
+    //   apns: { payload: { aps: { sound: 'default', badge: 1 } } },
+    // }]);
+
     return notif;
   }
 
   async broadcast(data: any) {
-    const { title, body, imageUrl, actionUrl, target, scheduleAt } = data;
+    const { title, body, type, targetUserIds, targetAudience } = data;
     if (!title || !body) throw new Error('Title and body are required');
+
+    // In production, fetch target user device tokens and send via FCM:
+    // const tokens = targetUserIds
+    //   ? await this.deviceTokenRepo.find({ where: { userId: In(targetUserIds) } })
+    //   : await this.deviceTokenRepo.find();
+    // const messages = tokens.map(t => ({
+    //   token: t.token,
+    //   notification: { title, body },
+    //   data: { type: type || 'info', broadcast: 'true' },
+    // }));
+    // const result = await admin.messaging().sendEach(messages);
+
     const broadcastId = `bcast_${Date.now()}`;
+
+    // Save broadcast to DB for tracking
+    // await this.broadcastRepo.save({ id: broadcastId, title, body, type, targetAudience, sentAt: new Date() });
+
     return {
       broadcastId,
-      status: scheduleAt ? 'scheduled' : 'sent',
-      targetType: target?.type || 'all',
-      estimatedRecipients: 0,
-      scheduledAt: scheduleAt || new Date(),
+      status: 'sent',
+      type: type || 'info',
+      targetType: targetAudience || (targetUserIds ? 'segment' : 'all'),
+      estimatedRecipients: targetUserIds?.length || 0,
+      sentAt: new Date(),
     };
   }
 }

@@ -10,5 +10,6 @@ export class Media {
   @Column() sizeBytes: number;
   @Column() purpose: string;
   @Column({ default: 'active' }) status: string;
+  @Column({ type: 'jsonb', nullable: true }) metadata: any;
   @CreateDateColumn() createdAt: Date;
 }

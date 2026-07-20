@@ -29,3 +29,4 @@ export { AuditLog } from './audit-log.entity';
 export { SystemSetting } from './system-setting.entity';
 export { Media } from './media.entity';
 export { PreKeyBundle } from './pre-key-bundle.entity';
+export { BiometricCredential } from './biometric-credential.entity';

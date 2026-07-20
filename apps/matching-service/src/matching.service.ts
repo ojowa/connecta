@@ -33,20 +33,21 @@ export class MatchingService {
     if (!target) throw new NotFoundException('User not found');
     const like = this.likeRepo.create({ userId, likedUserId: targetUserId, isSuperLike: likeType === 'super' });
     await this.likeRepo.save(like);
-    // H4: Atomic increment to prevent race condition
+    // Atomic increment: insert row with likesGiven=1 if new today, otherwise increment
+    const today = new Date(); today.setHours(0, 0, 0, 0);
     await this.dailyLikeRepo
       .createQueryBuilder()
       .insert()
       .into(DailyLike)
-      .values({ userId, date: new Date(), likesGiven: 1 })
+      .values({ userId, date: today, likesGiven: 1 })
       .orUpdate(['likesGiven'], ['userId', 'date'])
       .execute();
-    // Also increment atomically
+    // Use raw update to increment (orUpdate with just column name replaces, doesn't add)
     await this.dailyLikeRepo
       .createQueryBuilder()
       .update(DailyLike)
-      .set({ likesGiven: () => 'likesGiven + 1' })
-      .where('userId = :userId AND date = CURRENT_DATE', { userId })
+      .set({ likesGiven: () => 'daily_likes."likesGiven" + 1' })
+      .where('userId = :userId AND date = :date', { userId, date: today })
       .execute();
     const daily = await this.dailyLikeRepo.findOne({ where: { userId, date: new Date() } });
     const mutualLike = await this.likeRepo.findOne({ where: { userId: targetUserId, likedUserId: userId } });

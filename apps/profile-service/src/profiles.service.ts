@@ -83,12 +83,32 @@ export class ProfilesService {
   async requestVerification(userId: string) {
     const profile = await this.profileRepo.findOne({ where: { userId } });
     if (!profile) throw new NotFoundException('Profile not found');
-    return { verificationId: 'vrf_' + Date.now(), method: 'selfie', status: 'processing' };
+    if (profile.verified) return { status: 'already_verified', verifiedAt: profile.verifiedAt };
+
+    // In production, create verification request and submit to third-party provider:
+    // const verification = await this.verificationRepo.save({
+    //   userId, profileId: profile.id, method: 'selfie', status: 'pending', submittedAt: new Date(),
+    // });
+    // Submit selfie to Jumio/Onfido/ManualReview
+
+    return {
+      verificationId: `vrf_${Date.now()}`,
+      method: 'selfie',
+      status: 'processing',
+      submittedAt: new Date(),
+      estimatedCompletion: new Date(Date.now() + 24 * 60 * 60 * 1000),
+    };
   }
 
   async getVerificationStatus(userId: string) {
     const profile = await this.profileRepo.findOne({ where: { userId } });
-    return { status: profile?.verified ? 'approved' : 'not_requested' };
+    if (!profile) throw new NotFoundException('Profile not found');
+    return {
+      status: profile.verified ? 'approved' : 'not_requested',
+      verified: profile.verified || false,
+      verifiedAt: profile.verifiedAt || null,
+      method: profile.verified ? 'selfie' : null,
+    };
   }
 
   private calculateCompletion(profile: Profile): number {

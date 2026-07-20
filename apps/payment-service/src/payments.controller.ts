@@ -30,4 +30,7 @@ export class PaymentsController {
 
   @Post('refund/:transactionId') @ApiOperation({ summary: 'Request refund' }) @ApiBearerAuth()
   refund(@Body('_userId') userId: string, @Param('transactionId') txnId: string, @Body() body: RequestRefundDto) { return this.paymentsService.requestRefund(userId, txnId, body); }
+
+  @Post('webhook/paystack') @ApiOperation({ summary: 'Paystack webhook' })
+  webhook(@Body() payload: any, @Query('signature') signature?: string) { return this.paymentsService.handleWebhook(payload, signature || ''); }
 }

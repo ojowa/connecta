@@ -20,6 +20,7 @@ export class Profile {
   @Column({ nullable: true }) country: string;
   @Column({ nullable: true }) relationshipGoal: string;
   @Column({ default: false }) verified: boolean;
+  @Column({ nullable: true }) verifiedAt: Date;
   @Column({ default: 0 }) completionPercentage: number;
   @Column({ default: true }) isActive: boolean;
   @OneToMany(() => Photo, (photo) => photo.profile, { cascade: true }) photos: Photo[];
