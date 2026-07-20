@@ -1,13 +1,15 @@
-import { Controller, Get, Post, Body, Param, Query, Req, Res } from '@nestjs/common';
+import { Controller, Get, Post, Body, Param, Query, Req, Res, UseGuards } from '@nestjs/common';
 import { HttpService } from '@nestjs/axios';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { Request, Response } from 'express';
 import { firstValueFrom } from 'rxjs';
+import { JwtAuthGuard } from '@app/common/guards/jwt-auth.guard';
 
 const CALL_SERVICE = process.env.CALL_SERVICE_URL || 'http://localhost:3006';
 
 @ApiTags('Calls')
 @ApiBearerAuth()
+@UseGuards(JwtAuthGuard)
 @Controller('calls')
 export class CallsController {
   constructor(private readonly http: HttpService) {}
@@ -20,34 +22,34 @@ export class CallsController {
   @ApiOperation({ summary: 'Start a call' })
   async startCall(@Body() body: any, @Req() req: Request, @Res() res: Response) {
     const result = await firstValueFrom(
-      this.http.post(`${CALL_SERVICE}/calls/start`, body, { headers: this.authHeaders(req) }),
+      this.http.post(`${CALL_SERVICE}/v1/calls/start`, body, { headers: this.authHeaders(req) }),
     );
     return res.status(result.status).json(result.data);
   }
 
-  @Post('answer')
+  @Post(':callId/answer')
   @ApiOperation({ summary: 'Answer a call' })
-  async answerCall(@Body() body: any, @Req() req: Request, @Res() res: Response) {
+  async answerCall(@Param('callId') callId: string, @Body() body: any, @Req() req: Request, @Res() res: Response) {
     const result = await firstValueFrom(
-      this.http.post(`${CALL_SERVICE}/calls/answer`, body, { headers: this.authHeaders(req) }),
+      this.http.post(`${CALL_SERVICE}/v1/calls/${callId}/answer`, body, { headers: this.authHeaders(req) }),
     );
     return res.status(result.status).json(result.data);
   }
 
-  @Post('reject')
+  @Post(':callId/reject')
   @ApiOperation({ summary: 'Reject a call' })
-  async rejectCall(@Body() body: any, @Req() req: Request, @Res() res: Response) {
+  async rejectCall(@Param('callId') callId: string, @Body() body: any, @Req() req: Request, @Res() res: Response) {
     const result = await firstValueFrom(
-      this.http.post(`${CALL_SERVICE}/calls/reject`, body, { headers: this.authHeaders(req) }),
+      this.http.post(`${CALL_SERVICE}/v1/calls/${callId}/reject`, body, { headers: this.authHeaders(req) }),
     );
     return res.status(result.status).json(result.data);
   }
 
-  @Post('end')
+  @Post(':callId/end')
   @ApiOperation({ summary: 'End a call' })
-  async endCall(@Body() body: any, @Req() req: Request, @Res() res: Response) {
+  async endCall(@Param('callId') callId: string, @Body() body: any, @Req() req: Request, @Res() res: Response) {
     const result = await firstValueFrom(
-      this.http.post(`${CALL_SERVICE}/calls/end`, body, { headers: this.authHeaders(req) }),
+      this.http.post(`${CALL_SERVICE}/v1/calls/${callId}/end`, body, { headers: this.authHeaders(req) }),
     );
     return res.status(result.status).json(result.data);
   }
@@ -56,19 +58,10 @@ export class CallsController {
   @ApiOperation({ summary: 'Get call history' })
   async getCallHistory(@Query() query: any, @Req() req: Request, @Res() res: Response) {
     const result = await firstValueFrom(
-      this.http.get(`${CALL_SERVICE}/calls/history`, {
+      this.http.get(`${CALL_SERVICE}/v1/calls/history`, {
         params: query,
         headers: this.authHeaders(req),
       }),
-    );
-    return res.status(result.status).json(result.data);
-  }
-
-  @Post('ice-candidate')
-  @ApiOperation({ summary: 'Exchange ICE candidates' })
-  async exchangeIceCandidate(@Body() body: any, @Req() req: Request, @Res() res: Response) {
-    const result = await firstValueFrom(
-      this.http.post(`${CALL_SERVICE}/calls/ice-candidate`, body, { headers: this.authHeaders(req) }),
     );
     return res.status(result.status).json(result.data);
   }
