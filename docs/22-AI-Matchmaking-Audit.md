@@ -337,3 +337,41 @@ Key optimizations:
 - Parallelized compatibility scoring (1,000 sequential → 200 parallel)
 - Batched candidate enrichment (N+1 → batch query)
 - Bounded like/pass/block loading (unbounded → capped)
+
+---
+
+## 5. Feed Generation Pipeline Architecture
+
+```mermaid
+graph TD
+    A[User Request] --> B[CandidateGenerator]
+    B --> C[CompatibilityEngine<br/>Parallel Scoring]
+    C --> D[DiversityInjector]
+    D --> E[BehaviorAnalyzer<br/>Per Candidate]
+    E --> F[IcebreakerGenerator<br/>Per Candidate]
+    F --> G[MatchmakingEngine<br/>Assembly]
+    G --> H[Feed Response]
+    
+    B --> |Query| DB[(PostgreSQL)]
+    C --> |Query| DB
+    E --> |Query| DB
+```
+
+### Pipeline Stages
+
+| Stage | Module | Input | Output | DB Queries |
+|-------|--------|-------|--------|------------|
+| 1. Candidate Generation | `CandidateGenerator` | userId, preferences | ~200 CandidateProfile[] | 5 (prefs, likes, passes, blocks, profiles) |
+| 2. Compatibility Scoring | `CompatibilityEngine` | userId × 200 candidates | RankedCandidate[] with scores | ~1000 (5 per candidate, parallelized) |
+| 3. Diversity Injection | `DiversityInjector` | RankedCandidate[] | Diverse top-N selection | 0 |
+| 4. Behavioral Analysis | `BehaviorAnalyzer` | Per feed item userId | Safety scores | 6 per item |
+| 5. Icebreaker Generation | `IcebreakerGenerator` | User + candidate profiles | 5 icebreakers per item | ~2 per item |
+| 6. Feed Assembly | `MatchmakingEngine` | All enriched items | MatchFeedItem[] | 1 (user profile) |
+
+### Key Design Decisions
+
+1. **Parallel scoring**: Compatibility scores are computed with `Promise.all` (not sequential) to keep latency under 3s
+2. **Bounded queries**: Like/pass/block histories capped at 10,000 records per user
+3. **No ML models**: V1 uses deterministic heuristics (no TensorFlow, no embeddings)
+4. **Regex-based scam detection**: Pattern matching for money requests, love bombing, sob stories
+5. **Template-based icebreakers**: No LLM dependency — uses profile data extraction and template strings

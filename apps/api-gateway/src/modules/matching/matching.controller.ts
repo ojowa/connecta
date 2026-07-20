@@ -105,4 +105,22 @@ export class MatchingController {
     );
     return res.status(result.status).json(result.data);
   }
+
+  @Get('scam-check/:userId')
+  @ApiOperation({ summary: 'Check scam risk for a conversation' })
+  async checkScamRisk(@Param('userId') userId: string, @Req() req: Request, @Res() res: Response) {
+    const result = await firstValueFrom(
+      this.http.get(`${MATCHING_SERVICE}/matching/scam-check/${userId}`, { headers: this.authHeaders(req) }),
+    );
+    return res.status(result.status).json(result.data);
+  }
+
+  @Get('safety-score/:userId')
+  @ApiOperation({ summary: 'Get behavioral safety score for a user' })
+  async getSafetyScore(@Param('userId') userId: string, @Req() req: Request, @Res() res: Response) {
+    const result = await firstValueFrom(
+      this.http.get(`${MATCHING_SERVICE}/matching/safety-score/${userId}`, { headers: this.authHeaders(req) }),
+    );
+    return res.status(result.status).json(result.data);
+  }
 }

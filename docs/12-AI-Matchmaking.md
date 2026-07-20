@@ -5,6 +5,13 @@
 **Version:** 1.0.0
 **Date:** July 2026
 
+> **Implementation Status (July 2026):**
+> - **V1 (Current):** TypeScript/NestJS algorithmic heuristics in `apps/matching-service/src/ai/`
+> - **V2 (Planned):** Python/FastAPI sidecar for ML models (when 1,000+ DAU)
+> - **V3 (Future):** Full TensorFlow pipeline with training data (when 10,000+ users)
+>
+> See [Doc 22: AI Matchmaking Audit](22-AI-Matchmaking-Audit.md) for spec-vs-implementation gap analysis.
+
 > **Implementation Note (July 2026):** This spec describes a Python/FastAPI ML-based architecture.
 > The current implementation uses TypeScript/NestJS with algorithmic heuristic logic (no ML models).
 > See [Doc 22: AI Matchmaking Audit](22-AI-Matchmaking-Audit.md) for the spec-vs-implementation gap
@@ -170,7 +177,54 @@ class CandidateGenerator:
         return [r['user_id'] for r in candidates]
 ```
 
-### 2.5 Diversity Injection
+### 2.5 V1 Compatibility Scoring Algorithm
+
+The current V1 implementation uses a weighted heuristic scoring algorithm in TypeScript. Each dimension is scored 0.0–1.0, then combined using configurable weights.
+
+#### Scoring Dimensions
+
+| Dimension | Weight | Calculation |
+|---|---|---|
+| **Interest Overlap** | 0.25 | Jaccard similarity: `intersection / union` of interest sets |
+| **Lifestyle Compatibility** | 0.20 | School match (+0.15), city match (+0.10), job title match (+0.10/+0.05), prompt text overlap |
+| **Values Alignment** | 0.30 | Verified status (+0.10), profile completeness (+0.10), shared value keywords from prompt answers |
+| **Communication Style** | 0.15 | Bio length ratio, prompt count similarity |
+| **Goal Alignment** | 0.10 | Exact match (+0.30), compatible goals (+0.15) |
+
+#### Dimension Details
+
+**Interest Overlap (0.25)**
+Jaccard similarity coefficient computed on the union of user-declared interests and bio-extracted topics:
+```
+score = |interests_a ∩ interests_b| / |interests_a ∪ interests_b|
+```
+Returns 0.5 (neutral) when either user has no interests.
+
+**Lifestyle Compatibility (0.20)**
+Composite of lifestyle attribute matches:
+- Same school/university → +0.15
+- Same city → +0.10
+- Same job title → +0.10 (exact), +0.05 (partial/fuzzy)
+- Prompt answer text overlap (cosine similarity on TF-IDF vectors)
+
+**Values Alignment (0.30)**
+- Phone/email verified → +0.10
+- Profile completeness percentage → +0.10
+- Shared value keywords extracted from prompt Q&A responses (e.g., "honesty", "family", "ambition")
+
+**Communication Style (0.15)**
+- Bio length ratio (shorter/longer, capped at 1.0)
+- Prompt count difference (fewer prompts = more casual)
+
+**Goal Alignment (0.10)**
+- Exact relationship goal match → +0.30
+- Compatible goal categories (e.g., "long-term" ↔ "marriage") → +0.15
+
+#### Final Score
+```
+total = Σ(dimension_score × weight)
+```
+Weights sum to 1.0. Score range: 0.0 (no compatibility) to 1.0 (perfect compatibility).
 
 ```python
 # recommendation_engine/services/diversity.py
@@ -504,6 +558,9 @@ class IceBreakerGenerator:
 
         return response.choices[0].message.content.split('\n')
 ```
+
+> **Current Implementation:** The V1 implementation uses local template-based icebreaker generation
+> with regex bio topic extraction. No OpenAI dependency. See `icebreaker.generator.ts`.
 
 ---
 

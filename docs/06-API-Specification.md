@@ -2238,6 +2238,110 @@ curl -X GET https://api.connecta.app/v1/matching/compatibility/usr_x9y8z7w6 \
 
 ---
 
+### 7.10 Check Scam Risk
+
+Analyzes conversation messages for romance scam patterns (money requests, love bombing, sob stories, urgency).
+
+```
+GET /v1/matching/scam-check/:userId
+Authorization: Bearer <access_token>
+```
+
+**Auth Required:** Yes
+
+**Response (200 OK):**
+
+```json
+{
+  "riskScore": 0.35,
+  "flags": ["money_mention", "rapid_emotional_escalation"],
+  "isScamSuspected": false
+}
+```
+
+| Field | Type | Description |
+|---|---|---|
+| `riskScore` | number | 0.0 - 1.0 risk assessment |
+| `flags` | array | Detected scam indicators |
+| `isScamSuspected` | boolean | Whether the system suspects a scam |
+
+**Possible flags:**
+
+| Flag | Description |
+|---|---|
+| `money_mention` | User requested money or financial assistance |
+| `rapid_emotional_escalation` | Unusually fast emotional investment |
+| `sob_story_pattern` | Recurring tragic backstory elements |
+| `high_urgency` | Pressure to act quickly or meet outside the app |
+| `suspicious_links` | Links to known scam or phishing domains |
+| `external_links` | Push to communicate on external platforms |
+| `generic_short_messages` | Low-effort, copy-paste style messages |
+| `low_message_diversity` | Repetitive or templated message patterns |
+
+**Curl Example:**
+
+```bash
+curl -X GET https://api.connecta.app/v1/matching/scam-check/usr_x9y8z7w6 \
+  -H "Authorization: Bearer eyJhbGciOiJSUzI1NiIs..."
+```
+
+---
+
+### 7.11 Get Safety Score
+
+Returns behavioral safety analysis for a user profile.
+
+```
+GET /v1/matching/safety-score/:userId
+Authorization: Bearer <access_token>
+```
+
+**Auth Required:** Yes
+
+**Response (200 OK):**
+
+```json
+{
+  "riskScore": 0.15,
+  "flags": ["single_photo"],
+  "isSuspicious": false,
+  "safetyScore": 85
+}
+```
+
+| Field | Type | Description |
+|---|---|---|
+| `riskScore` | number | 0.0 - 1.0 risk assessment |
+| `flags` | array | Detected behavioral red flags |
+| `isSuspicious` | boolean | Whether the profile is deemed suspicious |
+| `safetyScore` | number | 0-100 safety rating (higher = safer) |
+
+**Possible flags:**
+
+| Flag | Description |
+|---|---|
+| `mass_messaging` | Sending near-identical messages to many users |
+| `high_message_volume` | Abnormally high message send rate |
+| `like_spam` | Mass liking behavior |
+| `new_account_high_activity` | New account with immediate intense activity |
+| `no_photos` | Profile has no uploaded photos |
+| `single_photo` | Profile has only one photo |
+| `no_bio` | Profile has no bio text |
+| `incomplete_profile` | Missing key profile fields |
+| `unverified_contact` | Email or phone not verified |
+| `multiple_reports` | Received reports from multiple users |
+| `has_reports` | Has at least one report on file |
+| `multiple_devices` | Active on an unusual number of devices |
+
+**Curl Example:**
+
+```bash
+curl -X GET https://api.connecta.app/v1/matching/safety-score/usr_x9y8z7w6 \
+  -H "Authorization: Bearer eyJhbGciOiJSUzI1NiIs..."
+```
+
+---
+
 ## 8. Chat Service
 
 ### 8.1 List Conversations

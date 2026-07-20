@@ -31,8 +31,8 @@
 
 | Layer | Technology | Version |
 |-------|-----------|---------|
-| Framework | React Native | 0.76+ |
-| Build Tool | Expo | SDK 52+ |
+| Framework | React Native | 0.86 |
+| Build Tool | Expo | SDK 57 |
 | Language | TypeScript | 5.5+ |
 | Navigation | React Navigation | 7.x |
 | State Management | Zustand | 5.x |
@@ -56,7 +56,7 @@
 - Built-in builds via EAS Build
 - Pre-configured native modules
 - Simplified environment variable management
-- Expo Router for file-based routing (optional)
+- Flat file-based navigation with React Navigation 7
 
 ---
 
@@ -85,11 +85,6 @@ connecta-mobile/
 |       +-- loading.json
 |
 +-- src/
-    |-- app/
-    |   |-- App.tsx                        # Root component
-    |   |-- Providers.tsx                  # Context providers wrapper
-    |   +-- RootNavigator.tsx              # Root navigation container
-    |
     |-- components/
     |   |-- common/
     |   |   |-- Avatar.tsx
@@ -150,6 +145,11 @@ connecta-mobile/
     |       +-- PreferenceSlider.tsx
     |
     |-- screens/
+    |   |-- onboarding/
+    |   |   |-- SplashScreen.tsx
+    |   |   |-- WelcomeScreen.tsx
+    |   |   +-- OnboardingFlow.tsx
+    |   |
     |   |-- auth/
     |   |   |-- LoginScreen.tsx
     |   |   |-- RegisterScreen.tsx
@@ -157,50 +157,46 @@ connecta-mobile/
     |   |   |-- ForgotPasswordScreen.tsx
     |   |   +-- BiometricSetupScreen.tsx
     |   |
-    |   |-- onboarding/
-    |   |   |-- WelcomeScreen.tsx
-    |   |   |-- ProfileSetupScreen.tsx
-    |   |   |-- PhotoUploadScreen.tsx
-    |   |   |-- InterestSelectionScreen.tsx
-    |   |   +-- LocationPermissionScreen.tsx
-    |   |
     |   |-- main/
-    |   |   |-- DiscoverScreen.tsx           # Swipe/browse profiles
-    |   |   |-- MatchesScreen.tsx            # New matches list
-    |   |   |-- ChatsScreen.tsx              # Conversations list
-    |   |   |-- ProfileScreen.tsx            # User profile
-    |   |   +-- SettingsScreen.tsx
+    |   |   |-- DiscoverScreen.tsx
+    |   |   |-- MatchesScreen.tsx
+    |   |   |-- ChatsScreen.tsx
+    |   |   +-- ProfileScreen.tsx
     |   |
     |   |-- chat/
-    |   |   |-- ConversationScreen.tsx       # Individual chat
-    |   |   +-- GroupChatScreen.tsx
+    |   |   +-- ConversationScreen.tsx
     |   |
     |   |-- profile/
     |   |   |-- EditProfileScreen.tsx
-    |   |   |-- ViewProfileScreen.tsx        # View other's profile
-    |   |   |-- PhotoManagerScreen.tsx
-    |   |   +-- PreferencesScreen.tsx
+    |   |   +-- PhotoManagerScreen.tsx
+    |   |
+    |   |-- settings/
+    |   |   +-- SettingsScreen.tsx
+    |   |
+    |   |-- notifications/
+    |   |   +-- NotificationsScreen.tsx
+    |   |
+    |   |-- subscription/
+    |   |   |-- SubscriptionScreen.tsx
+    |   |   +-- WalletScreen.tsx
+    |   |
+    |   |-- safety/
+    |   |   |-- ReportScreen.tsx
+    |   |   |-- BlockConfirmation.tsx
+    |   |   +-- SafetyTips.tsx
     |   |
     |   |-- call/
-    |   |   |-- AudioCallScreen.tsx
-    |   |   +-- VideoCallScreen.tsx
+    |   |   |-- IncomingCallScreen.tsx
+    |   |   |-- ActiveVoiceCallScreen.tsx
+    |   |   +-- ActiveVideoCallScreen.tsx
     |   |
-    |   +-- settings/
-    |       |-- AccountSettingsScreen.tsx
-    |       |-- PrivacySettingsScreen.tsx
-    |       |-- NotificationSettingsScreen.tsx
-    |       |-- BlockedUsersScreen.tsx
-    |       +-- AboutScreen.tsx
+    |   +-- match/
+    |       +-- MatchScreen.tsx
     |
     |-- navigation/
-    |   |-- RootNavigator.tsx
-    |   |-- AuthNavigator.tsx
-    |   |-- MainTabNavigator.tsx
-    |   |-- ChatNavigator.tsx
-    |   |-- ProfileNavigator.tsx
-    |   |-- SettingsNavigator.tsx
-    |   |-- ModalNavigator.tsx
-    |   +-- linking.ts                       # Deep linking config
+    |   |-- RootNavigator.tsx              # Auth/Main switch + push/modal screens
+    |   |-- AuthNavigator.tsx              # Auth flow: Splash → Welcome → Onboarding → Login → Register → OTP → ForgotPassword
+    |   +-- MainTabNavigator.tsx           # 4 tabs: Discover | Matches | Chats | Profile
     |
     |-- services/
     |   |-- api/
@@ -299,13 +295,6 @@ connecta-mobile/
     |   +-- utils/
     |       |-- checksum.ts
     |       +-- timestamp.ts
-    |
-    |-- ai/
-    |   |-- recommendationEngine.ts         # Match suggestions
-    |   |-- compatibilityScoring.ts         # Profile compatibility
-    |   |-- moderationFilter.ts             # Content moderation
-    |   +-- localModels/
-    |       +-- onDeviceML.ts               # CoreML/TFLite integration
     |
     |-- notifications/
     |   |-- NotificationManager.ts          # Push notification handler
@@ -557,86 +546,86 @@ export const queryClient = new QueryClient({
 
 ### Navigator Hierarchy
 
+The app uses a **flat navigation structure** with all screens registered directly on the `RootNavigator`. There are only 3 navigator files.
+
 ```
-RootNavigator (Stack)
-|-- AuthStack (Stack) -- shown when not authenticated
-|   |-- Login
-|   |-- Register
-|   |-- OTPVerification
-|   |-- ForgotPassword
-|   +-- BiometricSetup
+RootNavigator (NativeStack)
 |
-|-- MainTabs (Bottom Tab) -- shown when authenticated
-|   |-- DiscoverStack (Stack)
-|   |   +-- Discover
-|   |-- MatchesStack (Stack)
-|   |   +-- Matches
-|   |-- ChatsStack (Stack)
-|   |   +-- Chats
-|   |   +-- Conversation (pushed)
-|   +-- ProfileStack (Stack)
-|       |-- Profile
-|       +-- Settings
+|-- Auth stack (when not authenticated):
+|   |-- SplashScreen
+|   |-- WelcomeScreen
+|   |-- OnboardingFlow
+|   |-- LoginScreen
+|   |-- RegisterScreen
+|   |-- OTPVerificationScreen
+|   +-- ForgotPasswordScreen
 |
-+-- ModalStack (Stack, presented modally)
-    |-- EditProfile
-    |-- PhotoManager
-    |-- ImageViewer
-    |-- VideoCall
-    |-- AudioCall
-    +-- IncomingCall
+|-- Main tabs (when authenticated):
+|   |-- Discover
+|   |-- Matches
+|   |-- Chats
+|   +-- Profile
+|
+|-- Push screens (NativeStack, pushed on top of tabs):
+|   |-- Conversation
+|   |-- EditProfile
+|   |-- PhotoManager
+|   |-- Settings
+|   |-- Notifications
+|   |-- Subscription
+|   |-- Wallet
+|   +-- SafetyTips
+|
++-- Modal screens (presented modally):
+    |-- Report
+    |-- BlockConfirmation
+    |-- IncomingCall
+    |-- ActiveVoiceCall
+    |-- ActiveVideoCall
+    +-- Match
 ```
 
-### Root Navigator
+### Auth Navigator
 
 ```typescript
-// src/navigation/RootNavigator.tsx
+// src/navigation/AuthNavigator.tsx
 import React from 'react';
-import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import { useAppStore } from '../store';
-import { AuthNavigator } from './AuthNavigator';
-import { MainTabNavigator } from './MainTabNavigator';
-import { ModalNavigator } from './ModalNavigator';
-import { linking } from './linking';
+import { SplashScreen } from '../screens/onboarding/SplashScreen';
+import { WelcomeScreen } from '../screens/onboarding/WelcomeScreen';
+import { OnboardingFlow } from '../screens/onboarding/OnboardingFlow';
+import { LoginScreen } from '../screens/auth/LoginScreen';
+import { RegisterScreen } from '../screens/auth/RegisterScreen';
+import { OTPVerificationScreen } from '../screens/auth/OTPVerificationScreen';
+import { ForgotPasswordScreen } from '../screens/auth/ForgotPasswordScreen';
 
 const Stack = createNativeStackNavigator();
 
-export const RootNavigator: React.FC = () => {
-  const isAuthenticated = useAppStore((s) => s.isAuthenticated);
-
+export const AuthNavigator: React.FC = () => {
   return (
-    <NavigationContainer linking={linking}>
-      <Stack.Navigator screenOptions={{ headerShown: false }}>
-        {!isAuthenticated ? (
-          <Stack.Screen name="Auth" component={AuthNavigator} />
-        ) : (
-          <>
-            <Stack.Screen name="Main" component={MainTabNavigator} />
-            <Stack.Screen
-              name="Modal"
-              component={ModalNavigator}
-              options={{ presentation: 'modal', animation: 'slide_from_bottom' }}
-            />
-          </>
-        )}
-      </Stack.Navigator>
-    </NavigationContainer>
+    <Stack.Navigator screenOptions={{ headerShown: false }}>
+      <Stack.Screen name="Splash" component={SplashScreen} />
+      <Stack.Screen name="Welcome" component={WelcomeScreen} />
+      <Stack.Screen name="Onboarding" component={OnboardingFlow} />
+      <Stack.Screen name="Login" component={LoginScreen} />
+      <Stack.Screen name="Register" component={RegisterScreen} />
+      <Stack.Screen name="OTP" component={OTPVerificationScreen} />
+      <Stack.Screen name="ForgotPassword" component={ForgotPasswordScreen} />
+    </Stack.Navigator>
   );
 };
 ```
 
-### Bottom Tab Navigator
+### Main Tab Navigator
 
 ```typescript
 // src/navigation/MainTabNavigator.tsx
 import React from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import { useUnread } from '../hooks/useUnread';
-import { DiscoverStack } from './DiscoverStack';
-import { MatchesStack } from './MatchesStack';
-import { ChatsStack } from './ChatsStack';
-import { ProfileStack } from './ProfileStack';
+import { DiscoverScreen } from '../screens/main/DiscoverScreen';
+import { MatchesScreen } from '../screens/main/MatchesScreen';
+import { ChatsScreen } from '../screens/main/ChatsScreen';
+import { ProfileScreen } from '../screens/main/ProfileScreen';
 import { TabBarIcon } from '../components/common/TabBarIcon';
 import { useTheme } from '../theme';
 
@@ -644,7 +633,6 @@ const Tab = createBottomTabNavigator();
 
 export const MainTabNavigator: React.FC = () => {
   const { colors } = useTheme();
-  const totalUnread = useUnread();
 
   return (
     <Tab.Navigator
@@ -658,29 +646,28 @@ export const MainTabNavigator: React.FC = () => {
     >
       <Tab.Screen
         name="Discover"
-        component={DiscoverStack}
+        component={DiscoverScreen}
         options={{
           tabBarIcon: ({ color, size }) => <TabBarIcon name="compass" color={color} size={size} />,
         }}
       />
       <Tab.Screen
         name="Matches"
-        component={MatchesStack}
+        component={MatchesScreen}
         options={{
           tabBarIcon: ({ color, size }) => <TabBarIcon name="heart" color={color} size={size} />,
         }}
       />
       <Tab.Screen
         name="Chats"
-        component={ChatsStack}
+        component={ChatsScreen}
         options={{
           tabBarIcon: ({ color, size }) => <TabBarIcon name="message-circle" color={color} size={size} />,
-          tabBarBadge: totalUnread > 0 ? totalUnread : undefined,
         }}
       />
       <Tab.Screen
         name="Profile"
-        component={ProfileStack}
+        component={ProfileScreen}
         options={{
           tabBarIcon: ({ color, size }) => <TabBarIcon name="user" color={color} size={size} />,
         }}
@@ -690,46 +677,125 @@ export const MainTabNavigator: React.FC = () => {
 };
 ```
 
-### Deep Linking Configuration
+### Root Navigator
 
 ```typescript
-// src/navigation/linking.ts
-import { LinkingOptions } from '@react-navigation/native';
-import { RootStackParamList } from '../types/navigation';
+// src/navigation/RootNavigator.tsx
+import React from 'react';
+import { NavigationContainer } from '@react-navigation/native';
+import { createNativeStackNavigator } from '@react-navigation/native-stack';
+import { useAppStore } from '../store';
+import { AuthNavigator } from './AuthNavigator';
+import { MainTabNavigator } from './MainTabNavigator';
 
-export const linking: LinkingOptions<RootStackParamList> = {
-  prefixes: ['connecta://', 'https://connecta.app'],
-  config: {
-    screens: {
-      Auth: {
-        screens: {
-          OTPVerification: 'verify-otp/:token',
-          ForgotPassword: 'reset-password/:token',
-        },
-      },
-      Main: {
-        screens: {
-          Discover: 'discover',
-          Matches: 'matches',
-          Chats: {
-            screens: {
-              Conversation: 'chat/:conversationId',
-            },
-          },
-          Profile: 'profile',
-        },
-      },
-      Modal: {
-        screens: {
-          EditProfile: 'edit-profile',
-          VideoCall: 'call/video/:callId',
-          AudioCall: 'call/audio/:callId',
-        },
-      },
-    },
-  },
+// Screens
+import { ConversationScreen } from '../screens/chat/ConversationScreen';
+import { EditProfileScreen } from '../screens/profile/EditProfileScreen';
+import { PhotoManagerScreen } from '../screens/profile/PhotoManagerScreen';
+import { SettingsScreen } from '../screens/settings/SettingsScreen';
+import { NotificationsScreen } from '../screens/notifications/NotificationsScreen';
+import { SubscriptionScreen } from '../screens/subscription/SubscriptionScreen';
+import { WalletScreen } from '../screens/subscription/WalletScreen';
+import { SafetyTips } from '../screens/safety/SafetyTips';
+import { ReportScreen } from '../screens/safety/ReportScreen';
+import { BlockConfirmation } from '../screens/safety/BlockConfirmation';
+import { IncomingCallScreen } from '../screens/call/IncomingCallScreen';
+import { ActiveVoiceCallScreen } from '../screens/call/ActiveVoiceCallScreen';
+import { ActiveVideoCallScreen } from '../screens/call/ActiveVideoCallScreen';
+import { MatchScreen } from '../screens/match/MatchScreen';
+
+const Stack = createNativeStackNavigator();
+
+export const RootNavigator: React.FC = () => {
+  const isAuthenticated = useAppStore((s) => s.isAuthenticated);
+
+  return (
+    <NavigationContainer>
+      <Stack.Navigator screenOptions={{ headerShown: false }}>
+        {!isAuthenticated ? (
+          <Stack.Screen name="Auth" component={AuthNavigator} />
+        ) : (
+          <>
+            <Stack.Screen name="Main" component={MainTabNavigator} />
+
+            {/* Push screens */}
+            <Stack.Screen name="Conversation" component={ConversationScreen} />
+            <Stack.Screen name="EditProfile" component={EditProfileScreen} />
+            <Stack.Screen name="PhotoManager" component={PhotoManagerScreen} />
+            <Stack.Screen name="Settings" component={SettingsScreen} />
+            <Stack.Screen name="Notifications" component={NotificationsScreen} />
+            <Stack.Screen name="Subscription" component={SubscriptionScreen} />
+            <Stack.Screen name="Wallet" component={WalletScreen} />
+            <Stack.Screen name="SafetyTips" component={SafetyTips} />
+
+            {/* Modal screens */}
+            <Stack.Screen
+              name="Report"
+              component={ReportScreen}
+              options={{ presentation: 'modal', animation: 'slide_from_bottom' }}
+            />
+            <Stack.Screen
+              name="BlockConfirmation"
+              component={BlockConfirmation}
+              options={{ presentation: 'modal', animation: 'slide_from_bottom' }}
+            />
+            <Stack.Screen
+              name="IncomingCall"
+              component={IncomingCallScreen}
+              options={{ presentation: 'modal', animation: 'slide_from_bottom' }}
+            />
+            <Stack.Screen
+              name="ActiveVoiceCall"
+              component={ActiveVoiceCallScreen}
+              options={{ presentation: 'fullScreenModal' }}
+            />
+            <Stack.Screen
+              name="ActiveVideoCall"
+              component={ActiveVideoCallScreen}
+              options={{ presentation: 'fullScreenModal' }}
+            />
+            <Stack.Screen
+              name="Match"
+              component={MatchScreen}
+              options={{ presentation: 'modal', animation: 'slide_from_bottom' }}
+            />
+          </>
+        )}
+      </Stack.Navigator>
+    </NavigationContainer>
+  );
 };
 ```
+
+### Screen Mapping
+
+| Category | Screen Name | Component | Presentation |
+|----------|------------|-----------|-------------|
+| **Auth** | `Splash` | SplashScreen | push |
+| | `Welcome` | WelcomeScreen | push |
+| | `Onboarding` | OnboardingFlow | push |
+| | `Login` | LoginScreen | push |
+| | `Register` | RegisterScreen | push |
+| | `OTP` | OTPVerificationScreen | push |
+| | `ForgotPassword` | ForgotPasswordScreen | push |
+| **Main Tabs** | `Discover` | DiscoverScreen | tab |
+| | `Matches` | MatchesScreen | tab |
+| | `Chats` | ChatsScreen | tab |
+| | `Profile` | ProfileScreen | tab |
+| **Push** | `Conversation` | ConversationScreen | push |
+| | `EditProfile` | EditProfileScreen | push |
+| | `PhotoManager` | PhotoManagerScreen | push |
+| | `Settings` | SettingsScreen | push |
+| | `Notifications` | NotificationsScreen | push |
+| | `Subscription` | SubscriptionScreen | push |
+| | `Wallet` | WalletScreen | push |
+| | `SafetyTips` | SafetyTips | push |
+| **Modal** | `Report` | ReportScreen | modal |
+| | `BlockConfirmation` | BlockConfirmation | modal |
+| | `IncomingCall` | IncomingCallScreen | modal |
+| | `ActiveVoiceCall` | ActiveVoiceCallScreen | fullScreenModal |
+| | `ActiveVideoCall` | ActiveVideoCallScreen | fullScreenModal |
+| | `Match` | MatchScreen | modal |
 ---
 
 ## 5. Offline-First SQLite Setup
@@ -3087,7 +3153,6 @@ EXPO_PUBLIC_AMPLITUDE_KEY=your_amplitude_key
       "@socket/*": ["src/socket/*"],
       "@webrtc/*": ["src/webrtc/*"],
       "@sync/*": ["src/sync/*"],
-      "@ai/*": ["src/ai/*"],
       "@notifications/*": ["src/notifications/*"],
       "@utils/*": ["src/utils/*"],
       "@types/*": ["src/types/*"],
