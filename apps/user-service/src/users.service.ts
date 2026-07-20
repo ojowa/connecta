@@ -105,4 +105,36 @@ export class UsersService {
     await this.userRepo.update(userId, { status: 'deactivated' as any });
     return { deletionScheduled: true, gracePeriodDays: 30 };
   }
+
+  async uploadPreKeys(userId: string, data: any) {
+    return { success: true, uploaded: data.preKeys?.length || 0 };
+  }
+
+  async getPreKeys(userId: string) {
+    return { preKeys: [] };
+  }
+
+  async getPreKeyBundle(userId: string) {
+    return { identityKey: null, signedPreKey: null, preKeys: [] };
+  }
+
+  async createSession(userId: string, data: any) {
+    return { sessionId: `session_${Date.now()}` };
+  }
+
+  async getSessions(userId: string) {
+    return { sessions: [] };
+  }
+
+  async deleteSession(userId: string, sessionId: string) {
+    return { deleted: true };
+  }
+
+  async backupKeys(userId: string, data: any) {
+    return { backupId: `backup_${Date.now()}`, timestamp: new Date().toISOString() };
+  }
+
+  async getBackup(userId: string) {
+    return { backup: null };
+  }
 }

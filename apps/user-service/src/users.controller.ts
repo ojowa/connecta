@@ -36,4 +36,29 @@ export class UsersController {
 
   @Post(':id/report') @ApiOperation({ summary: 'Report user' })
   reportUser(@Body('_userId') userId: string, @Param('id') id: string, @Body() body: ReportUserDto) { return this.usersService.reportUser(userId, id, body); }
+
+  // Crypto / Signal Protocol
+  @Post('me/prekeys') @ApiOperation({ summary: 'Upload pre-key bundle' })
+  uploadPreKeys(@Body('_userId') userId: string, @Body() body: any) { return this.usersService.uploadPreKeys(userId, body); }
+
+  @Get('me/prekeys') @ApiOperation({ summary: 'Get pre-keys' })
+  getPreKeys(@Body('_userId') userId: string) { return this.usersService.getPreKeys(userId); }
+
+  @Get('me/prekeys/bundle') @ApiOperation({ summary: 'Get pre-key bundle' })
+  getPreKeyBundle(@Body('_userId') userId: string) { return this.usersService.getPreKeyBundle(userId); }
+
+  @Post('sessions') @ApiOperation({ summary: 'Create session' })
+  createSession(@Body('_userId') userId: string, @Body() body: any) { return this.usersService.createSession(userId, body); }
+
+  @Get('sessions') @ApiOperation({ summary: 'Get sessions' })
+  getSessions(@Body('_userId') userId: string) { return this.usersService.getSessions(userId); }
+
+  @Delete('sessions/:sessionId') @ApiOperation({ summary: 'Delete session' })
+  deleteSession(@Body('_userId') userId: string, @Param('sessionId') sessionId: string) { return this.usersService.deleteSession(userId, sessionId); }
+
+  @Post('me/backup') @ApiOperation({ summary: 'Backup keys' })
+  backupKeys(@Body('_userId') userId: string, @Body() body: any) { return this.usersService.backupKeys(userId, body); }
+
+  @Get('me/backup') @ApiOperation({ summary: 'Get backup' })
+  getBackup(@Body('_userId') userId: string) { return this.usersService.getBackup(userId); }
 }
