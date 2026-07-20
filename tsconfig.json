@@ -29,5 +29,6 @@
       "@app/logger": ["libs/logger/src"],
       "@app/logger/*": ["libs/logger/src/*"]
     }
-  }
+  },
+  "exclude": ["connecta-mobile", "node_modules", "dist"]
 }
