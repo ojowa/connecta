@@ -1,4 +1,4 @@
-import { Controller, Get, Put, Post, Delete, Body, Param, Req, Res, Query } from '@nestjs/common';
+import { Controller, Get, Patch, Put, Post, Delete, Body, Param, Req, Res, Query } from '@nestjs/common';
 import { HttpService } from '@nestjs/axios';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { Request, Response } from 'express';
@@ -25,65 +25,89 @@ export class UsersController {
     return res.status(result.status).json(result.data);
   }
 
-  @Put('me')
+  @Patch('me')
   @ApiOperation({ summary: 'Update current user profile' })
   async updateMe(@Body() body: any, @Req() req: Request, @Res() res: Response) {
     const result = await firstValueFrom(
-      this.http.put(`${USER_SERVICE}/users/me`, body, { headers: this.authHeaders(req) }),
+      this.http.patch(`${USER_SERVICE}/users/me`, body, { headers: this.authHeaders(req) }),
     );
     return res.status(result.status).json(result.data);
   }
 
   @Delete('me')
   @ApiOperation({ summary: 'Delete current user account' })
-  async deleteMe(@Req() req: Request, @Res() res: Response) {
+  async deleteMe(@Body() body: any, @Req() req: Request, @Res() res: Response) {
     const result = await firstValueFrom(
-      this.http.delete(`${USER_SERVICE}/users/me`, { headers: this.authHeaders(req) }),
+      this.http.delete(`${USER_SERVICE}/users/me`, {
+        headers: this.authHeaders(req),
+        data: body,
+      }),
     );
     return res.status(result.status).json(result.data);
   }
 
-  @Get(':id')
+  @Get(':userId')
   @ApiOperation({ summary: 'Get user public profile' })
-  async getUser(@Param('id') id: string, @Req() req: Request, @Res() res: Response) {
+  async getUser(@Param('userId') userId: string, @Req() req: Request, @Res() res: Response) {
     const result = await firstValueFrom(
-      this.http.get(`${USER_SERVICE}/users/${id}`, { headers: this.authHeaders(req) }),
+      this.http.get(`${USER_SERVICE}/users/${userId}`, { headers: this.authHeaders(req) }),
     );
     return res.status(result.status).json(result.data);
   }
 
-  @Put('preferences')
+  @Get('me/preferences')
+  @ApiOperation({ summary: 'Get user preferences' })
+  async getPreferences(@Req() req: Request, @Res() res: Response) {
+    const result = await firstValueFrom(
+      this.http.get(`${USER_SERVICE}/users/me/preferences`, { headers: this.authHeaders(req) }),
+    );
+    return res.status(result.status).json(result.data);
+  }
+
+  @Put('me/preferences')
   @ApiOperation({ summary: 'Update user preferences' })
   async updatePreferences(@Body() body: any, @Req() req: Request, @Res() res: Response) {
     const result = await firstValueFrom(
-      this.http.put(`${USER_SERVICE}/users/preferences`, body, { headers: this.authHeaders(req) }),
+      this.http.put(`${USER_SERVICE}/users/me/preferences`, body, { headers: this.authHeaders(req) }),
     );
     return res.status(result.status).json(result.data);
   }
 
-  @Post('block')
+  @Post(':userId/block')
   @ApiOperation({ summary: 'Block a user' })
-  async blockUser(@Body() body: any, @Req() req: Request, @Res() res: Response) {
+  async blockUser(@Param('userId') userId: string, @Body() body: any, @Req() req: Request, @Res() res: Response) {
     const result = await firstValueFrom(
-      this.http.post(`${USER_SERVICE}/users/block`, body, { headers: this.authHeaders(req) }),
+      this.http.post(`${USER_SERVICE}/users/${userId}/block`, body, { headers: this.authHeaders(req) }),
     );
     return res.status(result.status).json(result.data);
   }
 
-  @Delete('block/:userId')
+  @Delete(':userId/block')
   @ApiOperation({ summary: 'Unblock a user' })
   async unblockUser(@Param('userId') userId: string, @Req() req: Request, @Res() res: Response) {
     const result = await firstValueFrom(
-      this.http.delete(`${USER_SERVICE}/users/block/${userId}`, { headers: this.authHeaders(req) }),
+      this.http.delete(`${USER_SERVICE}/users/${userId}/block`, { headers: this.authHeaders(req) }),
     );
     return res.status(result.status).json(result.data);
   }
 
-  @Post('report')
-  @ApiOperation({ summary: 'Report a user' })
-  async reportUser(@Body() body: any, @Req() req: Request, @Res() res: Response) {
+  @Get('me/blocks')
+  @ApiOperation({ summary: 'List blocked users' })
+  async listBlockedUsers(@Query() query: any, @Req() req: Request, @Res() res: Response) {
     const result = await firstValueFrom(
-      this.http.post(`${USER_SERVICE}/users/report`, body, { headers: this.authHeaders(req) }),
+      this.http.get(`${USER_SERVICE}/users/me/blocks`, {
+        params: query,
+        headers: this.authHeaders(req),
+      }),
+    );
+    return res.status(result.status).json(result.data);
+  }
+
+  @Post(':userId/report')
+  @ApiOperation({ summary: 'Report a user' })
+  async reportUser(@Param('userId') userId: string, @Body() body: any, @Req() req: Request, @Res() res: Response) {
+    const result = await firstValueFrom(
+      this.http.post(`${USER_SERVICE}/users/${userId}/report`, body, { headers: this.authHeaders(req) }),
     );
     return res.status(result.status).json(result.data);
   }

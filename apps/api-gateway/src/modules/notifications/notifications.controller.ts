@@ -28,6 +28,17 @@ export class NotificationsController {
     return res.status(result.status).json(result.data);
   }
 
+  @Get('preferences')
+  @ApiOperation({ summary: 'Get notification preferences' })
+  async getPreferences(@Req() req: Request, @Res() res: Response) {
+    const result = await firstValueFrom(
+      this.http.get(`${NOTIFICATION_SERVICE}/notifications/preferences`, {
+        headers: this.authHeaders(req),
+      }),
+    );
+    return res.status(result.status).json(result.data);
+  }
+
   @Put('preferences')
   @ApiOperation({ summary: 'Update notification preferences' })
   async updatePreferences(@Body() body: any, @Req() req: Request, @Res() res: Response) {
@@ -37,20 +48,20 @@ export class NotificationsController {
     return res.status(result.status).json(result.data);
   }
 
-  @Post('mark-read')
+  @Put('read')
   @ApiOperation({ summary: 'Mark notifications as read' })
   async markRead(@Body() body: any, @Req() req: Request, @Res() res: Response) {
     const result = await firstValueFrom(
-      this.http.post(`${NOTIFICATION_SERVICE}/notifications/mark-read`, body, { headers: this.authHeaders(req) }),
+      this.http.put(`${NOTIFICATION_SERVICE}/notifications/read`, body, { headers: this.authHeaders(req) }),
     );
     return res.status(result.status).json(result.data);
   }
 
-  @Put('quiet-hours')
-  @ApiOperation({ summary: 'Set quiet hours' })
-  async setQuietHours(@Body() body: any, @Req() req: Request, @Res() res: Response) {
+  @Post('broadcast')
+  @ApiOperation({ summary: 'Send broadcast notification (admin)' })
+  async broadcast(@Body() body: any, @Req() req: Request, @Res() res: Response) {
     const result = await firstValueFrom(
-      this.http.put(`${NOTIFICATION_SERVICE}/notifications/quiet-hours`, body, { headers: this.authHeaders(req) }),
+      this.http.post(`${NOTIFICATION_SERVICE}/notifications/broadcast`, body, { headers: this.authHeaders(req) }),
     );
     return res.status(result.status).json(result.data);
   }

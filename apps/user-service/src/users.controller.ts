@@ -1,4 +1,4 @@
-import { Controller, Get, Put, Delete, Post, Body, Param, Query } from '@nestjs/common';
+import { Controller, Get, Patch, Put, Delete, Post, Body, Param, Query } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { UsersService } from './users.service';
 
@@ -9,7 +9,7 @@ export class UsersController {
   @Get('me') @ApiOperation({ summary: 'Get current user' })
   getMe(@Body('_userId') userId: string) { return this.usersService.getMe(userId); }
 
-  @Put('me') @ApiOperation({ summary: 'Update current user' })
+  @Patch('me') @ApiOperation({ summary: 'Update current user' })
   updateMe(@Body('_userId') userId: string, @Body() body: any) { return this.usersService.updateMe(userId, body); }
 
   @Delete('me') @ApiOperation({ summary: 'Delete account' })

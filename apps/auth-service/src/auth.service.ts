@@ -195,6 +195,34 @@ export class AuthService {
     return { revoked: true, deviceId };
   }
 
+  async registerBiometric(userId: string, data: any) {
+    const { deviceId, biometricType, publicKey, credentialId } = data;
+    if (!deviceId || !biometricType || !publicKey || !credentialId) {
+      throw new BadRequestException('Missing required fields');
+    }
+    const biometricId = `bio_${uuid()}`;
+    return { biometricId, biometricType, enabled: true, createdAt: new Date() };
+  }
+
+  async biometricLogin(data: any) {
+    const { deviceId, credentialId, signature, challenge } = data;
+    if (!deviceId || !credentialId || !signature || !challenge) {
+      throw new BadRequestException('Missing required fields');
+    }
+    const user = await this.userRepo.findOne({ where: { id: deviceId } });
+    if (!user) throw new UnauthorizedException('Biometric not registered for this device');
+    const tokens = await this.generateTokens(user);
+    return {
+      user: this.sanitizeUser(user),
+      tokens: { ...tokens, expiresIn: 900 },
+    };
+  }
+
+  async removeBiometric(userId: string, biometricId: string) {
+    if (!biometricId) throw new BadRequestException('Biometric ID required');
+    return { removed: true, biometricId };
+  }
+
   private async createSession(userId: string, refreshToken: string, deviceId?: string, platform?: string, osVersion?: string, appVersion?: string) {
     const session = this.sessionRepo.create({
       userId, refreshToken, deviceId: deviceId || uuid(), deviceType: platform, ipAddress: '0.0.0.0',

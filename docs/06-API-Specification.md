@@ -23,8 +23,9 @@
 12. [Notification Service](#12-notification-service)
 13. [Search Service](#13-search-service)
 14. [Admin Service](#14-admin-service)
-15. [WebSocket Events](#15-websocket-events)
-16. [Error Codes Reference](#16-error-codes-reference)
+15. [Crypto Relay Service (E2EE)](#15-crypto-relay-service-e2ee-key-exchange)
+16. [WebSocket Events](#16-websocket-events)
+17. [Error Codes Reference](#17-error-codes-reference)
 
 ---
 
@@ -4987,11 +4988,267 @@ curl -X POST https://api.connecta.app/v1/admin/broadcast \
 
 ---
 
-## 15. WebSocket Events
+## 15. Crypto Relay Service (E2EE Key Exchange)
+
+The Crypto Relay Service manages X3DH key bundles for end-to-end encryption. These endpoints are proxied through the API Gateway at `/v1/crypto/*`.
+
+### 15.1 Upload Pre-Key Bundle
+
+Uploads the user's identity key, signed pre-key, and one-time pre-keys for X3DH initial key exchange.
+
+```
+POST /v1/crypto/prekeys
+Authorization: Bearer <access_token>
+```
+
+**Auth Required:** Yes
+
+**Request Body:**
+
+```json
+{
+  "identity_key": "base64-encoded-curve25519-public-key",
+  "signed_pre_key": {
+    "key_id": "spk_abc123",
+    "public_key": "base64-encoded-curve25519-public-key",
+    "signature": "base64-encoded-ed25519-signature"
+  },
+  "one_time_pre_keys": [
+    {
+      "key_id": "opk_001",
+      "public_key": "base64-encoded-curve25519-public-key"
+    },
+    {
+      "key_id": "opk_002",
+      "public_key": "base64-encoded-curve25519-public-key"
+    }
+  ]
+}
+```
+
+**Response (201 Created):**
+
+```json
+{
+  "success": true,
+  "data": {
+    "uploaded": true,
+    "identity_key_id": "ik_usr123",
+    "signed_pre_key_id": "spk_abc123",
+    "one_time_pre_keys_count": 100,
+    "created_at": "2026-07-19T10:00:00Z"
+  }
+}
+```
+
+**Curl Example:**
+
+```bash
+curl -X POST https://api.connecta.app/v1/crypto/prekeys \
+  -H "Authorization: Bearer eyJhbGciOiJSUzI1NiIs..." \
+  -H "Content-Type: application/json" \
+  -d '{
+    "identity_key": "base64...",
+    "signed_pre_key": { "key_id": "spk_abc", "public_key": "base64...", "signature": "base64..." },
+    "one_time_pre_keys": [{ "key_id": "opk_001", "public_key": "base64..." }]
+  }'
+```
+
+---
+
+### 15.2 Get Pre-Key Bundle
+
+Returns a user's pre-key bundle for establishing an E2EE session via X3DH.
+
+```
+GET /v1/crypto/prekeys/:user_id
+Authorization: Bearer <access_token>
+```
+
+**Auth Required:** Yes
+
+**Response (200 OK):**
+
+```json
+{
+  "success": true,
+  "data": {
+    "user_id": "usr_x9y8z7w6",
+    "identity_key": "base64-encoded-curve25519-public-key",
+    "signed_pre_key": {
+      "key_id": "spk_abc123",
+      "public_key": "base64-encoded-curve25519-public-key",
+      "signature": "base64-encoded-ed25519-signature"
+    },
+    "one_time_pre_key": {
+      "key_id": "opk_001",
+      "public_key": "base64-encoded-curve25519-public-key"
+    }
+  }
+}
+```
+
+**Error Responses:**
+
+| Status | Code | Scenario |
+|---|---|---|
+| 404 | `CRY_001` | User has no pre-key bundle |
+| 404 | `CRY_002` | No one-time pre-keys available |
+
+---
+
+### 15.3 Claim One-Time Pre-Key
+
+Claims a one-time pre-key for X3DH (consumed on first use).
+
+```
+POST /v1/crypto/prekeys/claim/:key_id
+Authorization: Bearer <access_token>
+```
+
+**Auth Required:** Yes
+
+**Response (200 OK):**
+
+```json
+{
+  "success": true,
+  "data": {
+    "claimed": true,
+    "key_id": "opk_001",
+    "public_key": "base64-encoded-curve25519-public-key"
+  }
+}
+```
+
+---
+
+### 15.4 Delete One-Time Pre-Key
+
+Deletes a consumed one-time pre-key.
+
+```
+DELETE /v1/crypto/prekeys/:key_id
+Authorization: Bearer <access_token>
+```
+
+**Auth Required:** Yes
+
+**Response (200 OK):**
+
+```json
+{
+  "success": true,
+  "data": {
+    "deleted": true,
+    "key_id": "opk_001"
+  }
+}
+```
+
+---
+
+### 15.5 Get Active Sessions
+
+Returns active E2EE sessions for a user (ratchet states).
+
+```
+GET /v1/crypto/sessions/:user_id
+Authorization: Bearer <access_token>
+```
+
+**Auth Required:** Yes
+
+**Response (200 OK):**
+
+```json
+{
+  "success": true,
+  "data": {
+    "sessions": [
+      {
+        "session_id": "sess_abc123",
+        "remote_user_id": "usr_x9y8z7w6",
+        "created_at": "2026-07-19T10:00:00Z",
+        "last_message_at": "2026-07-19T10:30:00Z"
+      }
+    ]
+  }
+}
+```
+
+---
+
+### 15.6 Upload Encrypted Key Backup
+
+Uploads an encrypted backup of E2EE keys for cross-device restore.
+
+```
+POST /v1/crypto/backup
+Authorization: Bearer <access_token>
+```
+
+**Auth Required:** Yes
+
+**Request Body:**
+
+```json
+{
+  "encrypted_backup": "base64-encoded-encrypted-backup",
+  "backup_version": 1,
+  "device_id": "dev_abc123"
+}
+```
+
+**Response (201 Created):**
+
+```json
+{
+  "success": true,
+  "data": {
+    "uploaded": true,
+    "backup_id": "bkp_xyz789",
+    "backup_version": 1,
+    "uploaded_at": "2026-07-19T10:00:00Z"
+  }
+}
+```
+
+---
+
+### 15.7 Get Encrypted Key Backup
+
+Returns the user's encrypted key backup.
+
+```
+GET /v1/crypto/backup
+Authorization: Bearer <access_token>
+```
+
+**Auth Required:** Yes
+
+**Response (200 OK):**
+
+```json
+{
+  "success": true,
+  "data": {
+    "backup_id": "bkp_xyz789",
+    "encrypted_backup": "base64-encoded-encrypted-backup",
+    "backup_version": 1,
+    "device_id": "dev_abc123",
+    "uploaded_at": "2026-07-19T10:00:00Z"
+  }
+}
+```
+
+---
+
+## 16. WebSocket Events
 
 Connecta uses WebSocket connections for real-time communication. The WebSocket server is available at `wss://ws.connecta.app/v1`.
 
-### 15.1 Connection
+### 16.1 Connection
 
 **WebSocket URL:**
 
@@ -5006,7 +5263,7 @@ Authorization: Bearer <access_token>
 X-Device-ID: <device_id>
 ```
 
-### 15.2 Event Categories
+### 16.2 Event Categories
 
 #### Chat Events
 
@@ -5185,7 +5442,7 @@ X-Device-ID: <device_id>
 }
 ```
 
-### 15.3 WebSocket Error Events
+### 16.3 WebSocket Error Events
 
 ```json
 {
@@ -5206,7 +5463,7 @@ X-Device-ID: <device_id>
 | `WS_004` | Invalid message format |
 | `WS_005` | Connection throttled |
 
-### 15.4 Reconnection Strategy
+### 16.4 Reconnection Strategy
 
 The client should implement exponential backoff for reconnection:
 
@@ -5219,7 +5476,7 @@ The client should implement exponential backoff for reconnection:
 delay = min(base_delay * 2^attempt + jitter, max_delay)
 ```
 
-### 15.5 Heartbeat
+### 16.5 Heartbeat
 
 The server sends a ping every 30 seconds. The client must respond with a pong within 10 seconds. If no pong is received, the connection is considered dead and should be reconnected.
 

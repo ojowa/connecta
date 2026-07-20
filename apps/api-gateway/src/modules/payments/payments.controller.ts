@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Param, Req, Res } from '@nestjs/common';
+import { Controller, Get, Post, Put, Body, Param, Query, Req, Res } from '@nestjs/common';
 import { HttpService } from '@nestjs/axios';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { Request, Response } from 'express';
@@ -8,7 +8,7 @@ const PAYMENT_SERVICE = process.env.PAYMENT_SERVICE_URL || 'http://localhost:300
 
 @ApiTags('Payments')
 @ApiBearerAuth()
-@Controller('subscriptions')
+@Controller('payments')
 export class PaymentsController {
   constructor(private readonly http: HttpService) {}
 
@@ -18,9 +18,12 @@ export class PaymentsController {
 
   @Get('plans')
   @ApiOperation({ summary: 'Get available subscription plans' })
-  async getPlans(@Req() req: Request, @Res() res: Response) {
+  async getPlans(@Query() query: any, @Req() req: Request, @Res() res: Response) {
     const result = await firstValueFrom(
-      this.http.get(`${PAYMENT_SERVICE}/subscriptions/plans`, { headers: this.authHeaders(req) }),
+      this.http.get(`${PAYMENT_SERVICE}/payments/plans`, {
+        params: query,
+        headers: this.authHeaders(req),
+      }),
     );
     return res.status(result.status).json(result.data);
   }
@@ -29,42 +32,31 @@ export class PaymentsController {
   @ApiOperation({ summary: 'Subscribe to a plan' })
   async subscribe(@Body() body: any, @Req() req: Request, @Res() res: Response) {
     const result = await firstValueFrom(
-      this.http.post(`${PAYMENT_SERVICE}/subscriptions/subscribe`, body, { headers: this.authHeaders(req) }),
+      this.http.post(`${PAYMENT_SERVICE}/payments/subscribe`, body, { headers: this.authHeaders(req) }),
     );
     return res.status(result.status).json(result.data);
   }
 
-  @Post('cancel')
+  @Post('subscribe/cancel')
   @ApiOperation({ summary: 'Cancel subscription' })
   async cancelSubscription(@Body() body: any, @Req() req: Request, @Res() res: Response) {
     const result = await firstValueFrom(
-      this.http.post(`${PAYMENT_SERVICE}/subscriptions/cancel`, body, { headers: this.authHeaders(req) }),
+      this.http.post(`${PAYMENT_SERVICE}/payments/subscribe/cancel`, body, { headers: this.authHeaders(req) }),
     );
     return res.status(result.status).json(result.data);
   }
 
-  @Post('upgrade')
-  @ApiOperation({ summary: 'Upgrade subscription' })
+  @Put('subscribe/upgrade')
+  @ApiOperation({ summary: 'Upgrade or downgrade subscription' })
   async upgradeSubscription(@Body() body: any, @Req() req: Request, @Res() res: Response) {
     const result = await firstValueFrom(
-      this.http.post(`${PAYMENT_SERVICE}/subscriptions/upgrade`, body, { headers: this.authHeaders(req) }),
+      this.http.put(`${PAYMENT_SERVICE}/payments/subscribe/upgrade`, body, { headers: this.authHeaders(req) }),
     );
     return res.status(result.status).json(result.data);
-  }
-}
-
-@ApiTags('Payments')
-@ApiBearerAuth()
-@Controller('payments')
-export class PaymentTransactionsController {
-  constructor(private readonly http: HttpService) {}
-
-  private authHeaders(req: Request) {
-    return { authorization: req.headers.authorization };
   }
 
   @Post('initialize')
-  @ApiOperation({ summary: 'Initialize a payment' })
+  @ApiOperation({ summary: 'Initialize a one-time payment' })
   async initializePayment(@Body() body: any, @Req() req: Request, @Res() res: Response) {
     const result = await firstValueFrom(
       this.http.post(`${PAYMENT_SERVICE}/payments/initialize`, body, { headers: this.authHeaders(req) }),
@@ -73,7 +65,7 @@ export class PaymentTransactionsController {
   }
 
   @Post('verify')
-  @ApiOperation({ summary: 'Verify a payment' })
+  @ApiOperation({ summary: 'Verify a payment transaction' })
   async verifyPayment(@Body() body: any, @Req() req: Request, @Res() res: Response) {
     const result = await firstValueFrom(
       this.http.post(`${PAYMENT_SERVICE}/payments/verify`, body, { headers: this.authHeaders(req) }),
@@ -83,18 +75,26 @@ export class PaymentTransactionsController {
 
   @Get('history')
   @ApiOperation({ summary: 'Get payment history' })
-  async getPaymentHistory(@Req() req: Request, @Res() res: Response) {
+  async getPaymentHistory(@Query() query: any, @Req() req: Request, @Res() res: Response) {
     const result = await firstValueFrom(
-      this.http.get(`${PAYMENT_SERVICE}/payments/history`, { headers: this.authHeaders(req) }),
+      this.http.get(`${PAYMENT_SERVICE}/payments/history`, {
+        params: query,
+        headers: this.authHeaders(req),
+      }),
     );
     return res.status(result.status).json(result.data);
   }
 
-  @Post('refund')
+  @Post('refund/:transactionId')
   @ApiOperation({ summary: 'Request a refund' })
-  async requestRefund(@Body() body: any, @Req() req: Request, @Res() res: Response) {
+  async requestRefund(
+    @Param('transactionId') transactionId: string,
+    @Body() body: any,
+    @Req() req: Request,
+    @Res() res: Response,
+  ) {
     const result = await firstValueFrom(
-      this.http.post(`${PAYMENT_SERVICE}/payments/refund`, body, { headers: this.authHeaders(req) }),
+      this.http.post(`${PAYMENT_SERVICE}/payments/refund/${transactionId}`, body, { headers: this.authHeaders(req) }),
     );
     return res.status(result.status).json(result.data);
   }

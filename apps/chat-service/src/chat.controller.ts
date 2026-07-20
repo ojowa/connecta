@@ -36,6 +36,11 @@ export class ChatController {
     return this.chatService.searchMessages(userId, q, convId, page, limit);
   }
 
+  @Post('conversations/:id/typing') @ApiOperation({ summary: 'Send typing indicator' })
+  sendTyping(@Body('_userId') userId: string, @Param('id') id: string, @Body('is_typing') isTyping: boolean) {
+    return this.chatService.sendTyping(userId, id, isTyping);
+  }
+
   @Delete('conversations/:id/messages/:messageId') @ApiOperation({ summary: 'Delete message' })
   deleteMessage(@Body('_userId') userId: string, @Param('messageId') messageId: string) {
     return this.chatService.deleteMessage(userId, messageId);

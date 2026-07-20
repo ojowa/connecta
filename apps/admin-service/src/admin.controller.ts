@@ -9,6 +9,9 @@ export class AdminController {
   @Post('login') @ApiOperation({ summary: 'Admin login' })
   login(@Body() body: any) { return this.adminService.login(body); }
 
+  @Post('2fa/verify') @ApiOperation({ summary: 'Verify admin 2FA code' })
+  verify2fa(@Body() body: any) { return this.adminService.verify2fa(body); }
+
   @Get('dashboard') @ApiOperation({ summary: 'Dashboard' }) @ApiBearerAuth()
   dashboard(@Query('period') period?: string) { return this.adminService.getDashboard(period); }
 
@@ -41,4 +44,10 @@ export class AdminController {
 
   @Put('settings') @ApiOperation({ summary: 'Update settings' }) @ApiBearerAuth()
   updateSettings(@Body() body: any) { return this.adminService.updateSettings(body); }
+
+  @Get('analytics') @ApiOperation({ summary: 'Get platform analytics' }) @ApiBearerAuth()
+  getAnalytics(@Query() query: any) { return this.adminService.getAnalytics(query); }
+
+  @Post('broadcast') @ApiOperation({ summary: 'Send broadcast notification' }) @ApiBearerAuth()
+  broadcast(@Body() body: any) { return this.adminService.broadcast(body); }
 }

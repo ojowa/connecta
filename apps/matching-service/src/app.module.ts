@@ -4,7 +4,14 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { MatchingController } from './matching.controller';
 import { MatchingService } from './matching.service';
 import { MatchEventsHandler } from './events/match-events.handler';
-import { User, Profile, Like, Pass, Match, DailyLike, Photo, Conversation, ConversationParticipant, UserPreference, Notification } from '@app/common/entities';
+import { CompatibilityEngine } from './ai/compatibility.engine';
+import { CandidateGenerator } from './ai/candidate.generator';
+import { DiversityInjector } from './ai/diversity.injector';
+import { BehaviorAnalyzer } from './ai/behavior.analyzer';
+import { ScamDetector } from './ai/scam.detector';
+import { IcebreakerGenerator } from './ai/icebreaker.generator';
+import { MatchmakingEngine } from './ai/matchmaking.engine';
+import { User, Profile, Like, Pass, Match, DailyLike, Photo, Conversation, ConversationParticipant, UserPreference, Notification, Block, Report, Interest, ProfileInterest, Session } from '@app/common/entities';
 
 @Module({
   imports: [
@@ -14,9 +21,19 @@ import { User, Profile, Like, Pass, Match, DailyLike, Photo, Conversation, Conve
       username: process.env.DB_USERNAME || 'postgres', password: process.env.DB_PASSWORD || 'Aarinola',
       database: process.env.DB_NAME || 'connecta_db', autoLoadEntities: true, synchronize: true,
     }),
-    TypeOrmModule.forFeature([User, Profile, Like, Pass, Match, DailyLike, Photo, Conversation, ConversationParticipant, UserPreference, Notification]),
+    TypeOrmModule.forFeature([User, Profile, Like, Pass, Match, DailyLike, Photo, Conversation, ConversationParticipant, UserPreference, Notification, Block, Report, Interest, ProfileInterest, Session]),
   ],
   controllers: [MatchingController],
-  providers: [MatchingService, MatchEventsHandler],
+  providers: [
+    MatchingService,
+    MatchEventsHandler,
+    CompatibilityEngine,
+    CandidateGenerator,
+    DiversityInjector,
+    BehaviorAnalyzer,
+    ScamDetector,
+    IcebreakerGenerator,
+    MatchmakingEngine,
+  ],
 })
 export class AppModule {}

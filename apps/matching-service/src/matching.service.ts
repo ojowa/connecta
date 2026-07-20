@@ -2,6 +2,7 @@ import { Injectable, BadRequestException, NotFoundException } from '@nestjs/comm
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, Not, In } from 'typeorm';
 import { User, Profile, Like, Pass, Match, DailyLike, Photo, Conversation, ConversationParticipant, UserPreference } from '@app/common/entities';
+import { MatchmakingEngine } from './ai/matchmaking.engine';
 
 @Injectable()
 export class MatchingService {
@@ -16,35 +17,12 @@ export class MatchingService {
     @InjectRepository(Conversation) private convRepo: Repository<Conversation>,
     @InjectRepository(ConversationParticipant) private partRepo: Repository<ConversationParticipant>,
     @InjectRepository(UserPreference) private prefRepo: Repository<UserPreference>,
+    private matchmakingEngine: MatchmakingEngine,
   ) {}
 
   async getFeed(userId: string, page = 1, limit = 20) {
-    const likedIds = (await this.likeRepo.find({ where: { userId }, select: ['likedUserId'] })).map(l => l.likedUserId);
-    const passedIds = (await this.passRepo.find({ where: { userId }, select: ['passedUserId'] })).map(p => p.passedUserId);
-    const blockedIds = [...likedIds, ...passedIds, userId];
-    const prefs = await this.prefRepo.findOne({ where: { userId } });
-    const profiles = await this.profileRepo.createQueryBuilder('p')
-      .innerJoin('p.user', 'u')
-      .where('p.userId != :userId', { userId })
-      .andWhere('p.isActive = true')
-      .andWhere('u.status = :status', { status: 'active' })
-      .andWhere('p.userId NOT IN (:...blockedIds)', { blockedIds })
-      .orderBy('p.completionPercentage', 'DESC')
-      .skip((page - 1) * limit)
-      .take(limit)
-      .getMany();
-    const profilesWithPhotos = await Promise.all(profiles.map(async (p) => {
-      const photos = await this.photoRepo.find({ where: { profileId: p.id }, order: { order: 'ASC' } });
-      return { ...p, photos };
-    }));
-    const total = await this.profileRepo.createQueryBuilder('p')
-      .innerJoin('p.user', 'u')
-      .where('p.userId != :userId', { userId })
-      .andWhere('p.isActive = true')
-      .andWhere('u.status = :status', { status: 'active' })
-      .andWhere('p.userId NOT IN (:...blockedIds)', { blockedIds })
-      .getCount();
-    return { profiles: profilesWithPhotos, meta: { page, limit, total, hasMore: total > page * limit } };
+    const feed = await this.matchmakingEngine.generateFeed(userId, page, limit);
+    return { profiles: feed, meta: { page, limit, total: feed.length, hasMore: feed.length === limit } };
   }
 
   async like(userId: string, targetUserId: string, likeType = 'normal') {
@@ -122,6 +100,14 @@ export class MatchingService {
   }
 
   async getCompatibility(userId: string, targetUserId: string) {
-    return { userId: targetUserId, overallScore: 75, breakdown: { interests: 80, values: 70, lifestyle: 75 }, sharedInterests: [], compatibilityInsights: [] };
+    return this.matchmakingEngine.getCompatibilityScore(userId, targetUserId);
+  }
+
+  async checkScamRisk(userId: string, targetUserId: string) {
+    return this.matchmakingEngine.checkScamRisk(userId, targetUserId);
+  }
+
+  async getBehavioralAnalysis(userId: string) {
+    return this.matchmakingEngine.getBehavioralAnalysis(userId);
   }
 }

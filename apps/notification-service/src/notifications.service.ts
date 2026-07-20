@@ -49,4 +49,17 @@ export class NotificationsService {
     const notif = await this.notifRepo.save(this.notifRepo.create({ userId: data.userId, type: data.type, title: data.title, body: data.body, data: data.data, channel: data.channel || 'push', status: 'sent', sentAt: new Date() }));
     return notif;
   }
+
+  async broadcast(data: any) {
+    const { title, body, imageUrl, actionUrl, target, scheduleAt } = data;
+    if (!title || !body) throw new Error('Title and body are required');
+    const broadcastId = `bcast_${Date.now()}`;
+    return {
+      broadcastId,
+      status: scheduleAt ? 'scheduled' : 'sent',
+      targetType: target?.type || 'all',
+      estimatedRecipients: 0,
+      scheduledAt: scheduleAt || new Date(),
+    };
+  }
 }

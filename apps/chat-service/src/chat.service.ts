@@ -93,4 +93,11 @@ export class ChatService {
     await this.msgRepo.update(messageId, { isDeleted: true, deletedAt: new Date() });
     return { deleted: true, messageId, visibleToSender: true, visibleToRecipient: false };
   }
+
+  async sendTyping(userId: string, conversationId: string, isTyping: boolean) {
+    const part = await this.partRepo.findOne({ where: { conversationId, userId } });
+    if (!part) throw new ForbiddenException('Not a participant');
+    const expiresAt = new Date(Date.now() + 8000);
+    return { conversationId, isTyping, expiresAt };
+  }
 }

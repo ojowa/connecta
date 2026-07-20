@@ -24,6 +24,15 @@ export class AdminController {
     return res.status(result.status).json(result.data);
   }
 
+  @Post('2fa/verify')
+  @ApiOperation({ summary: 'Verify admin 2FA code' })
+  async verify2fa(@Body() body: any, @Res() res: Response) {
+    const result = await firstValueFrom(
+      this.http.post(`${ADMIN_SERVICE}/admin/2fa/verify`, body),
+    );
+    return res.status(result.status).json(result.data);
+  }
+
   @Get('dashboard')
   @ApiOperation({ summary: 'Get dashboard metrics' })
   @ApiBearerAuth()
@@ -83,9 +92,9 @@ export class AdminController {
   @Post('users/:id/unsuspend')
   @ApiOperation({ summary: 'Unsuspend user' })
   @ApiBearerAuth()
-  async unsuspendUser(@Param('id') id: string, @Req() req: Request, @Res() res: Response) {
+  async unsuspendUser(@Param('id') id: string, @Body() body: any, @Req() req: Request, @Res() res: Response) {
     const result = await firstValueFrom(
-      this.http.post(`${ADMIN_SERVICE}/admin/users/${id}/unsuspend`, {}, { headers: this.authHeaders(req) }),
+      this.http.post(`${ADMIN_SERVICE}/admin/users/${id}/unsuspend`, body, { headers: this.authHeaders(req) }),
     );
     return res.status(result.status).json(result.data);
   }
@@ -109,6 +118,19 @@ export class AdminController {
   async resolveReport(@Param('id') id: string, @Body() body: any, @Req() req: Request, @Res() res: Response) {
     const result = await firstValueFrom(
       this.http.post(`${ADMIN_SERVICE}/admin/reports/${id}/resolve`, body, { headers: this.authHeaders(req) }),
+    );
+    return res.status(result.status).json(result.data);
+  }
+
+  @Get('analytics')
+  @ApiOperation({ summary: 'Get platform analytics' })
+  @ApiBearerAuth()
+  async getAnalytics(@Query() query: any, @Req() req: Request, @Res() res: Response) {
+    const result = await firstValueFrom(
+      this.http.get(`${ADMIN_SERVICE}/admin/analytics`, {
+        params: query,
+        headers: this.authHeaders(req),
+      }),
     );
     return res.status(result.status).json(result.data);
   }
@@ -142,6 +164,16 @@ export class AdminController {
   async updateSettings(@Body() body: any, @Req() req: Request, @Res() res: Response) {
     const result = await firstValueFrom(
       this.http.put(`${ADMIN_SERVICE}/admin/settings`, body, { headers: this.authHeaders(req) }),
+    );
+    return res.status(result.status).json(result.data);
+  }
+
+  @Post('broadcast')
+  @ApiOperation({ summary: 'Send broadcast notification' })
+  @ApiBearerAuth()
+  async broadcast(@Body() body: any, @Req() req: Request, @Res() res: Response) {
+    const result = await firstValueFrom(
+      this.http.post(`${ADMIN_SERVICE}/admin/broadcast`, body, { headers: this.authHeaders(req) }),
     );
     return res.status(result.status).json(result.data);
   }

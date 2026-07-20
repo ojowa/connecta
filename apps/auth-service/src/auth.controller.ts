@@ -45,29 +45,49 @@ export class AuthController {
     return this.authService.logout(body);
   }
 
-  @Post('forgot-password')
-  @ApiOperation({ summary: 'Forgot password' })
-  forgotPassword(@Body() body: any) {
-    return this.authService.forgotPassword(body);
-  }
-
-  @Post('reset-password')
-  @ApiOperation({ summary: 'Reset password' })
-  resetPassword(@Body() body: any) {
-    return this.authService.resetPassword(body);
-  }
-
   @Get('devices')
   @ApiOperation({ summary: 'List devices' })
   @ApiBearerAuth()
-  getDevices(@Body() body: any) {
-    return this.authService.getDevices(body.userId || '');
+  getDevices(@Body('_userId') userId: string) {
+    return this.authService.getDevices(userId);
   }
 
   @Delete('devices/:deviceId')
   @ApiOperation({ summary: 'Revoke device' })
   @ApiBearerAuth()
-  revokeDevice(@Param('deviceId') deviceId: string, @Body() body: any) {
-    return this.authService.revokeDevice(body.userId || '', deviceId);
+  revokeDevice(@Param('deviceId') deviceId: string, @Body('_userId') userId: string) {
+    return this.authService.revokeDevice(userId, deviceId);
+  }
+
+  @Post('biometric/register')
+  @ApiOperation({ summary: 'Register biometric authentication' })
+  @ApiBearerAuth()
+  registerBiometric(@Body('_userId') userId: string, @Body() body: any) {
+    return this.authService.registerBiometric(userId, body);
+  }
+
+  @Post('biometric/login')
+  @ApiOperation({ summary: 'Biometric login' })
+  biometricLogin(@Body() body: any) {
+    return this.authService.biometricLogin(body);
+  }
+
+  @Delete('biometric/:biometricId')
+  @ApiOperation({ summary: 'Remove biometric authentication' })
+  @ApiBearerAuth()
+  removeBiometric(@Param('biometricId') biometricId: string, @Body('_userId') userId: string) {
+    return this.authService.removeBiometric(userId, biometricId);
+  }
+
+  @Post('password/forgot')
+  @ApiOperation({ summary: 'Request password reset' })
+  forgotPassword(@Body() body: any) {
+    return this.authService.forgotPassword(body);
+  }
+
+  @Post('password/reset')
+  @ApiOperation({ summary: 'Reset password' })
+  resetPassword(@Body() body: any) {
+    return this.authService.resetPassword(body);
   }
 }

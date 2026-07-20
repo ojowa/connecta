@@ -19,4 +19,7 @@ export class NotificationsController {
 
   @Put('read') @ApiOperation({ summary: 'Mark as read' })
   markRead(@Body('_userId') userId: string, @Body() body: any) { return this.notificationsService.markAsRead(userId, body); }
+
+  @Post('broadcast') @ApiOperation({ summary: 'Send broadcast notification (admin)' })
+  broadcast(@Body() body: any) { return this.notificationsService.broadcast(body); }
 }

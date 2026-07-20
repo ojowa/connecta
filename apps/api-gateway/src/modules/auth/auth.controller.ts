@@ -1,4 +1,4 @@
-import { Controller, Post, Body, Req, Res } from '@nestjs/common';
+import { Controller, Get, Post, Delete, Body, Param, Req, Res } from '@nestjs/common';
 import { HttpService } from '@nestjs/axios';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { Request, Response } from 'express';
@@ -30,7 +30,7 @@ export class AuthController {
   }
 
   @Post('otp/send')
-  @ApiOperation({ summary: 'Send OTP to phone' })
+  @ApiOperation({ summary: 'Send OTP' })
   async sendOtp(@Body() body: any, @Res() res: Response) {
     const result = await firstValueFrom(
       this.http.post(`${AUTH_SERVICE}/auth/otp/send`, body),
@@ -68,20 +68,77 @@ export class AuthController {
     return res.status(result.status).json(result.data);
   }
 
-  @Post('forgot-password')
-  @ApiOperation({ summary: 'Request password reset' })
-  async forgotPassword(@Body() body: any, @Res() res: Response) {
+  @Get('devices')
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'List registered devices' })
+  async listDevices(@Req() req: Request, @Res() res: Response) {
     const result = await firstValueFrom(
-      this.http.post(`${AUTH_SERVICE}/auth/forgot-password`, body),
+      this.http.get(`${AUTH_SERVICE}/auth/devices`, {
+        headers: { authorization: req.headers.authorization },
+      }),
     );
     return res.status(result.status).json(result.data);
   }
 
-  @Post('reset-password')
+  @Delete('devices/:deviceId')
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Revoke a device session' })
+  async revokeDevice(@Param('deviceId') deviceId: string, @Req() req: Request, @Res() res: Response) {
+    const result = await firstValueFrom(
+      this.http.delete(`${AUTH_SERVICE}/auth/devices/${deviceId}`, {
+        headers: { authorization: req.headers.authorization },
+      }),
+    );
+    return res.status(result.status).json(result.data);
+  }
+
+  @Post('biometric/register')
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Register biometric authentication' })
+  async registerBiometric(@Body() body: any, @Req() req: Request, @Res() res: Response) {
+    const result = await firstValueFrom(
+      this.http.post(`${AUTH_SERVICE}/auth/biometric/register`, body, {
+        headers: { authorization: req.headers.authorization },
+      }),
+    );
+    return res.status(result.status).json(result.data);
+  }
+
+  @Post('biometric/login')
+  @ApiOperation({ summary: 'Login with biometric signature' })
+  async biometricLogin(@Body() body: any, @Res() res: Response) {
+    const result = await firstValueFrom(
+      this.http.post(`${AUTH_SERVICE}/auth/biometric/login`, body),
+    );
+    return res.status(result.status).json(result.data);
+  }
+
+  @Delete('biometric/:biometricId')
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Remove biometric authentication' })
+  async removeBiometric(@Param('biometricId') biometricId: string, @Req() req: Request, @Res() res: Response) {
+    const result = await firstValueFrom(
+      this.http.delete(`${AUTH_SERVICE}/auth/biometric/${biometricId}`, {
+        headers: { authorization: req.headers.authorization },
+      }),
+    );
+    return res.status(result.status).json(result.data);
+  }
+
+  @Post('password/forgot')
+  @ApiOperation({ summary: 'Request password reset' })
+  async forgotPassword(@Body() body: any, @Res() res: Response) {
+    const result = await firstValueFrom(
+      this.http.post(`${AUTH_SERVICE}/auth/password/forgot`, body),
+    );
+    return res.status(result.status).json(result.data);
+  }
+
+  @Post('password/reset')
   @ApiOperation({ summary: 'Reset password with token' })
   async resetPassword(@Body() body: any, @Res() res: Response) {
     const result = await firstValueFrom(
-      this.http.post(`${AUTH_SERVICE}/auth/reset-password`, body),
+      this.http.post(`${AUTH_SERVICE}/auth/password/reset`, body),
     );
     return res.status(result.status).json(result.data);
   }
