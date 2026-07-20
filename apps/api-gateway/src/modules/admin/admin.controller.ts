@@ -1,88 +1,148 @@
-import { Controller, Get, Put, Post, Body, Param, Query } from '@nestjs/common';
+import { Controller, Get, Put, Post, Body, Param, Query, Req, Res } from '@nestjs/common';
+import { HttpService } from '@nestjs/axios';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
+import { Request, Response } from 'express';
+import { firstValueFrom } from 'rxjs';
+
+const ADMIN_SERVICE = process.env.ADMIN_SERVICE_URL || 'http://localhost:3011';
 
 @ApiTags('Admin')
 @Controller('admin')
 export class AdminController {
-  @Post('login')
-  @ApiOperation({ summary: 'Admin login' })
-  login(@Body() body: any) {
-    return { message: 'Admin login endpoint — to be implemented' };
+  constructor(private readonly http: HttpService) {}
+
+  private authHeaders(req: Request) {
+    return { authorization: req.headers.authorization };
   }
 
-  @Post('2fa/verify')
-  @ApiOperation({ summary: 'Verify 2FA code' })
-  verify2fa(@Body() body: any) {
-    return { message: 'Verify 2FA endpoint — to be implemented' };
+  @Post('login')
+  @ApiOperation({ summary: 'Admin login' })
+  async login(@Body() body: any, @Res() res: Response) {
+    const result = await firstValueFrom(
+      this.http.post(`${ADMIN_SERVICE}/admin/login`, body),
+    );
+    return res.status(result.status).json(result.data);
   }
 
   @Get('dashboard')
   @ApiOperation({ summary: 'Get dashboard metrics' })
   @ApiBearerAuth()
-  getDashboard() {
-    return { message: 'Dashboard endpoint — to be implemented' };
+  async getDashboard(@Query('period') period: string, @Req() req: Request, @Res() res: Response) {
+    const result = await firstValueFrom(
+      this.http.get(`${ADMIN_SERVICE}/admin/dashboard`, {
+        params: { period },
+        headers: this.authHeaders(req),
+      }),
+    );
+    return res.status(result.status).json(result.data);
   }
 
   @Get('users')
   @ApiOperation({ summary: 'Get all users (admin)' })
   @ApiBearerAuth()
-  getUsers(@Query() query: any) {
-    return { message: 'Get users endpoint — to be implemented' };
+  async getUsers(@Query() query: any, @Req() req: Request, @Res() res: Response) {
+    const result = await firstValueFrom(
+      this.http.get(`${ADMIN_SERVICE}/admin/users`, {
+        params: query,
+        headers: this.authHeaders(req),
+      }),
+    );
+    return res.status(result.status).json(result.data);
   }
 
   @Get('users/:id')
   @ApiOperation({ summary: 'Get user details (admin)' })
   @ApiBearerAuth()
-  getUser(@Param('id') id: string) {
-    return { message: `Get user ${id} — to be implemented` };
+  async getUser(@Param('id') id: string, @Req() req: Request, @Res() res: Response) {
+    const result = await firstValueFrom(
+      this.http.get(`${ADMIN_SERVICE}/admin/users/${id}`, { headers: this.authHeaders(req) }),
+    );
+    return res.status(result.status).json(result.data);
   }
 
-  @Put('users/:id/status')
-  @ApiOperation({ summary: 'Update user status (suspend/ban)' })
+  @Post('users/:id/suspend')
+  @ApiOperation({ summary: 'Suspend user' })
   @ApiBearerAuth()
-  updateUserStatus(@Param('id') id: string, @Body() body: any) {
-    return { message: `Update user ${id} status — to be implemented` };
+  async suspendUser(@Param('id') id: string, @Body() body: any, @Req() req: Request, @Res() res: Response) {
+    const result = await firstValueFrom(
+      this.http.post(`${ADMIN_SERVICE}/admin/users/${id}/suspend`, body, { headers: this.authHeaders(req) }),
+    );
+    return res.status(result.status).json(result.data);
+  }
+
+  @Post('users/:id/ban')
+  @ApiOperation({ summary: 'Ban user' })
+  @ApiBearerAuth()
+  async banUser(@Param('id') id: string, @Body() body: any, @Req() req: Request, @Res() res: Response) {
+    const result = await firstValueFrom(
+      this.http.post(`${ADMIN_SERVICE}/admin/users/${id}/ban`, body, { headers: this.authHeaders(req) }),
+    );
+    return res.status(result.status).json(result.data);
+  }
+
+  @Post('users/:id/unsuspend')
+  @ApiOperation({ summary: 'Unsuspend user' })
+  @ApiBearerAuth()
+  async unsuspendUser(@Param('id') id: string, @Req() req: Request, @Res() res: Response) {
+    const result = await firstValueFrom(
+      this.http.post(`${ADMIN_SERVICE}/admin/users/${id}/unsuspend`, {}, { headers: this.authHeaders(req) }),
+    );
+    return res.status(result.status).json(result.data);
   }
 
   @Get('reports')
   @ApiOperation({ summary: 'Get reports queue' })
   @ApiBearerAuth()
-  getReports(@Query() query: any) {
-    return { message: 'Get reports endpoint — to be implemented' };
+  async getReports(@Query() query: any, @Req() req: Request, @Res() res: Response) {
+    const result = await firstValueFrom(
+      this.http.get(`${ADMIN_SERVICE}/admin/reports`, {
+        params: query,
+        headers: this.authHeaders(req),
+      }),
+    );
+    return res.status(result.status).json(result.data);
   }
 
-  @Put('reports/:id/action')
-  @ApiOperation({ summary: 'Take action on a report' })
+  @Post('reports/:id/resolve')
+  @ApiOperation({ summary: 'Resolve a report' })
   @ApiBearerAuth()
-  takeReportAction(@Param('id') id: string, @Body() body: any) {
-    return { message: `Take action on report ${id} — to be implemented` };
-  }
-
-  @Get('analytics/overview')
-  @ApiOperation({ summary: 'Get analytics overview' })
-  @ApiBearerAuth()
-  getAnalyticsOverview() {
-    return { message: 'Analytics overview endpoint — to be implemented' };
+  async resolveReport(@Param('id') id: string, @Body() body: any, @Req() req: Request, @Res() res: Response) {
+    const result = await firstValueFrom(
+      this.http.post(`${ADMIN_SERVICE}/admin/reports/${id}/resolve`, body, { headers: this.authHeaders(req) }),
+    );
+    return res.status(result.status).json(result.data);
   }
 
   @Get('audit-log')
   @ApiOperation({ summary: 'Get admin audit log' })
   @ApiBearerAuth()
-  getAuditLog(@Query() query: any) {
-    return { message: 'Audit log endpoint — to be implemented' };
+  async getAuditLog(@Query() query: any, @Req() req: Request, @Res() res: Response) {
+    const result = await firstValueFrom(
+      this.http.get(`${ADMIN_SERVICE}/admin/audit-log`, {
+        params: query,
+        headers: this.authHeaders(req),
+      }),
+    );
+    return res.status(result.status).json(result.data);
+  }
+
+  @Get('settings')
+  @ApiOperation({ summary: 'Get system settings' })
+  @ApiBearerAuth()
+  async getSettings(@Req() req: Request, @Res() res: Response) {
+    const result = await firstValueFrom(
+      this.http.get(`${ADMIN_SERVICE}/admin/settings`, { headers: this.authHeaders(req) }),
+    );
+    return res.status(result.status).json(result.data);
   }
 
   @Put('settings')
   @ApiOperation({ summary: 'Update system settings' })
   @ApiBearerAuth()
-  updateSettings(@Body() body: any) {
-    return { message: 'Update settings endpoint — to be implemented' };
-  }
-
-  @Post('notifications/broadcast')
-  @ApiOperation({ summary: 'Send push notification broadcast' })
-  @ApiBearerAuth()
-  broadcastNotification(@Body() body: any) {
-    return { message: 'Broadcast notification endpoint — to be implemented' };
+  async updateSettings(@Body() body: any, @Req() req: Request, @Res() res: Response) {
+    const result = await firstValueFrom(
+      this.http.put(`${ADMIN_SERVICE}/admin/settings`, body, { headers: this.authHeaders(req) }),
+    );
+    return res.status(result.status).json(result.data);
   }
 }

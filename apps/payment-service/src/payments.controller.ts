@@ -1,45 +1,32 @@
-import { Controller, Get, Post, Body } from '@nestjs/common';
-import { ApiTags, ApiOperation } from '@nestjs/swagger';
+import { Controller, Get, Post, Put, Body, Param, Query } from '@nestjs/common';
+import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { PaymentsService } from './payments.service';
 
-@ApiTags('Payments')
-@Controller('payments')
+@ApiTags('Payments') @Controller('payments')
 export class PaymentsController {
   constructor(private readonly paymentsService: PaymentsService) {}
 
-  @Get('plans')
-  @ApiOperation({ summary: 'Get plans' })
-  getPlans() {
-    return this.paymentsService.getPlans();
-  }
+  @Get('plans') @ApiOperation({ summary: 'Get subscription plans' })
+  getPlans(@Query('country') country?: string, @Query('currency') currency?: string) { return this.paymentsService.getPlans(country, currency); }
 
-  @Post('subscribe')
-  @ApiOperation({ summary: 'Subscribe' })
-  subscribe(@Body() body: any) {
-    return this.paymentsService.subscribe(body);
-  }
+  @Post('subscribe') @ApiOperation({ summary: 'Subscribe to plan' }) @ApiBearerAuth()
+  subscribe(@Body('_userId') userId: string, @Body() body: any) { return this.paymentsService.subscribe(userId, body); }
 
-  @Post('cancel')
-  @ApiOperation({ summary: 'Cancel subscription' })
-  cancel(@Body() body: any) {
-    return this.paymentsService.cancel(body);
-  }
+  @Post('subscribe/cancel') @ApiOperation({ summary: 'Cancel subscription' }) @ApiBearerAuth()
+  cancel(@Body('_userId') userId: string, @Body() body: any) { return this.paymentsService.cancelSubscription(userId, body); }
 
-  @Post('initialize')
-  @ApiOperation({ summary: 'Initialize payment' })
-  initialize(@Body() body: any) {
-    return this.paymentsService.initialize(body);
-  }
+  @Put('subscribe/upgrade') @ApiOperation({ summary: 'Upgrade plan' }) @ApiBearerAuth()
+  upgrade(@Body('_userId') userId: string, @Body() body: any) { return this.paymentsService.upgradePlan(userId, body); }
 
-  @Post('verify')
-  @ApiOperation({ summary: 'Verify payment' })
-  verify(@Body() body: any) {
-    return this.paymentsService.verify(body);
-  }
+  @Post('initialize') @ApiOperation({ summary: 'Initialize payment' }) @ApiBearerAuth()
+  initialize(@Body('_userId') userId: string, @Body() body: any) { return this.paymentsService.initializePayment(userId, body); }
 
-  @Get('history')
-  @ApiOperation({ summary: 'Get payment history' })
-  getHistory() {
-    return this.paymentsService.getHistory();
-  }
+  @Post('verify') @ApiOperation({ summary: 'Verify payment' }) @ApiBearerAuth()
+  verify(@Body('_userId') userId: string, @Body('reference') reference: string) { return this.paymentsService.verifyPayment(userId, reference); }
+
+  @Get('history') @ApiOperation({ summary: 'Payment history' }) @ApiBearerAuth()
+  history(@Body('_userId') userId: string, @Query('page') page?: number, @Query('limit') limit?: number) { return this.paymentsService.getPaymentHistory(userId, page, limit); }
+
+  @Post('refund/:transactionId') @ApiOperation({ summary: 'Request refund' }) @ApiBearerAuth()
+  refund(@Body('_userId') userId: string, @Param('transactionId') txnId: string, @Body() body: any) { return this.paymentsService.requestRefund(userId, txnId, body); }
 }

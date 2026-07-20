@@ -1,42 +1,88 @@
-import { Controller, Post, Body } from '@nestjs/common';
-import { ApiTags, ApiOperation } from '@nestjs/swagger';
+import { Controller, Post, Body, Req, Res } from '@nestjs/common';
+import { HttpService } from '@nestjs/axios';
+import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
+import { Request, Response } from 'express';
+import { firstValueFrom } from 'rxjs';
+
+const AUTH_SERVICE = process.env.AUTH_SERVICE_URL || 'http://localhost:3001';
 
 @ApiTags('Auth')
 @Controller('auth')
 export class AuthController {
+  constructor(private readonly http: HttpService) {}
+
   @Post('register')
   @ApiOperation({ summary: 'Register a new user' })
-  register(@Body() body: any) {
-    return { message: 'Register endpoint — to be implemented' };
+  async register(@Body() body: any, @Res() res: Response) {
+    const result = await firstValueFrom(
+      this.http.post(`${AUTH_SERVICE}/auth/register`, body),
+    );
+    return res.status(result.status).json(result.data);
   }
 
   @Post('login')
   @ApiOperation({ summary: 'Login with credentials' })
-  login(@Body() body: any) {
-    return { message: 'Login endpoint — to be implemented' };
+  async login(@Body() body: any, @Res() res: Response) {
+    const result = await firstValueFrom(
+      this.http.post(`${AUTH_SERVICE}/auth/login`, body),
+    );
+    return res.status(result.status).json(result.data);
   }
 
   @Post('otp/send')
   @ApiOperation({ summary: 'Send OTP to phone' })
-  sendOtp(@Body() body: any) {
-    return { message: 'Send OTP endpoint — to be implemented' };
+  async sendOtp(@Body() body: any, @Res() res: Response) {
+    const result = await firstValueFrom(
+      this.http.post(`${AUTH_SERVICE}/auth/otp/send`, body),
+    );
+    return res.status(result.status).json(result.data);
   }
 
   @Post('otp/verify')
   @ApiOperation({ summary: 'Verify OTP code' })
-  verifyOtp(@Body() body: any) {
-    return { message: 'Verify OTP endpoint — to be implemented' };
+  async verifyOtp(@Body() body: any, @Res() res: Response) {
+    const result = await firstValueFrom(
+      this.http.post(`${AUTH_SERVICE}/auth/otp/verify`, body),
+    );
+    return res.status(result.status).json(result.data);
   }
 
   @Post('refresh')
   @ApiOperation({ summary: 'Refresh access token' })
-  refresh(@Body() body: any) {
-    return { message: 'Refresh token endpoint — to be implemented' };
+  async refresh(@Body() body: any, @Res() res: Response) {
+    const result = await firstValueFrom(
+      this.http.post(`${AUTH_SERVICE}/auth/refresh`, body),
+    );
+    return res.status(result.status).json(result.data);
   }
 
   @Post('logout')
+  @ApiBearerAuth()
   @ApiOperation({ summary: 'Logout and revoke tokens' })
-  logout(@Body() body: any) {
-    return { message: 'Logout endpoint — to be implemented' };
+  async logout(@Body() body: any, @Req() req: Request, @Res() res: Response) {
+    const result = await firstValueFrom(
+      this.http.post(`${AUTH_SERVICE}/auth/logout`, body, {
+        headers: { authorization: req.headers.authorization },
+      }),
+    );
+    return res.status(result.status).json(result.data);
+  }
+
+  @Post('forgot-password')
+  @ApiOperation({ summary: 'Request password reset' })
+  async forgotPassword(@Body() body: any, @Res() res: Response) {
+    const result = await firstValueFrom(
+      this.http.post(`${AUTH_SERVICE}/auth/forgot-password`, body),
+    );
+    return res.status(result.status).json(result.data);
+  }
+
+  @Post('reset-password')
+  @ApiOperation({ summary: 'Reset password with token' })
+  async resetPassword(@Body() body: any, @Res() res: Response) {
+    const result = await firstValueFrom(
+      this.http.post(`${AUTH_SERVICE}/auth/reset-password`, body),
+    );
+    return res.status(result.status).json(result.data);
   }
 }

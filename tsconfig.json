@@ -19,10 +19,15 @@
     "noFallthroughCasesInSwitch": true,
     "paths": {
       "@app/common": ["libs/common/src"],
+      "@app/common/*": ["libs/common/src/*"],
       "@app/auth": ["libs/auth/src"],
+      "@app/auth/*": ["libs/auth/src/*"],
       "@app/database": ["libs/database/src"],
+      "@app/database/*": ["libs/database/src/*"],
       "@app/config": ["libs/config/src"],
-      "@app/logger": ["libs/logger/src"]
+      "@app/config/*": ["libs/config/src/*"],
+      "@app/logger": ["libs/logger/src"],
+      "@app/logger/*": ["libs/logger/src/*"]
     }
   }
 }

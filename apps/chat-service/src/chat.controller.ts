@@ -1,45 +1,43 @@
-import { Controller, Get, Post, Delete, Body, Param, Query } from '@nestjs/common';
-import { ApiTags, ApiOperation } from '@nestjs/swagger';
+import { Controller, Get, Post, Put, Delete, Body, Param, Query } from '@nestjs/common';
+import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { ChatService } from './chat.service';
 
-@ApiTags('Chat')
-@Controller('chat')
+@ApiTags('Chat') @ApiBearerAuth() @Controller('chat')
 export class ChatController {
   constructor(private readonly chatService: ChatService) {}
 
-  @Get('conversations')
-  @ApiOperation({ summary: 'Get conversations' })
-  getConversations(@Query() query: any) {
-    return this.chatService.getConversations(query);
+  @Get('conversations') @ApiOperation({ summary: 'List conversations' })
+  getConversations(@Body('_userId') userId: string, @Query('page') page?: number, @Query('limit') limit?: number, @Query('filter') filter?: string) {
+    return this.chatService.getConversations(userId, page, limit, filter);
   }
 
-  @Get('conversations/:id/messages')
-  @ApiOperation({ summary: 'Get messages' })
-  getMessages(@Param('id') id: string, @Query() query: any) {
-    return this.chatService.getMessages(id, query);
+  @Get('conversations/:id/messages') @ApiOperation({ summary: 'Get messages' })
+  getMessages(@Body('_userId') userId: string, @Param('id') id: string, @Query('limit') limit?: number, @Query('before') before?: string, @Query('after') after?: string) {
+    return this.chatService.getMessages(userId, id, limit, before, after);
   }
 
-  @Post('conversations/:id/messages')
-  @ApiOperation({ summary: 'Send message' })
-  sendMessage(@Param('id') id: string, @Body() body: any) {
-    return this.chatService.sendMessage(id, body);
+  @Post('conversations/:id/messages') @ApiOperation({ summary: 'Send message' })
+  sendMessage(@Body('_userId') userId: string, @Param('id') id: string, @Body() body: any) {
+    return this.chatService.sendMessage(userId, id, body);
   }
 
-  @Delete('messages/:id')
-  @ApiOperation({ summary: 'Delete message' })
-  deleteMessage(@Param('id') id: string) {
-    return this.chatService.deleteMessage(id);
+  @Post('conversations/:id/messages/:messageId/reactions') @ApiOperation({ summary: 'React to message' })
+  react(@Body('_userId') userId: string, @Param('messageId') messageId: string, @Body('emoji') emoji: string, @Body('action') action: 'add' | 'remove') {
+    return this.chatService.reactToMessage(userId, messageId, emoji, action);
   }
 
-  @Post('messages/:id/react')
-  @ApiOperation({ summary: 'React to message' })
-  reactToMessage(@Param('id') id: string, @Body() body: any) {
-    return this.chatService.reactToMessage(id, body);
+  @Put('conversations/:id/read') @ApiOperation({ summary: 'Mark as read' })
+  markRead(@Body('_userId') userId: string, @Param('id') id: string, @Body('lastReadMessageId') lastReadMessageId: string) {
+    return this.chatService.markAsRead(userId, id, lastReadMessageId);
   }
 
-  @Post('messages/:id/read')
-  @ApiOperation({ summary: 'Mark as read' })
-  markRead(@Param('id') id: string) {
-    return this.chatService.markRead(id);
+  @Get('messages/search') @ApiOperation({ summary: 'Search messages' })
+  search(@Body('_userId') userId: string, @Query('q') q: string, @Query('conversation_id') convId?: string, @Query('page') page?: number, @Query('limit') limit?: number) {
+    return this.chatService.searchMessages(userId, q, convId, page, limit);
+  }
+
+  @Delete('conversations/:id/messages/:messageId') @ApiOperation({ summary: 'Delete message' })
+  deleteMessage(@Body('_userId') userId: string, @Param('messageId') messageId: string) {
+    return this.chatService.deleteMessage(userId, messageId);
   }
 }

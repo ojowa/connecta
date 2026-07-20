@@ -1,33 +1,22 @@
 import { Controller, Get, Put, Post, Body, Query } from '@nestjs/common';
-import { ApiTags, ApiOperation } from '@nestjs/swagger';
+import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { NotificationsService } from './notifications.service';
 
-@ApiTags('Notifications')
-@Controller('notifications')
+@ApiTags('Notifications') @ApiBearerAuth() @Controller('notifications')
 export class NotificationsController {
   constructor(private readonly notificationsService: NotificationsService) {}
 
-  @Get()
-  @ApiOperation({ summary: 'Get notifications' })
-  getNotifications(@Query() query: any) {
-    return this.notificationsService.getNotifications(query);
+  @Get() @ApiOperation({ summary: 'List notifications' })
+  list(@Body('_userId') userId: string, @Query('page') page?: number, @Query('limit') limit?: number, @Query('filter') filter?: string) {
+    return this.notificationsService.getNotifications(userId, page, limit, filter);
   }
 
-  @Put('preferences')
-  @ApiOperation({ summary: 'Update preferences' })
-  updatePreferences(@Body() body: any) {
-    return this.notificationsService.updatePreferences(body);
-  }
+  @Get('preferences') @ApiOperation({ summary: 'Get preferences' })
+  getPrefs(@Body('_userId') userId: string) { return this.notificationsService.getPreferences(userId); }
 
-  @Post('mark-read')
-  @ApiOperation({ summary: 'Mark as read' })
-  markRead(@Body() body: any) {
-    return this.notificationsService.markRead(body);
-  }
+  @Put('preferences') @ApiOperation({ summary: 'Update preferences' })
+  updatePrefs(@Body('_userId') userId: string, @Body() body: any) { return this.notificationsService.updatePreferences(userId, body); }
 
-  @Post('send')
-  @ApiOperation({ summary: 'Send notification' })
-  send(@Body() body: any) {
-    return this.notificationsService.send(body);
-  }
+  @Put('read') @ApiOperation({ summary: 'Mark as read' })
+  markRead(@Body('_userId') userId: string, @Body() body: any) { return this.notificationsService.markAsRead(userId, body); }
 }

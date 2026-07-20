@@ -1,3 +1,4 @@
-export * from './auth.module';
-export * from './auth.service';
-export * from './jwt.strategy';
+export { JwtStrategy } from './jwt.strategy';
+export { JwtAuthGuard } from './jwt-auth.guard';
+export { RolesGuard } from './roles.guard';
+export { AuthLibModule } from './auth.module';
