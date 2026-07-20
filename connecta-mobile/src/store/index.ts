@@ -58,11 +58,27 @@ export const useAppStore = create<AppState>()(
           const unreadCounts = { ...state.unreadCounts, [conversationId]: current + 1 };
           return { unreadCounts, totalUnread: Object.values(unreadCounts).reduce((a, b) => a + b, 0) };
         }),
-        addMessage: () => {},
-        updateMessage: () => {},
-        removeMessage: () => {},
-        markMessagesRead: () => {},
-        addNewMatch: () => {},
+        addMessage: (message) => set((state) => {
+          if (message.senderId !== state.user?.id && message.conversationId !== state.activeChatId) {
+            const current = state.unreadCounts[message.conversationId] || 0;
+            const unreadCounts = { ...state.unreadCounts, [message.conversationId]: current + 1 };
+            return { unreadCounts, totalUnread: Object.values(unreadCounts).reduce((a, b) => a + b, 0) };
+          }
+          return {};
+        }),
+        updateMessage: (id, data) => set(() => {
+          return {};
+        }),
+        removeMessage: (id) => set(() => {
+          return {};
+        }),
+        markMessagesRead: (conversationId) => set((state) => {
+          const unreadCounts = { ...state.unreadCounts, [conversationId]: 0 };
+          return { unreadCounts, totalUnread: Object.values(unreadCounts).reduce((a, b) => a + b, 0) };
+        }),
+        addNewMatch: (match) => set(() => {
+          return {};
+        }),
         logout: () => set({
           user: null, token: null, refreshToken: null, isAuthenticated: false,
         }),

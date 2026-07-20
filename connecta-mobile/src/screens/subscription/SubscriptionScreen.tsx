@@ -6,7 +6,11 @@ import {
   ScrollView,
   TouchableOpacity,
   SafeAreaView,
+  Alert,
 } from 'react-native';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { apiClient } from '../../services/api/apiClient';
+import { useNavigation } from '@react-navigation/native';
 import { colors } from '../../theme/colors';
 import { typography } from '../../theme/typography';
 import { spacing } from '../../theme/spacing';
@@ -28,76 +32,18 @@ interface Plan {
   isPopular?: boolean;
 }
 
-const PLANS: Plan[] = [
-  {
-    id: 'free',
-    name: 'Free',
-    monthlyPrice: 0,
-    yearlyPrice: 0,
-    tagline: 'Basic features',
-    features: [
-      { label: 'Limited swipes' },
-      { label: 'Basic filters' },
-      { label: 'Standard matching' },
-    ],
-  },
-  {
-    id: 'premium',
-    name: 'Premium',
-    monthlyPrice: 9.99,
-    yearlyPrice: 7.99,
-    tagline: 'For serious daters',
-    features: [
-      { label: 'Unlimited swipes' },
-      { label: 'See who liked you' },
-      { label: 'Advanced filters' },
-      { label: 'Priority support' },
-    ],
-  },
-  {
-    id: 'gold',
-    name: 'Gold',
-    monthlyPrice: 19.99,
-    yearlyPrice: 15.99,
-    tagline: 'Premium experience',
-    isPopular: true,
-    features: [
-      { label: 'Everything in Premium' },
-      { label: '5 Super Likes/week' },
-      { label: '1 Boost/month' },
-      { label: 'Profile boost' },
-      { label: 'No ads' },
-    ],
-  },
-  {
-    id: 'platinum',
-    name: 'Platinum',
-    monthlyPrice: 29.99,
-    yearlyPrice: 24.99,
-    tagline: 'Ultimate package',
-    features: [
-      { label: 'Everything in Gold' },
-      { label: 'Unlimited Super Likes' },
-      { label: 'Unlimited Boosts' },
-      { label: 'Priority in discovery' },
-      { label: 'Read receipts' },
-      { label: 'Exclusive badges' },
-    ],
-  },
-];
-
 const Checkmark: React.FC = () => (
   <Text style={styles.checkmark}>✓</Text>
 );
 
 const PlanCard: React.FC<{
-  plan: Plan;
+  plan: any;
   isYearly: boolean;
   isSelected: boolean;
   onSelect: () => void;
 }> = ({ plan, isYearly, isSelected, onSelect }) => {
-  const price = isYearly ? plan.yearlyPrice : plan.monthlyPrice;
-  const isFree = plan.id === 'free';
+  const price = plan.price;
+  const isFree = plan.planId === 'free';
 
   return (
     <TouchableOpacity
@@ -127,10 +73,10 @@ const PlanCard: React.FC<{
       <Text style={styles.planTagline}>{plan.tagline}</Text>
 
       <View style={styles.featureList}>
-        {plan.features.map((feature, index) => (
+        {(plan.features || []).map((feature: any, index: number) => (
           <View key={index} style={styles.featureRow}>
             <Checkmark />
-            <Text style={styles.featureLabel}>{feature.label}</Text>
+            <Text style={styles.featureLabel}>{typeof feature === 'string' ? feature : feature.label}</Text>
           </View>
         ))}
       </View>
@@ -157,8 +103,37 @@ const PlanCard: React.FC<{
 };
 
 const SubscriptionScreen: React.FC = () => {
-  const [selectedPlan, setSelectedPlan] = useState<PlanId>('free');
+  const [selectedPlan, setSelectedPlan] = useState<string | null>(null);
   const [isYearly, setIsYearly] = useState(false);
+  const navigation = useNavigation();
+  const queryClient = useQueryClient();
+
+  const { data: plansData, isLoading } = useQuery({
+    queryKey: ['plans'],
+    queryFn: () => apiClient.get('/payments/plans').then((r) => r.data.plans),
+  });
+
+  const subscribeMutation = useMutation({
+    mutationFn: (planId: string) => apiClient.post('/payments/subscribe', {
+      planId,
+      billingPeriod: isYearly ? 'yearly' : 'monthly',
+    }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['plans'] });
+      queryClient.invalidateQueries({ queryKey: ['wallet'] });
+      Alert.alert('Success', 'You are now subscribed!', [{ text: 'OK', onPress: () => navigation.goBack() }]);
+    },
+    onError: () => {
+      Alert.alert('Error', 'Failed to subscribe. Please try again.');
+    },
+  });
+
+  const plans = plansData || [];
+
+  const handleSubscribe = () => {
+    if (!selectedPlan) { Alert.alert('Select a plan', 'Please choose a plan first.'); return; }
+    subscribeMutation.mutate(selectedPlan);
+  };
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -205,15 +180,26 @@ const SubscriptionScreen: React.FC = () => {
           </TouchableOpacity>
         </View>
 
-        {PLANS.map((plan) => (
+        {plans.map((plan: any) => (
           <PlanCard
-            key={plan.id}
+            key={plan.planId}
             plan={plan}
             isYearly={isYearly}
-            isSelected={selectedPlan === plan.id}
-            onSelect={() => setSelectedPlan(plan.id)}
+            isSelected={selectedPlan === plan.planId}
+            onSelect={() => setSelectedPlan(plan.planId)}
           />
         ))}
+
+        <TouchableOpacity
+          style={[styles.subscribeNowButton, !selectedPlan && styles.subscribeNowButtonDisabled]}
+          onPress={handleSubscribe}
+          disabled={!selectedPlan || subscribeMutation.isPending}
+          activeOpacity={0.7}
+        >
+          <Text style={styles.subscribeNowButtonText}>
+            {subscribeMutation.isPending ? 'Subscribing...' : 'Subscribe Now'}
+          </Text>
+        </TouchableOpacity>
 
         <View style={styles.bottomSpacer} />
       </ScrollView>
@@ -391,6 +377,21 @@ const styles = StyleSheet.create({
   },
   subscribeButtonTextOutline: {
     color: colors.primary,
+  },
+  subscribeNowButton: {
+    marginHorizontal: spacing.lg,
+    marginTop: spacing.md,
+    paddingVertical: spacing.md,
+    borderRadius: borderRadius.button,
+    backgroundColor: colors.primary,
+    alignItems: 'center',
+  },
+  subscribeNowButtonDisabled: {
+    backgroundColor: colors.gray300,
+  },
+  subscribeNowButtonText: {
+    ...typography.button,
+    color: colors.white,
   },
   bottomSpacer: {
     height: spacing.xxl,

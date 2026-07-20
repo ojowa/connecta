@@ -24,13 +24,15 @@ export class AppConfigService {
       port: this.get('DB_PORT', 5432),
       username: this.getRequired('DB_USERNAME'),
       password: this.getRequired('DB_PASSWORD'),
-      database: this.getRequired('DB_DATABASE'),
+      database: this.getRequired('DB_NAME'),
       synchronize: this.get('DB_SYNCHRONIZE', false),
       ssl: this.get('DB_SSL', false),
     };
   }
 
   get redis() {
+    const url = this.get('REDIS_URL');
+    if (url) return { url };
     return {
       host: this.get('REDIS_HOST', 'localhost'),
       port: this.get('REDIS_PORT', 6379),
@@ -49,27 +51,27 @@ export class AppConfigService {
 
   get smtp() {
     return {
-      host: this.getRequired('SMTP_HOST'),
+      host: this.get('SMTP_HOST', 'smtp.gmail.com'),
       port: this.get('SMTP_PORT', 587),
-      user: this.getRequired('SMTP_USER'),
-      pass: this.getRequired('SMTP_PASS'),
+      user: this.get('SMTP_USER', ''),
+      pass: this.get('SMTP_PASS', ''),
       from: this.get('SMTP_FROM', 'Connecta <no-reply@connecta.ng>'),
     };
   }
 
   get firebase() {
     return {
-      projectId: this.getRequired('FIREBASE_PROJECT_ID'),
-      clientEmail: this.getRequired('FIREBASE_CLIENT_EMAIL'),
-      privateKey: this.getRequired('FIREBASE_PRIVATE_KEY'),
+      projectId: this.get('FIREBASE_PROJECT_ID', ''),
+      clientEmail: this.get('FIREBASE_CLIENT_EMAIL', ''),
+      privateKey: this.get('FIREBASE_PRIVATE_KEY', ''),
     };
   }
 
   get cloudinary() {
     return {
-      cloudName: this.getRequired('CLOUDINARY_CLOUD_NAME'),
-      apiKey: this.getRequired('CLOUDINARY_API_KEY'),
-      apiSecret: this.getRequired('CLOUDINARY_API_SECRET'),
+      cloudName: this.get('CLOUDINARY_CLOUD_NAME', ''),
+      apiKey: this.get('CLOUDINARY_API_KEY', ''),
+      apiSecret: this.get('CLOUDINARY_API_SECRET', ''),
     };
   }
 

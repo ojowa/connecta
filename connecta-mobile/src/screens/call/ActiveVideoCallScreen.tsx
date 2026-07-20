@@ -1,6 +1,8 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { RTCView } from 'react-native-webrtc';
+import WebRTCManager from '../../webrtc/WebRTCManager';
 import { colors } from '../../theme/colors';
 import { typography } from '../../theme/typography';
 import { spacing } from '../../theme/spacing';
@@ -27,33 +29,55 @@ export const ActiveVideoCallScreen: React.FC<ActiveVideoCallScreenProps> = ({ na
   const [duration, setDuration] = useState(0);
   const [isMuted, setIsMuted] = useState(false);
   const [isFrontCamera, setIsFrontCamera] = useState(true);
+  const [callState, setCallState] = useState<string>('connecting');
+  const [remoteStream, setRemoteStream] = useState<any>(null);
+  const [localStream, setLocalStream] = useState<any>(null);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const webrtc = WebRTCManager.getInstance();
+
+  const callerId = route?.params?.callerId || '';
+  const callType = route?.params?.callType || 'video';
 
   useEffect(() => {
-    intervalRef.current = setInterval(() => {
-      setDuration((prev) => prev + 1);
-    }, 1000);
+    if (!callerId) return;
+    webrtc.startCall(callerId, callType as 'audio' | 'video');
+
+    const unsubscribe = webrtc.onStateChangeHandler((state) => {
+      if (state) {
+        setCallState(state.state);
+        setRemoteStream(state.remoteStream);
+        setLocalStream(state.localStream);
+        if (state.state === 'connected' && !intervalRef.current) {
+          intervalRef.current = setInterval(() => setDuration((p) => p + 1), 1000);
+        }
+      }
+    });
 
     return () => {
+      unsubscribe();
       if (intervalRef.current) clearInterval(intervalRef.current);
     };
-  }, []);
+  }, [callerId, callType]);
 
   const toggleMute = useCallback(() => {
+    webrtc.toggleMute();
     setIsMuted((prev) => !prev);
   }, []);
 
   const toggleCamera = useCallback(() => {
+    webrtc.toggleVideo();
     setIsFrontCamera((prev) => !prev);
   }, []);
 
   const handleEndCall = useCallback(() => {
+    webrtc.endCall();
     if (intervalRef.current) clearInterval(intervalRef.current);
     navigation.goBack();
   }, [navigation]);
 
   const handleSwitchToAudio = useCallback(() => {
-    if (intervalRef.current) clearInterval(intervalRef.current);
+    webrtc.toggleVideo();
+    setIsFrontCamera(true);
     navigation.replace('ActiveVoiceCall', route?.params || {});
   }, [navigation, route?.params]);
 
@@ -64,15 +88,23 @@ export const ActiveVideoCallScreen: React.FC<ActiveVideoCallScreenProps> = ({ na
       </View>
 
       <View style={styles.remoteVideoContainer}>
-        <View style={styles.remoteVideo}>
-          <Text style={styles.remoteVideoText}>Remote Video</Text>
-        </View>
+        {remoteStream ? (
+          <RTCView streamURL={remoteStream.toURL()} style={styles.remoteVideo} objectFit="cover" />
+        ) : (
+          <View style={styles.remoteVideo}>
+            <Text style={styles.remoteVideoText}>{callState === 'connecting' ? 'Connecting...' : 'No video'}</Text>
+          </View>
+        )}
       </View>
 
       <View style={styles.localVideoContainer}>
-        <View style={styles.localVideo}>
-          <Text style={styles.localVideoText}>You</Text>
-        </View>
+        {localStream ? (
+          <RTCView streamURL={localStream.toURL()} style={styles.localVideo} objectFit="cover" zOrder={1} />
+        ) : (
+          <View style={styles.localVideo}>
+            <Text style={styles.localVideoText}>You</Text>
+          </View>
+        )}
       </View>
 
       <View style={styles.bottomOverlay}>

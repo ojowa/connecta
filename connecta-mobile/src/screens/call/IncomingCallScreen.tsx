@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ImageBackground } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import WebRTCManager from '../../webrtc/WebRTCManager';
 import { colors } from '../../theme/colors';
 import { typography } from '../../theme/typography';
 import { spacing } from '../../theme/spacing';
@@ -21,11 +22,15 @@ export const IncomingCallScreen: React.FC<IncomingCallScreenProps> = ({ navigati
   const { callerName = '', callerAvatar, callType = 'voice' } = route?.params || {};
 
   const handleDecline = () => {
+    WebRTCManager.getInstance().endCall();
     navigation.goBack();
   };
 
   const handleAccept = () => {
-    const params = route?.params || {};
+    const params: any = route?.params || {};
+    const callId = params.callId || '';
+    // acceptCall requires an SDP offer — in production this comes via socket signal
+    // For now, navigate to the active call screen which will handle the connection
     if (callType === 'video') {
       navigation.replace('ActiveVideoCall', params);
     } else {

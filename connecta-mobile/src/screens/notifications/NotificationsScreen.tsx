@@ -8,7 +8,7 @@ import {
   SafeAreaView,
   RefreshControl,
 } from 'react-native';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiClient } from '../../services/api/apiClient';
 import { colors } from '../../theme/colors';
 import { typography } from '../../theme/typography';
@@ -52,9 +52,15 @@ const NotificationsScreen: React.FC = () => {
     queryFn: () => apiClient.get('/notifications').then((r) => r.data),
   });
 
+  const queryClient = useQueryClient();
+  const markAllMutation = useMutation({
+    mutationFn: () => apiClient.put('/notifications/read', { markAs: 'all' }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['notifications'] }),
+  });
+
   const markAllAsRead = useCallback(() => {
-    // TODO: Implement mark-all-as-read API call
-  }, []);
+    markAllMutation.mutate();
+  }, [markAllMutation]);
 
   const renderNotification = ({ item }: { item: Notification }) => (
     <TouchableOpacity

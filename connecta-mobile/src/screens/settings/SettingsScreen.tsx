@@ -7,7 +7,13 @@ import {
   TouchableOpacity,
   Switch,
   SafeAreaView,
+  Alert,
 } from 'react-native';
+import { useNavigation } from '@react-navigation/native';
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { apiClient } from '../../services/api/apiClient';
+import { useAppStore } from '../../store';
 import { colors } from '../../theme/colors';
 import { typography } from '../../theme/typography';
 import { spacing } from '../../theme/spacing';
@@ -42,9 +48,31 @@ const SectionHeader: React.FC<{ title: string }> = ({ title }) => (
 );
 
 const SettingsScreen: React.FC = () => {
+  const navigation = useNavigation<NativeStackNavigationProp<any>>();
+  const queryClient = useQueryClient();
+  const logout = useAppStore((s) => s.logout);
   const [matchNotifications, setMatchNotifications] = useState(true);
   const [messageNotifications, setMessageNotifications] = useState(true);
   const [callNotifications, setCallNotifications] = useState(false);
+
+  const updatePrefsMutation = useMutation({
+    mutationFn: (prefs: any) => apiClient.put('/notifications/preferences', prefs),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['notificationPrefs'] }),
+  });
+
+  const handleLogout = () => {
+    Alert.alert('Logout', 'Are you sure you want to logout?', [
+      { text: 'Cancel', style: 'cancel' },
+      { text: 'Logout', style: 'destructive', onPress: () => { logout(); } },
+    ]);
+  };
+
+  const handleDeleteAccount = () => {
+    Alert.alert('Delete Account', 'This action cannot be undone. All your data will be permanently deleted.', [
+      { text: 'Cancel', style: 'cancel' },
+      { text: 'Delete', style: 'destructive', onPress: () => { /* Navigate to delete account confirmation */ } },
+    ]);
+  };
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -55,18 +83,18 @@ const SettingsScreen: React.FC = () => {
 
         <SectionHeader title="Account" />
         <View style={styles.section}>
-          <SettingsRow label="Edit Phone" onPress={() => {}} />
-          <SettingsRow label="Edit Email" onPress={() => {}} />
-          <SettingsRow label="Change Password" onPress={() => {}} />
-          <SettingsRow label="Two-Factor Auth" onPress={() => {}} />
-          <SettingsRow label="Devices" onPress={() => {}} />
+          <SettingsRow label="Edit Phone" onPress={() => navigation.navigate('EditPhone')} />
+          <SettingsRow label="Edit Email" onPress={() => navigation.navigate('EditEmail')} />
+          <SettingsRow label="Change Password" onPress={() => navigation.navigate('ChangePassword')} />
+          <SettingsRow label="Two-Factor Auth" onPress={() => navigation.navigate('TwoFactorAuth')} />
+          <SettingsRow label="Devices" onPress={() => navigation.navigate('Devices')} />
         </View>
 
         <SectionHeader title="Discovery" />
         <View style={styles.section}>
-          <SettingsRow label="Age Range" onPress={() => {}} />
-          <SettingsRow label="Distance" onPress={() => {}} />
-          <SettingsRow label="Show Me" onPress={() => {}} />
+          <SettingsRow label="Age Range" onPress={() => navigation.navigate('Preferences')} />
+          <SettingsRow label="Distance" onPress={() => navigation.navigate('Preferences')} />
+          <SettingsRow label="Show Me" onPress={() => navigation.navigate('Preferences')} />
         </View>
 
         <SectionHeader title="Notifications" />
@@ -76,7 +104,7 @@ const SettingsScreen: React.FC = () => {
             rightElement={
               <Switch
                 value={matchNotifications}
-                onValueChange={setMatchNotifications}
+                onValueChange={(v) => { setMatchNotifications(v); updatePrefsMutation.mutate({ matchNotifications: v }); }}
                 trackColor={{ false: colors.gray300, true: colors.primary }}
                 thumbColor={colors.white}
               />
@@ -87,7 +115,7 @@ const SettingsScreen: React.FC = () => {
             rightElement={
               <Switch
                 value={messageNotifications}
-                onValueChange={setMessageNotifications}
+                onValueChange={(v) => { setMessageNotifications(v); updatePrefsMutation.mutate({ messageNotifications: v }); }}
                 trackColor={{ false: colors.gray300, true: colors.primary }}
                 thumbColor={colors.white}
               />
@@ -98,42 +126,46 @@ const SettingsScreen: React.FC = () => {
             rightElement={
               <Switch
                 value={callNotifications}
-                onValueChange={setCallNotifications}
+                onValueChange={(v) => { setCallNotifications(v); updatePrefsMutation.mutate({ callNotifications: v }); }}
                 trackColor={{ false: colors.gray300, true: colors.primary }}
                 thumbColor={colors.white}
               />
             }
           />
-          <SettingsRow label="Quiet Hours" onPress={() => {}} />
+          <SettingsRow label="Quiet Hours" onPress={() => navigation.navigate('QuietHours')} />
         </View>
 
         <SectionHeader title="Privacy" />
         <View style={styles.section}>
-          <SettingsRow label="Block List" onPress={() => {}} />
-          <SettingsRow label="Download Data" onPress={() => {}} />
-          <SettingsRow label="Delete Account" onPress={() => {}} destructive />
+          <SettingsRow label="Block List" onPress={() => navigation.navigate('BlockList')} />
+          <SettingsRow label="Download Data" onPress={() => Alert.alert('Coming Soon', 'Data export will be available soon.')} />
+          <SettingsRow label="Delete Account" onPress={handleDeleteAccount} destructive />
         </View>
 
         <SectionHeader title="Subscription" />
         <View style={styles.section}>
-          <SettingsRow label="Current Plan" onPress={() => {}} />
-          <SettingsRow label="Manage Subscription" onPress={() => {}} />
-          <SettingsRow label="Payment History" onPress={() => {}} />
+          <SettingsRow label="Current Plan" onPress={() => navigation.navigate('Subscription')} />
+          <SettingsRow label="Manage Subscription" onPress={() => navigation.navigate('Subscription')} />
+          <SettingsRow label="Payment History" onPress={() => navigation.navigate('Wallet')} />
         </View>
 
         <SectionHeader title="Support" />
         <View style={styles.section}>
-          <SettingsRow label="Help Center" onPress={() => {}} />
-          <SettingsRow label="Report a Problem" onPress={() => {}} />
-          <SettingsRow label="Community Guidelines" onPress={() => {}} />
+          <SettingsRow label="Help Center" onPress={() => Alert.alert('Help Center', 'Visit connecta.ng/help for support.')} />
+          <SettingsRow label="Report a Problem" onPress={() => navigation.navigate('ReportProblem')} />
+          <SettingsRow label="Community Guidelines" onPress={() => Alert.alert('Community Guidelines', 'Be respectful, honest, and safe. Full guidelines at connecta.ng/guidelines.')} />
         </View>
 
         <SectionHeader title="About" />
         <View style={styles.section}>
           <SettingsRow label="App Version" rightElement={<Text style={styles.versionText}>1.0.0</Text>} />
-          <SettingsRow label="Terms of Service" onPress={() => {}} />
-          <SettingsRow label="Privacy Policy" onPress={() => {}} />
+          <SettingsRow label="Terms of Service" onPress={() => Alert.alert('Terms of Service', 'Full terms at connecta.ng/terms')} />
+          <SettingsRow label="Privacy Policy" onPress={() => Alert.alert('Privacy Policy', 'Full policy at connecta.ng/privacy')} />
         </View>
+
+        <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
+          <Text style={styles.logoutButtonText}>Logout</Text>
+        </TouchableOpacity>
 
         <View style={styles.bottomSpacer} />
       </ScrollView>
@@ -203,6 +235,20 @@ const styles = StyleSheet.create({
   versionText: {
     ...typography.body,
     color: colors.textSecondary,
+  },
+  logoutButton: {
+    marginHorizontal: spacing.lg,
+    marginTop: spacing.xl,
+    paddingVertical: spacing.md,
+    borderRadius: borderRadius.button,
+    backgroundColor: colors.error + '10',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: colors.error,
+  },
+  logoutButtonText: {
+    ...typography.button,
+    color: colors.error,
   },
   bottomSpacer: {
     height: spacing.xxl,

@@ -9,7 +9,8 @@ import {
   SafeAreaView,
   Alert,
 } from 'react-native';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useNavigation } from '@react-navigation/native';
 import { apiClient } from '../../services/api/apiClient';
 import { colors } from '../../theme/colors';
 import { typography } from '../../theme/typography';
@@ -113,8 +114,31 @@ const WalletScreen: React.FC = () => {
   const superLikes = walletData?.superLikes ?? 0;
   const boosts = walletData?.boosts ?? 0;
 
+  const queryClient = useQueryClient();
+  const navigation = useNavigation<any>();
+
+  const initPaymentMutation = useMutation({
+    mutationFn: (purpose: string) => apiClient.post('/payments/initialize', {
+      amount: purpose === 'sl10' ? '4.99' : purpose === 'boost5' ? '7.99' : '9.99',
+      currency: 'USD',
+      purpose,
+    }),
+    onSuccess: (response) => {
+      Alert.alert(
+        'Payment',
+        `Payment initialized. Reference: ${response.data.reference}\n\nIn production, this opens the Paystack checkout.`,
+        [{ text: 'OK' }]
+      );
+      queryClient.invalidateQueries({ queryKey: ['wallet'] });
+      queryClient.invalidateQueries({ queryKey: ['transactions'] });
+    },
+    onError: () => {
+      Alert.alert('Error', 'Failed to initialize payment. Please try again.');
+    },
+  });
+
   const handleBuy = (optionId: string) => {
-    Alert.alert('Coming soon', 'In-app purchases will be available soon.');
+    initPaymentMutation.mutate(optionId);
   };
 
   return (
