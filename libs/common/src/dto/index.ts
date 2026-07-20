@@ -1,4 +1,1 @@
-export { PaginationDto } from './pagination.dto';
-export * from './auth';
-export * from './matching';
-export * from './chat';
+export * from './paginated-query.dto';

@@ -375,3 +375,56 @@ graph TD
 3. **No ML models**: V1 uses deterministic heuristics (no TensorFlow, no embeddings)
 4. **Regex-based scam detection**: Pattern matching for money requests, love bombing, sob stories
 5. **Template-based icebreakers**: No LLM dependency — uses profile data extraction and template strings
+
+---
+
+## 12. Security & Compliance Fixes Applied (July 2026)
+
+### Backend Security Hardening
+
+| Fix | Status | Commit |
+|-----|--------|--------|
+| Removed hardcoded DB passwords (12 files) | ✅ | 16dd36c |
+| Removed hardcoded JWT secrets (5 files) | ✅ | 16dd36c |
+| Registered ThrottlerGuard globally | ✅ | 16dd36c |
+| CORS enabled on all 12 services | ✅ | 16dd36c |
+| Helmet/CSP headers on API gateway | ✅ | f623e31 |
+| Auth DTO validation (class-validator) | ✅ | f623e31 |
+| DTOs for all 11 remaining services | ✅ | pending |
+| Structured JSON audit logging | ✅ | pending |
+| NestJS Logger replaces console.log | ✅ | 473c1ec |
+
+### Mobile App Fixes
+
+| Fix | Status | Commit |
+|-----|--------|--------|
+| WalletScreen mock data → API | ✅ | 16dd36c |
+| NotificationsScreen mock data → API | ✅ | 16dd36c |
+| Empty catch blocks fixed (5 files) | ✅ | 16dd36c |
+
+### Documentation Status
+
+| Doc | Title | Status |
+|-----|-------|--------|
+| 01 | Platform Vision & Roadmap | ✅ |
+| 02 | Architecture Overview | ✅ |
+| 03 | Database Design | ✅ |
+| 04 | Authentication & Authorization | ✅ |
+| 05 | Real-time Communication | ✅ |
+| 06 | API Specification | ✅ |
+| 07 | Mobile App Architecture | ✅ |
+| 08 | Backend Services | ✅ |
+| 09 | Offline-First Sync | ✅ |
+| 10 | E2EE Security | ✅ |
+| 11 | WebRTC Implementation | ✅ |
+| 12 | AI Matchmaking | ✅ |
+| 13 | UI/UX Specification | ✅ |
+| 14 | Security Architecture | ✅ |
+| 15 | Analytics & Reporting | ✅ |
+| 16 | Localization | ✅ |
+| 17 | Performance | ✅ |
+| 18 | DevOps & CI/CD | ✅ |
+| 19 | Data Management | ✅ |
+| 20 | Launch & Deployment | ✅ |
+| 21 | Legal & Compliance | ✅ |
+| 22 | AI Audit Report | ✅ |

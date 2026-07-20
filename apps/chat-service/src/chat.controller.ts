@@ -1,6 +1,7 @@
 import { Controller, Get, Post, Put, Delete, Body, Param, Query } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { ChatService } from './chat.service';
+import { SendMessageDto, ReactToMessageDto, MarkReadDto, TypingIndicatorDto, SearchMessagesQueryDto } from './dto';
 
 @ApiTags('Chat') @ApiBearerAuth() @Controller('chat')
 export class ChatController {
@@ -17,28 +18,28 @@ export class ChatController {
   }
 
   @Post('conversations/:id/messages') @ApiOperation({ summary: 'Send message' })
-  sendMessage(@Body('_userId') userId: string, @Param('id') id: string, @Body() body: any) {
+  sendMessage(@Body('_userId') userId: string, @Param('id') id: string, @Body() body: SendMessageDto) {
     return this.chatService.sendMessage(userId, id, body);
   }
 
   @Post('conversations/:id/messages/:messageId/reactions') @ApiOperation({ summary: 'React to message' })
-  react(@Body('_userId') userId: string, @Param('messageId') messageId: string, @Body('emoji') emoji: string, @Body('action') action: 'add' | 'remove') {
-    return this.chatService.reactToMessage(userId, messageId, emoji, action);
+  react(@Body('_userId') userId: string, @Param('messageId') messageId: string, @Body() body: ReactToMessageDto) {
+    return this.chatService.reactToMessage(userId, messageId, body.emoji, body.action);
   }
 
   @Put('conversations/:id/read') @ApiOperation({ summary: 'Mark as read' })
-  markRead(@Body('_userId') userId: string, @Param('id') id: string, @Body('lastReadMessageId') lastReadMessageId: string) {
-    return this.chatService.markAsRead(userId, id, lastReadMessageId);
+  markRead(@Body('_userId') userId: string, @Param('id') id: string, @Body() body: MarkReadDto) {
+    return this.chatService.markAsRead(userId, id, body.lastReadMessageId);
   }
 
   @Get('messages/search') @ApiOperation({ summary: 'Search messages' })
-  search(@Body('_userId') userId: string, @Query('q') q: string, @Query('conversation_id') convId?: string, @Query('page') page?: number, @Query('limit') limit?: number) {
-    return this.chatService.searchMessages(userId, q, convId, page, limit);
+  search(@Body('_userId') userId: string, @Query() query: SearchMessagesQueryDto) {
+    return this.chatService.searchMessages(userId, query.q, query.conversation_id, query.page, query.limit);
   }
 
   @Post('conversations/:id/typing') @ApiOperation({ summary: 'Send typing indicator' })
-  sendTyping(@Body('_userId') userId: string, @Param('id') id: string, @Body('is_typing') isTyping: boolean) {
-    return this.chatService.sendTyping(userId, id, isTyping);
+  sendTyping(@Body('_userId') userId: string, @Param('id') id: string, @Body() body: TypingIndicatorDto) {
+    return this.chatService.sendTyping(userId, id, body.is_typing);
   }
 
   @Delete('conversations/:id/messages/:messageId') @ApiOperation({ summary: 'Delete message' })

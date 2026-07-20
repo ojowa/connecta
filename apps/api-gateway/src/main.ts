@@ -9,6 +9,7 @@ import { DeviceInfoMiddleware } from './middleware/device-info.middleware';
 import { RequestLoggingInterceptor } from './interceptors/request-logging.interceptor';
 import { TimeoutInterceptor } from './interceptors/timeout.interceptor';
 import { ResponseTransformInterceptor } from './interceptors/response-transform.interceptor';
+import { AuditLogInterceptor } from './interceptors/audit-log.interceptor';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule, {
@@ -31,6 +32,7 @@ async function bootstrap() {
     app.get(RequestLoggingInterceptor),
     app.get(TimeoutInterceptor),
     app.get(ResponseTransformInterceptor),
+    app.get(AuditLogInterceptor),
   );
 
   app.use(RequestIdMiddleware);

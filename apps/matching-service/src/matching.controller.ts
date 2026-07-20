@@ -1,6 +1,7 @@
 import { Controller, Get, Post, Delete, Body, Param, Query } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { MatchingService } from './matching.service';
+import { LikeUserDto, FeedQueryDto } from './dto';
 
 // C4: Auth is handled by API Gateway (JWT guard). The gateway verifies the
 // JWT token and forwards the authenticated user's ID as _userId in the request body.
@@ -10,14 +11,14 @@ export class MatchingController {
   constructor(private readonly matchingService: MatchingService) {}
 
   @Get('feed') @ApiOperation({ summary: 'Get discovery feed with AI-powered scoring' })
-  getFeed(@Body('_userId') userId: string, @Query('page') page?: number, @Query('limit') limit?: number) {
-    const safeLimit = Math.min(Math.max(Number(limit) || 20, 1), 100);
-    const safePage = Math.max(Number(page) || 1, 1);
+  getFeed(@Body('_userId') userId: string, @Query() query: FeedQueryDto) {
+    const safeLimit = Math.min(Math.max(Number(query.limit) || 20, 1), 100);
+    const safePage = Math.max(Number(query.page) || 1, 1);
     return this.matchingService.getFeed(userId, safePage, safeLimit);
   }
 
   @Post('like/:userId') @ApiOperation({ summary: 'Like a user' })
-  like(@Body('_userId') userId: string, @Param('userId') targetUserId: string, @Body('likeType') likeType?: string) { return this.matchingService.like(userId, targetUserId, likeType); }
+  like(@Body('_userId') userId: string, @Param('userId') targetUserId: string, @Body() body: LikeUserDto) { return this.matchingService.like(userId, targetUserId, body.likeType); }
 
   @Post('pass/:userId') @ApiOperation({ summary: 'Pass on a user' })
   pass(@Body('_userId') userId: string, @Param('userId') targetUserId: string) { return this.matchingService.pass(userId, targetUserId); }

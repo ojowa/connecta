@@ -1,6 +1,7 @@
 import { Controller, Get, Put, Post, Delete, Body, Param, Query } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { ProfilesService } from './profiles.service';
+import { UpdateProfileDto, UploadPhotoDto, ReorderPhotosDto } from './dto';
 
 @ApiTags('Profiles') @ApiBearerAuth() @Controller('profiles')
 export class ProfilesController {
@@ -10,19 +11,19 @@ export class ProfilesController {
   getMyProfile(@Body('_userId') userId: string) { return this.profilesService.getProfile(userId); }
 
   @Put('me') @ApiOperation({ summary: 'Update profile' })
-  updateProfile(@Body('_userId') userId: string, @Body() body: any) { return this.profilesService.updateProfile(userId, body); }
+  updateProfile(@Body('_userId') userId: string, @Body() body: UpdateProfileDto) { return this.profilesService.updateProfile(userId, body); }
 
   @Get('me/photos') @ApiOperation({ summary: 'Get photos' })
   getPhotos(@Body('_userId') userId: string) { return this.profilesService.getPhotos(userId); }
 
   @Post('me/photos') @ApiOperation({ summary: 'Upload photo' })
-  uploadPhoto(@Body('_userId') userId: string, @Body('url') url: string, @Body('isPrimary') isPrimary?: boolean) { return this.profilesService.uploadPhoto(userId, url, isPrimary); }
+  uploadPhoto(@Body('_userId') userId: string, @Body() body: UploadPhotoDto) { return this.profilesService.uploadPhoto(userId, body.url, body.isPrimary); }
 
   @Delete('me/photos/:photoId') @ApiOperation({ summary: 'Delete photo' })
   deletePhoto(@Body('_userId') userId: string, @Param('photoId') photoId: string) { return this.profilesService.deletePhoto(userId, photoId); }
 
   @Put('me/photos/order') @ApiOperation({ summary: 'Reorder photos' })
-  reorderPhotos(@Body('_userId') userId: string, @Body('photoIds') photoIds: string[]) { return this.profilesService.reorderPhotos(userId, photoIds); }
+  reorderPhotos(@Body('_userId') userId: string, @Body() body: ReorderPhotosDto) { return this.profilesService.reorderPhotos(userId, body.photoIds); }
 
   @Put('me/photos/:photoId/primary') @ApiOperation({ summary: 'Set primary photo' })
   setPrimary(@Body('_userId') userId: string, @Param('photoId') photoId: string) { return this.profilesService.setPrimaryPhoto(userId, photoId); }

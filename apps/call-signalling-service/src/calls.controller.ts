@@ -1,6 +1,7 @@
 import { Controller, Get, Post, Body, Param, Query, UseGuards } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { CallsService } from './calls.service';
+import { StartCallDto, RejectCallDto, EndCallDto, CallHistoryQueryDto } from './dto';
 import { JwtAuthGuard } from '@app/common/guards/jwt-auth.guard';
 import { CurrentUser } from '@app/common/decorators';
 
@@ -14,11 +15,10 @@ export class CallsController {
   @Post('start')
   @ApiOperation({ summary: 'Start call' })
   start(
-    @Body('recipientId') recipientId: string,
-    @Body('callType') callType: string,
+    @Body() body: StartCallDto,
     @CurrentUser('id') userId: string,
   ) {
-    return this.callsService.startCall({ callerId: userId, recipientId, callType });
+    return this.callsService.startCall({ callerId: userId, recipientId: body.recipientId, callType: body.callType });
   }
 
   @Post(':callId/answer')
@@ -35,9 +35,9 @@ export class CallsController {
   reject(
     @Param('callId') callId: string,
     @CurrentUser('id') userId: string,
-    @Body('reason') reason?: string,
+    @Body() body: RejectCallDto,
   ) {
-    return this.callsService.rejectCall(callId, userId, reason);
+    return this.callsService.rejectCall(callId, userId, body.reason);
   }
 
   @Post(':callId/end')
@@ -45,20 +45,17 @@ export class CallsController {
   end(
     @Param('callId') callId: string,
     @CurrentUser('id') userId: string,
-    @Body('reason') reason?: string,
+    @Body() body: EndCallDto,
   ) {
-    return this.callsService.endCall(callId, userId, reason);
+    return this.callsService.endCall(callId, userId, body.reason);
   }
 
   @Get('history')
   @ApiOperation({ summary: 'Call history' })
   history(
     @CurrentUser('id') userId: string,
-    @Query('page') page?: number,
-    @Query('limit') limit?: number,
-    @Query('call_type') callType?: string,
-    @Query('direction') direction?: string,
+    @Query() query: CallHistoryQueryDto,
   ) {
-    return this.callsService.getHistory(userId, page, limit, callType, direction);
+    return this.callsService.getHistory(userId, query.page, query.limit, query.call_type, query.direction);
   }
 }

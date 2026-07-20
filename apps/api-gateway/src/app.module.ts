@@ -20,6 +20,7 @@ import { DeviceInfoMiddleware } from './middleware/device-info.middleware';
 import { RequestLoggingInterceptor } from './interceptors/request-logging.interceptor';
 import { TimeoutInterceptor } from './interceptors/timeout.interceptor';
 import { ResponseTransformInterceptor } from './interceptors/response-transform.interceptor';
+import { AuditLogInterceptor } from './interceptors/audit-log.interceptor';
 
 @Module({
   imports: [
@@ -49,6 +50,7 @@ import { ResponseTransformInterceptor } from './interceptors/response-transform.
     RequestLoggingInterceptor,
     TimeoutInterceptor,
     ResponseTransformInterceptor,
+    AuditLogInterceptor,
   ],
 })
 export class AppModule implements NestModule {
