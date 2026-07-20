@@ -7,11 +7,11 @@ const KEY_SERVICE = 'com.connecta.crypto';
 
 export class KeyManager {
   static async generateRandomBytes(length: number): Promise<string> {
-    const bytes: number[] = [];
-    for (let i = 0; i < length; i++) {
-      bytes.push(Math.floor(Math.random() * 256));
-    }
-    return bytes.map((b) => b.toString(16).padStart(2, '0')).join('');
+    const array = new Uint8Array(length);
+    Crypto.getRandomValues(array);
+    return Array.from(array)
+      .map((b) => b.toString(16).padStart(2, '0'))
+      .join('');
   }
 
   static async generateKeyPair(): Promise<KeyPair> {
@@ -23,7 +23,7 @@ export class KeyManager {
   static async derivePublicKey(privateKey: string): Promise<string> {
     return Crypto.digestStringAsync(
       Crypto.CryptoDigestAlgorithm.SHA256,
-      privateKey + ':public',
+      'connecta-pubkey:' + privateKey,
     );
   }
 
@@ -38,10 +38,10 @@ export class KeyManager {
     keyId: number,
   ): Promise<SignedPreKey> {
     const keyPair = await this.generateKeyPair();
-    const signaturePayload = `${keyPair.publicKey}:${keyId}:${Date.now()}`;
+    const signaturePayload = `connecta-spk:${keyPair.publicKey}:${keyId}`;
     const signature = await Crypto.digestStringAsync(
       Crypto.CryptoDigestAlgorithm.SHA256,
-      signaturePayload + identityPrivateKey,
+      signaturePayload + ':' + identityPrivateKey,
     );
     return {
       ...keyPair,

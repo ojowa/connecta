@@ -78,6 +78,7 @@ export class MessageEncryptor {
       encryptedMessage.iv,
       encryptedMessage.mac,
       encryptedMessage.messageNumber,
+      encryptedMessage.ephemeralPublicKey,
     );
 
     await KeyManager.storeRatchetState(sessionId, newState);

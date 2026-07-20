@@ -8,7 +8,8 @@ const BACKUP_SERVICE = 'com.connecta.backup';
 
 export class SecureBackup {
   async backupKeys(masterPassword: string): Promise<BackupData> {
-    const backupKey = await this.deriveBackupKey(masterPassword);
+    const salt = await KeyManager.generateRandomBytes(32);
+    const backupKey = await this.deriveBackupKey(masterPassword, salt);
 
     const identityKeyPair = await KeyManager.getIdentityKeyPair();
     const latestSPK = await KeyManager.getLatestSignedPreKey();
@@ -19,19 +20,17 @@ export class SecureBackup {
       deviceId: await this.getDeviceId(),
     };
 
+    const iv = await KeyManager.generateRandomBytes(16);
     const encryptedBundle = await MediaEncryptor.aesEncrypt(
       JSON.stringify(keysToBackup),
       backupKey,
-      backupKey.substring(0, 32),
+      iv,
     );
-
-    const salt = backupKey.substring(0, 32);
-    const iterations = 600000;
 
     const backupData: BackupData = {
       encryptedBundle,
       salt,
-      iterations,
+      iterations: 600000,
       deviceId: keysToBackup.deviceId,
       timestamp: Date.now(),
     };
@@ -44,10 +43,11 @@ export class SecureBackup {
   async restoreKeys(backupData: BackupData, masterPassword: string): Promise<void> {
     const backupKey = await this.deriveBackupKey(masterPassword, backupData.salt);
 
+    const iv = await KeyManager.generateRandomBytes(16);
     const decrypted = await MediaEncryptor.aesDecrypt(
       backupData.encryptedBundle,
       backupKey,
-      backupData.salt,
+      iv,
     );
 
     const keys = JSON.parse(decrypted);
@@ -62,20 +62,22 @@ export class SecureBackup {
   }
 
   async verifyBackupPassword(masterPassword: string): Promise<boolean> {
-    try {
-      const lastBackup = await secureStorage.get(`${BACKUP_SERVICE}.last`);
-      if (!lastBackup) return false;
+    const lastBackup = await secureStorage.get(`${BACKUP_SERVICE}.last`);
+    if (!lastBackup) return false;
 
+    try {
       const backupData: BackupData = JSON.parse(lastBackup);
       const backupKey = await this.deriveBackupKey(masterPassword, backupData.salt);
 
+      const iv = await KeyManager.generateRandomBytes(16);
       const decrypted = await MediaEncryptor.aesDecrypt(
         backupData.encryptedBundle,
         backupKey,
-        backupData.salt,
+        iv,
       );
 
-      return !!decrypted;
+      const parsed = JSON.parse(decrypted);
+      return !!(parsed && parsed.identityKeyPair);
     } catch {
       return false;
     }
@@ -99,28 +101,24 @@ export class SecureBackup {
 
   private async deriveBackupKey(
     password: string,
-    existingSalt?: string,
+    salt: string,
   ): Promise<string> {
-    const salt = existingSalt || (await this.generateSalt());
     const iterations = 600000;
 
-    let derived = password + salt;
-    for (let i = 0; i < Math.min(iterations / 1000, 100); i++) {
-      derived = await Crypto.digestStringAsync(
+    let derived = await Crypto.digestStringAsync(
+      Crypto.CryptoDigestAlgorithm.SHA256,
+      password + ':' + salt + ':0',
+    );
+
+    for (let i = 1; i < iterations; i++) {
+      const hmac = await Crypto.digestStringAsync(
         Crypto.CryptoDigestAlgorithm.SHA256,
-        derived,
+        derived + ':' + password + ':' + salt + ':' + i,
       );
+      derived = hmac;
     }
 
     return derived;
-  }
-
-  private async generateSalt(): Promise<string> {
-    const bytes: number[] = [];
-    for (let i = 0; i < 32; i++) {
-      bytes.push(Math.floor(Math.random() * 256));
-    }
-    return bytes.map((b) => b.toString(16).padStart(2, '0')).join('');
   }
 
   private async getDeviceId(): Promise<string> {
