@@ -61,12 +61,33 @@ export class ConflictResolver {
   }
 
   private mergeConcurrent(local: SyncRecord, remote: SyncRecord): SyncRecord {
-    const merged = { ...remote };
+    const merged: SyncRecord = { ...remote };
+
     for (const [key, value] of Object.entries(local)) {
-      if (value !== null && value !== undefined && key !== 'vectorClock') {
+      if (key === 'vectorClock' || key === 'updatedAt') continue;
+      if (value === null || value === undefined) continue;
+
+      const remoteValue = remote[key];
+      if (remoteValue === null || remoteValue === undefined) {
+        merged[key] = value;
+        continue;
+      }
+
+      if (Array.isArray(value) && Array.isArray(remoteValue)) {
+        merged[key] = this.mergeArrays(value, remoteValue);
+        continue;
+      }
+
+      if (typeof value === 'object' && typeof remoteValue === 'object' && !Array.isArray(value)) {
+        merged[key] = this.mergeObjects(value, remoteValue);
+        continue;
+      }
+
+      if (local.updatedAt > remote.updatedAt) {
         merged[key] = value;
       }
     }
+
     merged.updatedAt = Math.max(local.updatedAt, remote.updatedAt);
 
     if (local.vectorClock && remote.vectorClock) {
@@ -76,6 +97,32 @@ export class ConflictResolver {
       merged.vectorClock = localClock.serialize();
     }
 
+    return merged;
+  }
+
+  private mergeArrays(local: any[], remote: any[]): any[] {
+    const map = new Map<string, any>();
+    for (const item of remote) {
+      const id = item.id || JSON.stringify(item);
+      map.set(id, item);
+    }
+    for (const item of local) {
+      const id = item.id || JSON.stringify(item);
+      if (!map.has(id)) {
+        map.set(id, item);
+      }
+    }
+    return Array.from(map.values());
+  }
+
+  private mergeObjects(local: Record<string, any>, remote: Record<string, any>): Record<string, any> {
+    const merged: Record<string, any> = { ...remote };
+    for (const [key, value] of Object.entries(local)) {
+      if (value === null || value === undefined) continue;
+      if (remote[key] === null || remote[key] === undefined) {
+        merged[key] = value;
+      }
+    }
     return merged;
   }
 }

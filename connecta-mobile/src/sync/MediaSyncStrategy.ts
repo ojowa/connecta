@@ -1,3 +1,4 @@
+import NetInfo from '@react-native-community/netinfo';
 import { NetworkManager } from '../sync/NetworkManager';
 
 export enum MediaPriority {
@@ -30,11 +31,10 @@ export class MediaSyncStrategy {
 
     switch (connectionType) {
       case 'wifi':
-        return rule.wifi;
-      case 'cellular':
-        return this.is4G() ? rule.cellular4g : rule.cellular3g;
       case 'ethernet':
         return rule.wifi;
+      case 'cellular':
+        return this.is4GOrHigher() ? rule.cellular4g : rule.cellular3g;
       default:
         return false;
     }
@@ -59,8 +59,14 @@ export class MediaSyncStrategy {
     }
   }
 
-  private static is4G(): boolean {
+  private static is4GOrHigher(): boolean {
     const type = NetworkManager.getConnectionType();
-    return type === 'cellular';
+    if (type !== 'cellular') return false;
+
+    const details = NetworkManager.getDetails() as any;
+    if (!details?.cellularGeneration) return false;
+
+    const gen = details.cellularGeneration;
+    return gen === '4g' || gen === '5g';
   }
 }

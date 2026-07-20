@@ -19,6 +19,7 @@ export interface ProfileCacheData {
   completionPercentage?: number;
   photos?: Array<{ id: string; url: string; isPrimary: boolean; position: number }>;
   interests?: Array<{ id: string; name: string }>;
+  updatedAt?: number;
 }
 
 export class ProfileCacheRepository {
@@ -36,17 +37,28 @@ export class ProfileCacheRepository {
     const db = await getDatabase();
     const now = Date.now();
 
-    const existing = await db.getFirstAsync<{ version: number }>(
-      'SELECT version FROM local_profile_cache WHERE user_id = ?',
+    const existing = await db.getFirstAsync<{ data: string; version: number }>(
+      'SELECT data, version FROM local_profile_cache WHERE user_id = ?',
       [userId],
     );
-    const version = existing ? existing.version + 1 : 1;
 
-    await db.runAsync(
-      `INSERT OR REPLACE INTO local_profile_cache (user_id, data, version, cached_at)
-       VALUES (?, ?, ?, ?)`,
-      [userId, JSON.stringify(data), version, now],
-    );
+    if (existing) {
+      const existingData = JSON.parse(existing.data);
+      const hasChanged = JSON.stringify(existingData) !== JSON.stringify(data);
+      if (!hasChanged) return;
+
+      await db.runAsync(
+        `INSERT OR REPLACE INTO local_profile_cache (user_id, data, version, cached_at)
+         VALUES (?, ?, ?, ?)`,
+        [userId, JSON.stringify(data), existing.version + 1, now],
+      );
+    } else {
+      await db.runAsync(
+        `INSERT OR REPLACE INTO local_profile_cache (user_id, data, version, cached_at)
+         VALUES (?, ?, ?, ?)`,
+        [userId, JSON.stringify(data), 1, now],
+      );
+    }
   }
 
   static async getAll(): Promise<ProfileCacheData[]> {

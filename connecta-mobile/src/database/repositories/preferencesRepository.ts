@@ -32,6 +32,13 @@ export class PreferencesRepository {
     const now = Date.now();
     const stringValue = typeof value === 'string' ? value : JSON.stringify(value);
 
+    const existing = await db.getFirstAsync<{ value: string }>(
+      'SELECT value FROM local_preferences WHERE key = ?',
+      [key],
+    );
+
+    if (existing && existing.value === stringValue) return;
+
     await db.runAsync(
       `INSERT OR REPLACE INTO local_preferences (key, value, updated_at, synced)
        VALUES (?, ?, ?, 0)`,
@@ -43,13 +50,28 @@ export class PreferencesRepository {
     const db = await getDatabase();
     const now = Date.now();
 
-    for (const [key, value] of Object.entries(prefs)) {
-      const stringValue = typeof value === 'string' ? value : JSON.stringify(value);
-      await db.runAsync(
-        `INSERT OR REPLACE INTO local_preferences (key, value, updated_at, synced)
-         VALUES (?, ?, ?, 0)`,
-        [key, stringValue, now],
-      );
+    await db.execAsync('BEGIN TRANSACTION;');
+    try {
+      for (const [key, value] of Object.entries(prefs)) {
+        const stringValue = typeof value === 'string' ? value : JSON.stringify(value);
+
+        const existing = await db.getFirstAsync<{ value: string }>(
+          'SELECT value FROM local_preferences WHERE key = ?',
+          [key],
+        );
+
+        if (existing && existing.value === stringValue) continue;
+
+        await db.runAsync(
+          `INSERT OR REPLACE INTO local_preferences (key, value, updated_at, synced)
+           VALUES (?, ?, ?, 0)`,
+          [key, stringValue, now],
+        );
+      }
+      await db.execAsync('COMMIT;');
+    } catch (error) {
+      await db.execAsync('ROLLBACK;');
+      throw error;
     }
   }
 

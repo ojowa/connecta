@@ -5,12 +5,16 @@ import { Outbox, SyncOperation } from './Outbox';
 import { ConflictResolver, STRATEGY_MATRIX } from './strategies/conflictResolution';
 import { NetworkManager } from './NetworkManager';
 import { apiClient } from '../services/api/apiClient';
+import { FeedCacheRepository } from '../database/repositories/feedCacheRepository';
+import { VectorClock } from './VectorClock';
 
 export interface SyncConfig {
   maxRetries: number;
   batchSize: number;
   syncIntervalMs: number;
   pullIntervalMs: number;
+  feedCacheMaxAgeMs: number;
+  messageRetentionDays: number;
 }
 
 const DEFAULT_CONFIG: SyncConfig = {
@@ -18,6 +22,8 @@ const DEFAULT_CONFIG: SyncConfig = {
   batchSize: 50,
   syncIntervalMs: 30000,
   pullIntervalMs: 300000,
+  feedCacheMaxAgeMs: 86400000,
+  messageRetentionDays: 90,
 };
 
 export class SyncEngine {
@@ -27,6 +33,9 @@ export class SyncEngine {
   private pullInterval: ReturnType<typeof setInterval> | null = null;
   private conflictResolver = new ConflictResolver();
   private config: SyncConfig;
+  private localVectorClock: VectorClock | null = null;
+  private appStateSubscription: any = null;
+  private netInfoUnsubscribe: (() => void) | null = null;
 
   private constructor(config?: Partial<SyncConfig>) {
     this.config = { ...DEFAULT_CONFIG, ...config };
@@ -41,13 +50,14 @@ export class SyncEngine {
 
   async initialize(): Promise<void> {
     NetworkManager.init();
+    this.localVectorClock = await this.loadVectorClock();
     this.setupListeners();
     this.startPeriodicSync();
   }
 
   private setupListeners(): void {
-    AppState.addEventListener('change', this.handleAppState);
-    NetInfo.addEventListener((info) => {
+    this.appStateSubscription = AppState.addEventListener('change', this.handleAppState);
+    this.netInfoUnsubscribe = NetInfo.addEventListener((info) => {
       if (info.isConnected) {
         this.triggerSync();
       }
@@ -58,7 +68,7 @@ export class SyncEngine {
     if (state === 'active') {
       this.triggerSync();
     } else if (state === 'background') {
-      this.scheduleBackgroundSync();
+      this.runBackgroundTasks();
     }
   };
 
@@ -78,13 +88,32 @@ export class SyncEngine {
     }, this.config.pullIntervalMs);
   }
 
-  private scheduleBackgroundSync(): void {
+  private async runBackgroundTasks(): Promise<void> {
     if (this.syncInterval) clearInterval(this.syncInterval);
-    this.syncInterval = setInterval(() => {
+
+    await this.checkpointDatabase();
+    await FeedCacheRepository.clearExpired(this.config.feedCacheMaxAgeMs);
+    await Outbox.cleanupFailed();
+    await this.cleanupOldMessages();
+
+    this.syncInterval = setInterval(async () => {
       if (NetworkManager.isConnected()) {
-        this.triggerSync();
+        try {
+          await this.processOutbox();
+        } catch (e) {
+          console.error('Background outbox sync failed:', e);
+        }
       }
-    }, 30000);
+    }, 60000);
+  }
+
+  private async checkpointDatabase(): Promise<void> {
+    try {
+      const db = await getDatabase();
+      await db.execAsync('PRAGMA wal_checkpoint(TRUNCATE);');
+    } catch (e) {
+      console.error('WAL checkpoint failed:', e);
+    }
   }
 
   async triggerSync(): Promise<void> {
@@ -104,15 +133,21 @@ export class SyncEngine {
 
   private async processOutbox(): Promise<void> {
     const pending = await Outbox.getPending(this.config.batchSize);
+    const now = Date.now();
 
     for (const item of pending) {
+      const secondsUntilRetry = await Outbox.getSecondsUntilRetry(item);
+      if (secondsUntilRetry > 0) {
+        continue;
+      }
+
       try {
         await this.syncItem(item);
         await Outbox.markSynced(item.id);
       } catch (error: any) {
         const retryCount = (item.retry_count || 0) + 1;
         if (retryCount >= this.config.maxRetries) {
-          console.error(`Sync item ${item.id} failed after ${retryCount} attempts:`, error.message);
+          console.error(`Sync item ${item.id} failed permanently after ${retryCount} attempts:`, error.message);
         }
         await Outbox.markFailed(item.id, retryCount);
       }
@@ -124,45 +159,37 @@ export class SyncEngine {
     const data = payload ? JSON.parse(payload) : {};
 
     switch (`${operation}:${entity_type}`) {
-      case 'CREATE:message':
+      case 'CREATE:message': {
         const msgResult = await apiClient.post('/chat/messages', data);
         if (msgResult.data?.messageId) {
           await Outbox.markMessageSynced(entity_id, msgResult.data.messageId);
         }
         break;
-
+      }
       case 'UPDATE:profile':
         await apiClient.put('/users/me', data);
         break;
-
       case 'UPDATE:preference':
         await apiClient.put('/users/preferences', data);
         break;
-
       case 'CREATE:like':
         await apiClient.post('/match/like', { targetUserId: entity_id });
         break;
-
       case 'CREATE:pass':
         await apiClient.post('/match/pass', { targetUserId: entity_id });
         break;
-
       case 'CREATE:super_like':
         await apiClient.post('/match/super-like', { targetUserId: entity_id });
         break;
-
       case 'CREATE:message_reaction':
         await apiClient.post(`/chat/messages/${entity_id}/reactions`, data);
         break;
-
       case 'DELETE:message':
         await apiClient.delete(`/chat/messages/${entity_id}`);
         break;
-
       case 'UPDATE:message_read':
         await apiClient.post('/chat/mark-read', data);
         break;
-
       default:
         break;
     }
@@ -170,6 +197,7 @@ export class SyncEngine {
 
   private async pullUpdates(): Promise<void> {
     const lastSync = await this.getLastSyncTimestamp();
+    let latestSync = lastSync;
 
     try {
       const [messagesRes, matchesRes, profileRes] = await Promise.all([
@@ -180,17 +208,25 @@ export class SyncEngine {
 
       for (const msg of messagesRes.data || []) {
         await this.saveIncomingMessage(msg);
+        const msgTime = new Date(msg.createdAt).getTime();
+        if (msgTime > latestSync) latestSync = msgTime;
       }
 
       for (const match of matchesRes.data || []) {
         await this.saveIncomingMatch(match);
+        const matchTime = new Date(match.matchedAt || match.createdAt).getTime();
+        if (matchTime > latestSync) latestSync = matchTime;
       }
 
       if (profileRes.data) {
         await this.saveIncomingProfile(profileRes.data);
+        const profileTime = profileRes.data.updatedAt ? new Date(profileRes.data.updatedAt).getTime() : Date.now();
+        if (profileTime > latestSync) latestSync = profileTime;
       }
 
-      await this.setLastSyncTimestamp(Date.now());
+      if (latestSync > lastSync) {
+        await this.setLastSyncTimestamp(latestSync);
+      }
     } catch (error) {
       console.error('Pull updates failed:', error);
     }
@@ -251,17 +287,36 @@ export class SyncEngine {
     const db = await getDatabase();
     const now = Date.now();
 
-    const existing = await db.getFirstAsync<{ version: number }>(
-      'SELECT version FROM local_profile_cache WHERE user_id = ?',
+    const existing = await db.getFirstAsync<{ data: string; version: number }>(
+      'SELECT data, version FROM local_profile_cache WHERE user_id = ?',
       [profile.userId],
     );
-    const version = existing ? existing.version + 1 : 1;
 
-    await db.runAsync(
-      `INSERT OR REPLACE INTO local_profile_cache (user_id, data, version, cached_at)
-       VALUES (?, ?, ?, ?)`,
-      [profile.userId, JSON.stringify(profile), version, now],
-    );
+    if (existing) {
+      const localData = JSON.parse(existing.data);
+      const remoteUpdated = profile.updatedAt ? new Date(profile.updatedAt).getTime() : 0;
+      const localUpdated = localData.updatedAt || 0;
+
+      if (remoteUpdated <= localUpdated) return;
+
+      const strategy = this.conflictResolver.getStrategyForEntity('profile');
+      const resolved = this.conflictResolver.resolve(
+        { ...localData, updatedAt: localUpdated, vectorClock: localData.vectorClock },
+        { ...profile, updatedAt: remoteUpdated, vectorClock: profile.vectorClock },
+        strategy,
+      );
+      await db.runAsync(
+        `INSERT OR REPLACE INTO local_profile_cache (user_id, data, version, cached_at)
+         VALUES (?, ?, ?, ?)`,
+        [profile.userId, JSON.stringify(resolved), existing.version + 1, now],
+      );
+    } else {
+      await db.runAsync(
+        `INSERT OR REPLACE INTO local_profile_cache (user_id, data, version, cached_at)
+         VALUES (?, ?, ?, ?)`,
+        [profile.userId, JSON.stringify(profile), 1, now],
+      );
+    }
   }
 
   private async getLastSyncTimestamp(): Promise<number> {
@@ -289,6 +344,47 @@ export class SyncEngine {
     );
   }
 
+  private async cleanupOldMessages(): Promise<void> {
+    const db = await getDatabase();
+    const cutoff = Date.now() - this.config.messageRetentionDays * 86400000;
+    await db.runAsync(
+      'DELETE FROM local_messages WHERE created_at < ? AND is_sent = 1',
+      [cutoff],
+    );
+  }
+
+  private async loadVectorClock(): Promise<VectorClock> {
+    const db = await getDatabase();
+    const row = await db.getFirstAsync<{ value: string }>(
+      "SELECT value FROM sync_metadata WHERE key = 'vector_clock'",
+    );
+    if (row) {
+      return new VectorClock(row.value);
+    }
+
+    try {
+      const response = await apiClient.get('/sync/vector-clock');
+      if (response.data?.vectorClock) {
+        const clock = new VectorClock(response.data.vectorClock);
+        await this.saveVectorClock(clock);
+        return clock;
+      }
+    } catch (e) {
+      console.error('Failed to fetch server vector clock:', e);
+    }
+
+    return new VectorClock();
+  }
+
+  private async saveVectorClock(clock: VectorClock): Promise<void> {
+    const db = await getDatabase();
+    await db.runAsync(
+      `INSERT OR REPLACE INTO sync_metadata (key, value, updated_at)
+       VALUES ('vector_clock', ?, ?)`,
+      [clock.serialize(), Date.now()],
+    );
+  }
+
   enqueue(operation: SyncOperation): void {
     Outbox.enqueue(operation);
   }
@@ -300,5 +396,7 @@ export class SyncEngine {
   destroy(): void {
     if (this.syncInterval) clearInterval(this.syncInterval);
     if (this.pullInterval) clearInterval(this.pullInterval);
+    if (this.appStateSubscription) this.appStateSubscription.remove();
+    if (this.netInfoUnsubscribe) this.netInfoUnsubscribe();
   }
 }

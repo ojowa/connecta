@@ -9,10 +9,22 @@ export interface SyncOperation {
   payload: Record<string, any>;
 }
 
+const BACKOFF_BASE_MS = 1000;
+const BACKOFF_MAX_MS = 300000;
+const MAX_RETRY_COUNT = 5;
+
 export class Outbox {
   static async enqueue(operation: SyncOperation): Promise<void> {
     const db = await getDatabase();
     const { entityType, entityId, operation: op, payload } = operation;
+
+    const existing = await db.getFirstAsync<{ id: number }>(
+      `SELECT id FROM local_sync_outbox
+       WHERE entity_type = ? AND entity_id = ? AND operation = ? AND status IN ('pending', 'processing')
+       LIMIT 1`,
+      [entityType, entityId, op],
+    );
+    if (existing) return;
 
     await this.writeToLocal(entityType, entityId, payload);
 
@@ -85,7 +97,7 @@ export class Outbox {
     const db = await getDatabase();
     return db.getAllAsync(
       `SELECT * FROM local_sync_outbox
-       WHERE status = 'pending' AND retry_count < 5
+       WHERE status = 'pending' AND retry_count < ?
        ORDER BY
          CASE entity_type
            WHEN 'message' THEN 0
@@ -99,7 +111,7 @@ export class Outbox {
          END,
          created_at ASC
        LIMIT ?`,
-      [limit],
+      [MAX_RETRY_COUNT, limit],
     );
   }
 
@@ -113,7 +125,7 @@ export class Outbox {
 
   static async markFailed(id: number, retryCount: number): Promise<void> {
     const db = await getDatabase();
-    if (retryCount >= 5) {
+    if (retryCount >= MAX_RETRY_COUNT) {
       await db.runAsync(
         "UPDATE local_sync_outbox SET status = 'failed', retry_count = ?, last_retry_at = ? WHERE id = ?",
         [retryCount, Date.now(), id],
@@ -139,10 +151,25 @@ export class Outbox {
     );
   }
 
-  static async getRetryDelay(attempt: number): Promise<number> {
-    const baseDelay = 1000;
-    const maxDelay = 300000;
-    const delay = Math.min(baseDelay * Math.pow(2, attempt), maxDelay);
+  static async cleanupFailed(): Promise<void> {
+    const db = await getDatabase();
+    const cutoff = Date.now() - 86400000 * 7;
+    await db.runAsync(
+      "DELETE FROM local_sync_outbox WHERE status = 'failed' AND last_retry_at < ?",
+      [cutoff],
+    );
+  }
+
+  static getRetryDelay(attempt: number): number {
+    const delay = Math.min(BACKOFF_BASE_MS * Math.pow(2, attempt), BACKOFF_MAX_MS);
     return delay + Math.random() * 1000;
+  }
+
+  static async getSecondsUntilRetry(item: any): Promise<number> {
+    const retryCount = item.retry_count || 0;
+    const lastRetry = item.last_retry_at || item.created_at;
+    const delay = this.getRetryDelay(retryCount);
+    const elapsed = Date.now() - lastRetry;
+    return Math.max(0, (delay - elapsed) / 1000);
   }
 }

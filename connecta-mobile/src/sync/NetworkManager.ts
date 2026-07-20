@@ -6,6 +6,7 @@ type ConnectivityListener = (connected: boolean) => void;
 export class NetworkManager {
   private static connected = false;
   private static connectionType = 'unknown';
+  private static details: NetInfoState['details'] = null;
   private static listeners: ConnectivityListener[] = [];
 
   static init(): void {
@@ -13,6 +14,7 @@ export class NetworkManager {
       const wasConnected = this.connected;
       this.connected = !!(state.isConnected && state.isInternetReachable);
       this.connectionType = state.type;
+      this.details = state.details;
 
       if (!wasConnected && this.connected) {
         SyncEngine.getInstance().triggerSync();
@@ -28,6 +30,10 @@ export class NetworkManager {
 
   static getConnectionType(): string {
     return this.connectionType;
+  }
+
+  static getDetails(): NetInfoState['details'] {
+    return this.details;
   }
 
   static onConnectivityChange(listener: ConnectivityListener): () => void {

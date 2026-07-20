@@ -51,12 +51,19 @@ export class FeedCacheRepository {
     const db = await getDatabase();
     const now = Date.now();
 
-    for (const item of items) {
-      await db.runAsync(
-        `INSERT OR REPLACE INTO local_feed_cache (user_id, data, score, cached_at)
-         VALUES (?, ?, ?, ?)`,
-        [item.userId, item.data, item.score, now],
-      );
+    await db.execAsync('BEGIN TRANSACTION;');
+    try {
+      for (const item of items) {
+        await db.runAsync(
+          `INSERT OR REPLACE INTO local_feed_cache (user_id, data, score, cached_at)
+           VALUES (?, ?, ?, ?)`,
+          [item.userId, item.data, item.score, now],
+        );
+      }
+      await db.execAsync('COMMIT;');
+    } catch (error) {
+      await db.execAsync('ROLLBACK;');
+      throw error;
     }
   }
 
