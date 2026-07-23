@@ -1,3 +1,4 @@
+
 {
   "name": "connecta-backend",
   "version": "1.0.0",
@@ -14,7 +15,7 @@
     "format": "prettier --write \"apps/**/*.ts\" \"libs/**/*.ts\"",
     "lint": "eslint \"{apps,libs}/**/*.ts\" --fix",
     "typecheck": "tsc --noEmit",
-    "start": "nest start",
+    "start": "nest start api-gateway",
     "start:api-gateway": "nest start api-gateway",
     "start:auth-service": "nest start auth-service",
     "start:user-service": "nest start user-service",

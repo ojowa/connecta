@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
+import { JwtModule } from '@nestjs/jwt';
 import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
 import { User, Session, OtpCode, Plan, Subscription, BiometricCredential } from '@app/common/entities';
@@ -20,6 +21,11 @@ import { User, Session, OtpCode, Plan, Subscription, BiometricCredential } from 
       logging: process.env.NODE_ENV !== 'production',
     }),
     TypeOrmModule.forFeature([User, Session, OtpCode, Plan, Subscription, BiometricCredential]),
+    JwtModule.register({
+      global: true,
+      secret: process.env.JWT_SECRET || '',
+      signOptions: { expiresIn: '15m' },
+    }),
   ],
   controllers: [AuthController],
   providers: [AuthService],
