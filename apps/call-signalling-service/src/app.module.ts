@@ -20,7 +20,7 @@ import { CallSession, User } from '@app/common/entities';
       password: process.env.DB_PASSWORD || '',
       database: process.env.DB_NAME || 'connecta_db',
       autoLoadEntities: true,
-      synchronize: true,
+      synchronize: false,
     }),
     TypeOrmModule.forFeature([CallSession, User]),
     PassportModule.register({ defaultStrategy: 'jwt' }),

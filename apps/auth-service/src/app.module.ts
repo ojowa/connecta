@@ -17,7 +17,7 @@ import { User, Session, OtpCode, Plan, Subscription, BiometricCredential } from 
       password: process.env.DB_PASSWORD || '',
       database: process.env.DB_NAME || 'connecta_db',
       autoLoadEntities: true,
-      synchronize: true,
+      synchronize: false,
       logging: process.env.NODE_ENV !== 'production',
     }),
     TypeOrmModule.forFeature([User, Session, OtpCode, Plan, Subscription, BiometricCredential]),

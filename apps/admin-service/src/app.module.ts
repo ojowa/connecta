@@ -13,7 +13,7 @@ import { AdminUser, AdminSession, AuditLog, SystemSetting, User, Report, Subscri
     TypeOrmModule.forRoot({
       type: 'postgres', host: process.env.DB_HOST || 'localhost', port: parseInt(process.env.DB_PORT || '5432', 10),
       username: process.env.DB_USERNAME || 'postgres', password: process.env.DB_PASSWORD || '',
-      database: process.env.DB_NAME || 'connecta_db', autoLoadEntities: true, synchronize: true,
+      database: process.env.DB_NAME || 'connecta_db', autoLoadEntities: true, synchronize: false,
     }),
     TypeOrmModule.forFeature([AdminUser, AdminSession, AuditLog, SystemSetting, User, Report, Subscription, Transaction, Plan, Profile, Notification, Photo]),
     JwtModule.register({ secret: process.env.JWT_SECRET || '', signOptions: { expiresIn: '15m' } }),
