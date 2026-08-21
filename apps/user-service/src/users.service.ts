@@ -137,4 +137,15 @@ export class UsersService {
   async getBackup(userId: string) {
     return { backup: null };
   }
+
+  async getSyncDelta(userId: string, sinceTimestamp: number) {
+    const sinceDate = new Date(sinceTimestamp);
+    const profile = await this.profileRepo
+      .createQueryBuilder('p')
+      .where('p.userId = :userId', { userId })
+      .andWhere('p.updatedAt > :since', { since: sinceDate })
+      .getOne();
+
+    return { data: profile };
+  }
 }

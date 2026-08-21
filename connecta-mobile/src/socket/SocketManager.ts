@@ -36,11 +36,11 @@ class SocketManager {
     const { token } = useAppStore.getState();
     if (!token) return;
 
-    const chatUrl = process.env.EXPO_PUBLIC_CHAT_WS_URL;
-    const callsUrl = process.env.EXPO_PUBLIC_CALLS_WS_URL;
+    const wsUrl = process.env.EXPO_PUBLIC_WS_URL;
+    if (!wsUrl) return;
 
-    if (chatUrl && !this.chatSocket?.connected) {
-      this.chatSocket = io(chatUrl, {
+    if (!this.chatSocket?.connected) {
+      this.chatSocket = io(`${wsUrl}/chat`, {
         auth: { token },
         transports: ['websocket'],
         reconnection: true,
@@ -52,8 +52,8 @@ class SocketManager {
       this.registerChatHandlers();
     }
 
-    if (callsUrl && !this.callsSocket?.connected) {
-      this.callsSocket = io(callsUrl, {
+    if (!this.callsSocket?.connected) {
+      this.callsSocket = io(`${wsUrl}/calls`, {
         auth: { token },
         transports: ['websocket'],
         reconnection: true,

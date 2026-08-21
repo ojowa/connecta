@@ -9,7 +9,9 @@ import { UsersModule } from './modules/users/users.module';
 import { ProfilesModule } from './modules/profiles/profiles.module';
 import { MatchingModule } from './modules/matching/matching.module';
 import { ChatModule } from './modules/chat/chat.module';
+import { ChatWsProxy } from './modules/chat/chat-ws-proxy';
 import { CallsModule } from './modules/calls/calls.module';
+import { CallsWsProxy } from './modules/calls/calls-ws-proxy';
 import { MediaModule } from './modules/media/media.module';
 import { PaymentsModule } from './modules/payments/payments.module';
 import { NotificationsModule } from './modules/notifications/notifications.module';
@@ -55,6 +57,8 @@ import { AuditLogInterceptor } from './interceptors/audit-log.interceptor';
     TimeoutInterceptor,
     ResponseTransformInterceptor,
     AuditLogInterceptor,
+    ChatWsProxy,
+    CallsWsProxy,
   ],
 })
 export class AppModule implements NestModule {

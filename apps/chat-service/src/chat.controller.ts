@@ -46,4 +46,10 @@ export class ChatController {
   deleteMessage(@Body('_userId') userId: string, @Param('messageId') messageId: string) {
     return this.chatService.deleteMessage(userId, messageId);
   }
+
+  @Get('sync') @ApiOperation({ summary: 'Get sync delta for messages' })
+  getSync(@Body('_userId') userId: string, @Query('since') since?: string) {
+    const sinceTime = since ? parseInt(since, 10) : 0;
+    return this.chatService.getSyncDelta(userId, sinceTime);
+  }
 }

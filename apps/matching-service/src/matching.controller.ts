@@ -54,4 +54,10 @@ export class MatchingController {
 
   @Get('safety-score/:userId') @ApiOperation({ summary: 'Get behavioral safety score for a user' })
   getSafetyScore(@Body('_userId') userId: string, @Param('userId') targetUserId: string) { return this.matchingService.getBehavioralAnalysis(targetUserId); }
+
+  @Get('sync') @ApiOperation({ summary: 'Get sync delta for matches' })
+  getSync(@Body('_userId') userId: string, @Query('since') since?: string) {
+    const sinceTime = since ? parseInt(since, 10) : 0;
+    return this.matchingService.getSyncDelta(userId, sinceTime);
+  }
 }

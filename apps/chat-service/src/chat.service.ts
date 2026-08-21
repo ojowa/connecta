@@ -101,4 +101,21 @@ export class ChatService {
     const expiresAt = new Date(Date.now() + 8000);
     return { conversationId, isTyping, expiresAt };
   }
+
+  async getSyncDelta(userId: string, sinceTimestamp: number) {
+    const participations = await this.partRepo.find({ where: { userId } });
+    const conversationIds = participations.map(p => p.conversationId);
+    if (conversationIds.length === 0) return { data: [] };
+
+    const sinceDate = new Date(sinceTimestamp);
+    const messages = await this.msgRepo
+      .createQueryBuilder('m')
+      .where('m.conversationId IN (:...ids)', { ids: conversationIds })
+      .andWhere('m.createdAt > :since', { since: sinceDate })
+      .orderBy('m.createdAt', 'ASC')
+      .limit(100)
+      .getMany();
+
+    return { data: messages };
+  }
 }

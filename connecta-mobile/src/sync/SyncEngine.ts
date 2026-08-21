@@ -160,9 +160,11 @@ export class SyncEngine {
 
     switch (`${operation}:${entity_type}`) {
       case 'CREATE:message': {
-        const msgResult = await apiClient.post('/chat/messages', data);
-        if (msgResult.data?.messageId) {
-          await Outbox.markMessageSynced(entity_id, msgResult.data.messageId);
+        const conversationId = data.conversationId;
+        if (!conversationId) break;
+        const msgResult = await apiClient.post(`/chat/conversations/${conversationId}/messages`, data);
+        if (msgResult.data?.data?.id) {
+          await Outbox.markMessageSynced(entity_id, msgResult.data.data.id);
         }
         break;
       }
@@ -170,26 +172,35 @@ export class SyncEngine {
         await apiClient.put('/users/me', data);
         break;
       case 'UPDATE:preference':
-        await apiClient.put('/users/preferences', data);
+        await apiClient.put('/users/me/preferences', data);
         break;
       case 'CREATE:like':
-        await apiClient.post('/match/like', { targetUserId: entity_id });
+        await apiClient.post(`/matching/like/${entity_id}`);
         break;
       case 'CREATE:pass':
-        await apiClient.post('/match/pass', { targetUserId: entity_id });
+        await apiClient.post(`/matching/pass/${entity_id}`);
         break;
       case 'CREATE:super_like':
-        await apiClient.post('/match/super-like', { targetUserId: entity_id });
+        await apiClient.post(`/matching/superlike/${entity_id}`);
         break;
-      case 'CREATE:message_reaction':
-        await apiClient.post(`/chat/messages/${entity_id}/reactions`, data);
+      case 'CREATE:message_reaction': {
+        const convId = data.conversationId;
+        if (!convId) break;
+        await apiClient.post(`/chat/conversations/${convId}/messages/${entity_id}/reactions`, { emoji: data.emoji });
         break;
-      case 'DELETE:message':
-        await apiClient.delete(`/chat/messages/${entity_id}`);
+      }
+      case 'DELETE:message': {
+        const convId = data.conversationId;
+        if (!convId) break;
+        await apiClient.delete(`/chat/conversations/${convId}/messages/${entity_id}`);
         break;
-      case 'UPDATE:message_read':
-        await apiClient.post('/chat/mark-read', data);
+      }
+      case 'UPDATE:message_read': {
+        const convId = data.conversationId;
+        if (!convId) break;
+        await apiClient.put(`/chat/conversations/${convId}/read`);
         break;
+      }
       default:
         break;
     }
@@ -201,26 +212,30 @@ export class SyncEngine {
 
     try {
       const [messagesRes, matchesRes, profileRes] = await Promise.all([
-        apiClient.get(`/chat/sync?since=${lastSync}`).catch(() => ({ data: [] })),
-        apiClient.get(`/matching/sync?since=${lastSync}`).catch(() => ({ data: [] })),
-        apiClient.get(`/users/sync?since=${lastSync}`).catch(() => ({ data: null })),
+        apiClient.get(`/chat/sync?since=${lastSync}`).catch(() => ({ data: { data: [] } })),
+        apiClient.get(`/matching/sync?since=${lastSync}`).catch(() => ({ data: { data: [] } })),
+        apiClient.get(`/users/sync?since=${lastSync}`).catch(() => ({ data: { data: null } })),
       ]);
 
-      for (const msg of messagesRes.data || []) {
+      const messages = messagesRes.data?.data || messagesRes.data || [];
+      const matches = matchesRes.data?.data || matchesRes.data || [];
+      const profile = profileRes.data?.data || profileRes.data || null;
+
+      for (const msg of messages) {
         await this.saveIncomingMessage(msg);
         const msgTime = new Date(msg.createdAt).getTime();
         if (msgTime > latestSync) latestSync = msgTime;
       }
 
-      for (const match of matchesRes.data || []) {
+      for (const match of matches) {
         await this.saveIncomingMatch(match);
         const matchTime = new Date(match.matchedAt || match.createdAt).getTime();
         if (matchTime > latestSync) latestSync = matchTime;
       }
 
-      if (profileRes.data) {
-        await this.saveIncomingProfile(profileRes.data);
-        const profileTime = profileRes.data.updatedAt ? new Date(profileRes.data.updatedAt).getTime() : Date.now();
+      if (profile) {
+        await this.saveIncomingProfile(profile);
+        const profileTime = profile.updatedAt ? new Date(profile.updatedAt).getTime() : Date.now();
         if (profileTime > latestSync) latestSync = profileTime;
       }
 
@@ -267,6 +282,7 @@ export class SyncEngine {
     const db = await getDatabase();
     const now = Date.now();
 
+    const otherUser = match.otherUser || {};
     await db.runAsync(
       `INSERT OR REPLACE INTO local_conversations
        (id, match_id, other_user_id, other_user_name, other_user_photo, created_at, updated_at)
@@ -274,9 +290,9 @@ export class SyncEngine {
       [
         match.conversationId || match.id,
         match.id,
-        match.otherUserId,
-        match.otherUserName || null,
-        match.otherUserPhoto || null,
+        otherUser.id || match.otherUserId || null,
+        otherUser.fullName || match.otherUserName || null,
+        otherUser.avatarUrl || match.otherUserPhoto || null,
         new Date(match.matchedAt || match.createdAt).getTime(),
         now,
       ],
@@ -364,8 +380,9 @@ export class SyncEngine {
 
     try {
       const response = await apiClient.get('/sync/vector-clock');
-      if (response.data?.vectorClock) {
-        const clock = new VectorClock(response.data.vectorClock);
+      const vc = response.data?.data?.vectorClock || response.data?.vectorClock;
+      if (vc) {
+        const clock = new VectorClock(vc);
         await this.saveVectorClock(clock);
         return clock;
       }

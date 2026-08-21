@@ -61,4 +61,10 @@ export class UsersController {
 
   @Get('me/backup') @ApiOperation({ summary: 'Get backup' })
   getBackup(@Body('_userId') userId: string) { return this.usersService.getBackup(userId); }
+
+  @Get('sync') @ApiOperation({ summary: 'Get sync delta for user profiles' })
+  getSync(@Body('_userId') userId: string, @Query('since') since?: string) {
+    const sinceTime = since ? parseInt(since, 10) : 0;
+    return this.usersService.getSyncDelta(userId, sinceTime);
+  }
 }

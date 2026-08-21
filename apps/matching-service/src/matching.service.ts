@@ -143,4 +143,17 @@ export class MatchingService {
   async getBehavioralAnalysis(userId: string) {
     return this.matchmakingEngine.getBehavioralAnalysis(userId);
   }
+
+  async getSyncDelta(userId: string, sinceTimestamp: number) {
+    const sinceDate = new Date(sinceTimestamp);
+    const matches = await this.matchRepo
+      .createQueryBuilder('m')
+      .where('(m.user1Id = :userId OR m.user2Id = :userId)', { userId })
+      .andWhere('m.matchedAt > :since', { since: sinceDate })
+      .orderBy('m.matchedAt', 'ASC')
+      .limit(100)
+      .getMany();
+
+    return { data: matches };
+  }
 }
