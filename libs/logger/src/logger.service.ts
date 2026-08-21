@@ -10,12 +10,16 @@ export enum LogLevel {
 
 @Injectable({ scope: Scope.TRANSIENT })
 export class AppLoggerService {
-  private context: string;
+  private context: string = 'App';
   private logLevel: LogLevel;
 
-  constructor(context?: string) {
-    this.context = context || 'App';
+  constructor() {
     this.logLevel = (process.env.LOG_LEVEL as LogLevel) || LogLevel.INFO;
+  }
+
+  setContext(context: string): this {
+    this.context = context;
+    return this;
   }
 
   log(message: string, context?: string) {
@@ -39,7 +43,8 @@ export class AppLoggerService {
   }
 
   child(context: string): AppLoggerService {
-    const logger = new AppLoggerService(context);
+    const logger = new AppLoggerService();
+    logger.setContext(context);
     return logger;
   }
 

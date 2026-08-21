@@ -4,7 +4,7 @@ import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { Request, Response } from 'express';
 import { firstValueFrom } from 'rxjs';
 
-const AUTH_SERVICE = process.env.AUTH_SERVICE_URL || 'http://localhost:3001';
+const AUTH_SERVICE = process.env.AUTH_SERVICE_URL;
 
 @ApiTags('Auth')
 @Controller('auth')

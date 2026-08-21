@@ -4,7 +4,7 @@ import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { Request, Response } from 'express';
 import { firstValueFrom } from 'rxjs';
 
-const CHAT_SERVICE = process.env.CHAT_SERVICE_URL || 'http://localhost:3005';
+const CHAT_SERVICE = process.env.CHAT_SERVICE_URL;
 
 @ApiTags('Chat')
 @ApiBearerAuth()
@@ -116,5 +116,21 @@ export class ChatController {
       this.http.delete(`${CHAT_SERVICE}/chat/conversations/${conversationId}/messages/${messageId}`, { headers: this.authHeaders(req) }),
     );
     return res.status(result.status).json(result.data);
+  }
+
+  @Get('sync')
+  @ApiOperation({ summary: 'Get sync delta for messages' })
+  async getSyncDelta(@Query('since') since: string, @Req() req: Request, @Res() res: Response) {
+    try {
+      const result = await firstValueFrom(
+        this.http.get(`${CHAT_SERVICE}/chat/sync`, {
+          params: { since },
+          headers: this.authHeaders(req),
+        }),
+      );
+      return res.status(result.status).json(result.data);
+    } catch {
+      return res.json({ data: [] });
+    }
   }
 }

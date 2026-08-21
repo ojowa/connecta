@@ -23,4 +23,9 @@ export class NotificationsController {
 
   @Post('broadcast') @ApiOperation({ summary: 'Send broadcast notification (admin)' })
   broadcast(@Body() body: BroadcastNotificationDto) { return this.notificationsService.broadcast(body); }
+
+  @Post('register') @ApiOperation({ summary: 'Register push notification token' })
+  registerToken(@Body('_userId') userId: string, @Body() body: { token: string; platform: string; deviceId?: string }) {
+    return this.notificationsService.registerDeviceToken(userId, body);
+  }
 }

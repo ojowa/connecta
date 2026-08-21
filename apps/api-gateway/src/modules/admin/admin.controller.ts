@@ -4,7 +4,7 @@ import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { Request, Response } from 'express';
 import { firstValueFrom } from 'rxjs';
 
-const ADMIN_SERVICE = process.env.ADMIN_SERVICE_URL || 'http://localhost:3011';
+const ADMIN_SERVICE = process.env.ADMIN_SERVICE_URL;
 
 @ApiTags('Admin')
 @Controller('admin')

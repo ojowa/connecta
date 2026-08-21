@@ -53,7 +53,7 @@ export class MatchingService {
     const mutualLike = await this.likeRepo.findOne({ where: { userId: targetUserId, likedUserId: userId } });
     if (mutualLike) {
       const conv = await this.convRepo.save(this.convRepo.create({ type: 'direct' }));
-      const match = await this.matchRepo.save(this.matchRepo.create({ userAId: userId, userBId: targetUserId, conversationId: conv.id, matchedVia: likeType === 'super' ? 'super_like' : 'like' }));
+      const match = await this.matchRepo.save(this.matchRepo.create({ user1Id: userId, user2Id: targetUserId, conversationId: conv.id, matchedVia: likeType === 'super' ? 'super_like' : 'like' }));
       await this.partRepo.save([
         this.partRepo.create({ conversationId: conv.id, userId }),
         this.partRepo.create({ conversationId: conv.id, userId: targetUserId }),
@@ -84,8 +84,8 @@ export class MatchingService {
     if (mutualLike) {
       const match = await this.matchRepo.findOne({
         where: [
-          { userAId: userId, userBId: lastLike.likedUserId },
-          { userAId: lastLike.likedUserId, userBId: userId },
+          { user1Id: userId, user2Id: lastLike.likedUserId },
+          { user1Id: lastLike.likedUserId, user2Id: userId },
         ],
       });
       if (match) {
@@ -101,22 +101,22 @@ export class MatchingService {
 
   async getMatches(userId: string, page = 1, limit = 20) {
     const [matches, total] = await this.matchRepo.findAndCount({
-      where: [{ userAId: userId, isActive: true }, { userBId: userId, isActive: true }],
+      where: [{ user1Id: userId, isActive: true }, { user2Id: userId, isActive: true }],
       order: { matchedAt: 'DESC' }, skip: (page - 1) * limit, take: limit,
     });
     const enriched = await Promise.all(matches.map(async (m) => {
-      const otherUserId = m.userAId === userId ? m.userBId : m.userAId;
+      const otherUserId = m.user1Id === userId ? m.user2Id : m.user1Id;
       const user = await this.userRepo.findOne({ where: { id: otherUserId } });
       const profile = await this.profileRepo.findOne({ where: { userId: otherUserId } });
-      return { matchId: m.id, matchedUser: { userId: otherUserId, fullName: user?.fullName, profile }, matchedAt: m.matchedAt, conversationId: m.conversationId };
+      return { id: m.id, user1Id: m.user1Id, user2Id: m.user2Id, matchedAt: m.matchedAt, conversationId: m.conversationId, otherUser: user ? { id: user.id, email: user.email, fullName: user.fullName, role: user.role, status: user.status, createdAt: user.createdAt } : null, profile };
     }));
-    return { matches: enriched, meta: { page, limit, total, hasMore: total > page * limit } };
+    return { data: enriched, meta: { page, limit, total, hasMore: total > page * limit } };
   }
 
   async unmatch(userId: string, matchId: string) {
     const match = await this.matchRepo.findOne({ where: { id: matchId } });
     if (!match) throw new NotFoundException('Match not found');
-    if (match.userAId !== userId && match.userBId !== userId) throw new BadRequestException('Not your match');
+    if (match.user1Id !== userId && match.user2Id !== userId) throw new BadRequestException('Not your match');
     await this.matchRepo.update(matchId, { isActive: false });
     return { unmatched: true, matchId };
   }
@@ -129,7 +129,7 @@ export class MatchingService {
       const user = await this.userRepo.findOne({ where: { id: l.userId } });
       return { likeId: l.id, fromUser: { userId: l.userId, fullName: user?.fullName }, likeType: l.isSuperLike ? 'super' : 'normal', likedAt: l.createdAt };
     }));
-    return { likes: enriched, totalLikes: total, meta: { page, limit, total, hasMore: total > page * limit } };
+    return { data: enriched, totalLikes: total, meta: { page, limit, total, hasMore: total > page * limit } };
   }
 
   async getCompatibility(userId: string, targetUserId: string) {

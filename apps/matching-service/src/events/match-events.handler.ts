@@ -25,7 +25,7 @@ export class MatchEventsHandler {
     private notificationRepository: Repository<Notification>,
   ) {}
 
-  async handleMatchCreated(payload: { matchId: string; userAId: string; userBId: string; matchedVia: string }) {
+  async handleMatchCreated(payload: { matchId: string; user1Id: string; user2Id: string; matchedVia: string }) {
     this.logger.log(`Handling match.created: ${payload.matchId}`);
 
     const conversation = this.conversationRepository.create({});
@@ -38,21 +38,21 @@ export class MatchEventsHandler {
     await this.participantRepository.save([
       this.participantRepository.create({
         conversationId: savedConversation.id,
-        userId: payload.userAId,
+        userId: payload.user1Id,
       }),
       this.participantRepository.create({
         conversationId: savedConversation.id,
-        userId: payload.userBId,
+        userId: payload.user2Id,
       }),
     ]);
 
-    const profileA = await this.profileRepository.findOne({ where: { userId: payload.userAId } });
-    const profileB = await this.profileRepository.findOne({ where: { userId: payload.userBId } });
+    const profileA = await this.profileRepository.findOne({ where: { userId: payload.user1Id } });
+    const profileB = await this.profileRepository.findOne({ where: { userId: payload.user2Id } });
 
     if (profileA) {
       await this.notificationRepository.save(
         this.notificationRepository.create({
-          userId: payload.userAId,
+          userId: payload.user1Id,
           type: 'new_match',
           title: 'New Match!',
           body: `You matched with ${profileB?.firstName || 'someone'}! Send a message to start chatting.`,
@@ -66,7 +66,7 @@ export class MatchEventsHandler {
     if (profileB) {
       await this.notificationRepository.save(
         this.notificationRepository.create({
-          userId: payload.userBId,
+          userId: payload.user2Id,
           type: 'new_match',
           title: 'New Match!',
           body: `You matched with ${profileA?.firstName || 'someone'}! Send a message to start chatting.`,
@@ -78,11 +78,11 @@ export class MatchEventsHandler {
     }
   }
 
-  async handleMatchMutual(payload: { matchId: string; userAId: string; userBId: string }) {
+  async handleMatchMutual(payload: { matchId: string; user1Id: string; user2Id: string }) {
     this.logger.log(`Handling match.mutual: ${payload.matchId}`);
 
-    const userA = await this.userRepository.findOne({ where: { id: payload.userAId } });
-    const userB = await this.userRepository.findOne({ where: { id: payload.userBId } });
+    const userA = await this.userRepository.findOne({ where: { id: payload.user1Id } });
+    const userB = await this.userRepository.findOne({ where: { id: payload.user2Id } });
 
     if (userA && userB) {
       this.logger.log(`Mutual match established between ${userA.email} and ${userB.email}`);

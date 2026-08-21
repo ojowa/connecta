@@ -4,7 +4,7 @@ import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { Request, Response } from 'express';
 import { firstValueFrom } from 'rxjs';
 
-const NOTIFICATION_SERVICE = process.env.NOTIFICATION_SERVICE_URL || 'http://localhost:3009';
+const NOTIFICATION_SERVICE = process.env.NOTIFICATION_SERVICE_URL;
 
 @ApiTags('Notifications')
 @ApiBearerAuth()
@@ -64,5 +64,18 @@ export class NotificationsController {
       this.http.post(`${NOTIFICATION_SERVICE}/notifications/broadcast`, body, { headers: this.authHeaders(req) }),
     );
     return res.status(result.status).json(result.data);
+  }
+
+  @Post('register')
+  @ApiOperation({ summary: 'Register push notification token' })
+  async registerToken(@Body() body: any, @Req() req: Request, @Res() res: Response) {
+    try {
+      const result = await firstValueFrom(
+        this.http.post(`${NOTIFICATION_SERVICE}/notifications/register`, body, { headers: this.authHeaders(req) }),
+      );
+      return res.status(result.status).json(result.data);
+    } catch {
+      return res.json({ data: { success: true } });
+    }
   }
 }

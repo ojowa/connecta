@@ -8,6 +8,7 @@ import { useNetworkStatus } from '../hooks/useNetworkStatus';
 import { useNotifications } from '../hooks/useNotifications';
 import { useSocket } from '../hooks/useSocket';
 import { SyncEngine } from '../sync/SyncEngine';
+import { useAppStore } from '../store';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -19,7 +20,11 @@ const AppInner: React.FC = () => {
   useNetworkStatus();
   useNotifications();
   useSocket();
-  React.useEffect(() => { SyncEngine.getInstance().initialize(); }, []);
+  const isAuthenticated = useAppStore((s) => s.isAuthenticated);
+  React.useEffect(() => {
+    if (isAuthenticated) SyncEngine.getInstance().initialize();
+    else SyncEngine.getInstance().destroy();
+  }, [isAuthenticated]);
   return <RootNavigator />;
 };
 

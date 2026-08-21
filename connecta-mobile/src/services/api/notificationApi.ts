@@ -15,12 +15,12 @@ export const notificationApi = {
   },
 
   async markAsRead(notificationIds?: string[], markAll?: boolean) {
-    const response = await apiClient.post(ENDPOINTS.NOTIFICATIONS.MARK_READ, { notificationIds, markAll });
+    const response = await apiClient.put(ENDPOINTS.NOTIFICATIONS.MARK_READ, { notificationIds, markAll });
     return response.data;
   },
 
-  async setQuietHours(data: { enabled: boolean; start?: string; end?: string }) {
-    const response = await apiClient.put(ENDPOINTS.NOTIFICATIONS.QUIET_HOURS, data);
+  async registerToken(token: string, platform: string, deviceId?: string) {
+    const response = await apiClient.post(ENDPOINTS.NOTIFICATIONS.REGISTER, { token, platform, deviceId });
     return response.data;
   },
 };

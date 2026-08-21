@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { devtools, persist, createJSONStorage } from 'zustand/middleware';
+import { mmkvStorage } from '../services/storage/mmkvStorage';
 import { User } from '../types/auth';
 import { Message } from '../types/chat';
 
@@ -85,6 +86,18 @@ export const useAppStore = create<AppState>()(
       }),
       {
         name: 'connecta-auth-storage',
+        storage: createJSONStorage(() => ({
+          getItem: (name: string) => {
+            const value = mmkvStorage.getString(name);
+            return value ? JSON.parse(value) : null;
+          },
+          setItem: (name: string, value: unknown) => {
+            mmkvStorage.set(name, JSON.stringify(value));
+          },
+          removeItem: (name: string) => {
+            mmkvStorage.remove(name);
+          },
+        })),
         partialize: (state) => ({
           token: state.token,
           refreshToken: state.refreshToken,

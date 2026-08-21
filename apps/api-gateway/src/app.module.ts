@@ -2,6 +2,7 @@ import { Module, MiddlewareConsumer, NestModule } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
 import { APP_GUARD } from '@nestjs/core';
+import { LoggerLibModule } from '@app/logger';
 import { HealthModule } from './health/health.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { UsersModule } from './modules/users/users.module';
@@ -15,6 +16,7 @@ import { NotificationsModule } from './modules/notifications/notifications.modul
 import { SearchModule } from './modules/search/search.module';
 import { AdminModule } from './modules/admin/admin.module';
 import { CryptoModule } from './modules/crypto/crypto.module';
+import { SyncModule } from './modules/sync/sync.module';
 import { RequestIdMiddleware } from './middleware/request-id.middleware';
 import { DeviceInfoMiddleware } from './middleware/device-info.middleware';
 import { RequestLoggingInterceptor } from './interceptors/request-logging.interceptor';
@@ -28,6 +30,7 @@ import { AuditLogInterceptor } from './interceptors/audit-log.interceptor';
     ThrottlerModule.forRoot([
       { name: 'default', ttl: 60000, limit: 120 },
     ]),
+    LoggerLibModule,
     HealthModule,
     AuthModule,
     UsersModule,
@@ -41,6 +44,7 @@ import { AuditLogInterceptor } from './interceptors/audit-log.interceptor';
     SearchModule,
     AdminModule,
     CryptoModule,
+    SyncModule,
   ],
   providers: [
     {

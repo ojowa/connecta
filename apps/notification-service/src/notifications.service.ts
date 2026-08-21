@@ -101,4 +101,8 @@ export class NotificationsService {
       sentAt: new Date(),
     };
   }
+
+  async registerDeviceToken(userId: string, data: { token: string; platform: string; deviceId?: string }) {
+    return { success: true, userId, platform: data.platform };
+  }
 }

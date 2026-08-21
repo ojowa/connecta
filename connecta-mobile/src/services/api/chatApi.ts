@@ -19,18 +19,18 @@ export const chatApi = {
     return response.data as ApiResponse<Message>;
   },
 
-  async deleteMessage(messageId: string) {
-    const response = await apiClient.delete(ENDPOINTS.CHAT.DELETE(messageId));
+  async deleteMessage(conversationId: string, messageId: string) {
+    const response = await apiClient.delete(ENDPOINTS.CHAT.DELETE(conversationId, messageId));
     return response.data;
   },
 
-  async reactToMessage(messageId: string, emoji: string) {
-    const response = await apiClient.post(ENDPOINTS.CHAT.REACT(messageId), { emoji });
+  async reactToMessage(conversationId: string, messageId: string, emoji: string) {
+    const response = await apiClient.post(ENDPOINTS.CHAT.REACT(conversationId, messageId), { emoji });
     return response.data;
   },
 
-  async markAsRead(messageId: string) {
-    const response = await apiClient.post(ENDPOINTS.CHAT.READ(messageId));
+  async markAsRead(conversationId: string) {
+    const response = await apiClient.put(ENDPOINTS.CHAT.READ(conversationId));
     return response.data;
   },
 

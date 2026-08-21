@@ -87,8 +87,8 @@ export class AppConfigService {
       name: this.get('APP_NAME', 'Connecta'),
       port: this.get('APP_PORT', 3000),
       nodeEnv: this.get('NODE_ENV', 'development'),
-      frontendUrl: this.get('FRONTEND_URL', 'http://localhost:8081'),
-      adminUrl: this.get('ADMIN_URL', 'http://localhost:3001'),
+      frontendUrl: this.get('FRONTEND_URL'),
+      adminUrl: this.get('ADMIN_URL'),
     };
   }
 }

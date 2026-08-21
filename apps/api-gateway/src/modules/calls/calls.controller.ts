@@ -5,7 +5,7 @@ import { Request, Response } from 'express';
 import { firstValueFrom } from 'rxjs';
 import { JwtAuthGuard } from '@app/common/guards/jwt-auth.guard';
 
-const CALL_SERVICE = process.env.CALL_SERVICE_URL || 'http://localhost:3006';
+const CALL_SERVICE = process.env.CALL_SERVICE_URL;
 
 @ApiTags('Calls')
 @ApiBearerAuth()

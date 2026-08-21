@@ -4,7 +4,7 @@ import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { Request, Response } from 'express';
 import { firstValueFrom } from 'rxjs';
 
-const PAYMENT_SERVICE = process.env.PAYMENT_SERVICE_URL || 'http://localhost:3008';
+const PAYMENT_SERVICE = process.env.PAYMENT_SERVICE_URL;
 
 @ApiTags('Payments')
 @ApiBearerAuth()

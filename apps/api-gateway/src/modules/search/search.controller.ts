@@ -4,7 +4,7 @@ import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { Request, Response } from 'express';
 import { firstValueFrom } from 'rxjs';
 
-const SEARCH_SERVICE = process.env.SEARCH_SERVICE_URL || 'http://localhost:3010';
+const SEARCH_SERVICE = process.env.SEARCH_SERVICE_URL;
 
 @ApiTags('Search')
 @ApiBearerAuth()

@@ -105,10 +105,10 @@ export class ChatGateway implements OnGatewayInit, OnGatewayConnection, OnGatewa
         replyTo: data.replyToMessageId,
       });
 
-      this.server.to(`conversation:${data.conversationId}`).emit(CHAT_EVENTS.MESSAGE_RECEIVED, result.message);
-      this.server.to(`user:${userId}`).emit(CHAT_EVENTS.MESSAGE_SENT, result.message);
+      this.server.to(`conversation:${data.conversationId}`).emit(CHAT_EVENTS.MESSAGE_RECEIVED, result.data);
+      this.server.to(`user:${userId}`).emit(CHAT_EVENTS.MESSAGE_SENT, result.data);
 
-      return { event: CHAT_EVENTS.MESSAGE_SENT, data: result.message };
+      return { event: CHAT_EVENTS.MESSAGE_SENT, data: result.data };
     } catch (error) {
       this.logger.error(`Send message error: ${error.message}`);
       return { event: 'error', data: { message: error.message } };

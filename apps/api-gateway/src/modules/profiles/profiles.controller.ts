@@ -4,7 +4,7 @@ import { ApiTags, ApiOperation, ApiBearerAuth, ApiConsumes } from '@nestjs/swagg
 import { Request, Response } from 'express';
 import { firstValueFrom } from 'rxjs';
 
-const PROFILE_SERVICE = process.env.PROFILE_SERVICE_URL || 'http://localhost:3003';
+const PROFILE_SERVICE = process.env.PROFILE_SERVICE_URL;
 
 @ApiTags('Profile')
 @ApiBearerAuth()
@@ -87,6 +87,15 @@ export class ProfilesController {
   async getVerificationStatus(@Req() req: Request, @Res() res: Response) {
     const result = await firstValueFrom(
       this.http.get(`${PROFILE_SERVICE}/profiles/verification`, { headers: this.authHeaders(req) }),
+    );
+    return res.status(result.status).json(result.data);
+  }
+
+  @Get(':userId')
+  @ApiOperation({ summary: 'Get user profile by ID' })
+  async getProfile(@Param('userId') userId: string, @Req() req: Request, @Res() res: Response) {
+    const result = await firstValueFrom(
+      this.http.get(`${PROFILE_SERVICE}/profiles/${userId}`, { headers: this.authHeaders(req) }),
     );
     return res.status(result.status).json(result.data);
   }

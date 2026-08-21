@@ -3,6 +3,7 @@ import * as Device from 'expo-device';
 import Constants from 'expo-constants';
 import { Platform } from 'react-native';
 import { apiClient } from '../services/api/apiClient';
+import { ENDPOINTS } from '../constants/endpoints';
 import { useAppStore } from '../store';
 
 Notifications.setNotificationHandler({
@@ -26,19 +27,23 @@ export class NotificationManager {
   }
 
   async initialize(): Promise<void> {
-    if (!Device.isDevice) return;
-    const { status: existingStatus } = await Notifications.getPermissionsAsync();
-    let finalStatus = existingStatus;
-    if (existingStatus !== 'granted') {
-      const { status } = await Notifications.requestPermissionsAsync();
-      finalStatus = status;
+    try {
+      if (!Device.isDevice) return;
+      const { status: existingStatus } = await Notifications.getPermissionsAsync();
+      let finalStatus = existingStatus;
+      if (existingStatus !== 'granted') {
+        const { status } = await Notifications.requestPermissionsAsync();
+        finalStatus = status;
+      }
+      if (finalStatus !== 'granted') return;
+      this.expoPushToken = await this.registerForPushNotificationsAsync();
+      if (this.expoPushToken) await this.registerTokenWithBackend(this.expoPushToken);
+      if (Platform.OS === 'android') await this.setupAndroidChannels();
+      this.notificationSubscription = Notifications.addNotificationReceivedListener(this.handleNotificationReceived);
+      this.responseSubscription = Notifications.addNotificationResponseReceivedListener(this.handleNotificationResponse);
+    } catch (error) {
+      console.warn('Push notifications not available:', error.message);
     }
-    if (finalStatus !== 'granted') return;
-    this.expoPushToken = await this.registerForPushNotificationsAsync();
-    if (this.expoPushToken) await this.registerTokenWithBackend(this.expoPushToken);
-    if (Platform.OS === 'android') await this.setupAndroidChannels();
-    this.notificationSubscription = Notifications.addNotificationReceivedListener(this.handleNotificationReceived);
-    this.responseSubscription = Notifications.addNotificationResponseReceivedListener(this.handleNotificationResponse);
   }
 
   private async registerForPushNotificationsAsync(): Promise<string | null> {
@@ -50,7 +55,7 @@ export class NotificationManager {
 
   private async registerTokenWithBackend(token: string): Promise<void> {
     try {
-      await apiClient.post('/notifications/register', {
+      await apiClient.post(ENDPOINTS.NOTIFICATIONS.REGISTER, {
         token,
         platform: Platform.OS,
         deviceId: Constants.installationId,

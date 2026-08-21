@@ -1,16 +1,9 @@
 import { apiClient } from './apiClient';
 import { ENDPOINTS } from '../../constants/endpoints';
-import { ApiResponse } from '../../types/api';
-import { Profile } from '../../types/match';
 
 export const profileApi = {
-  async getProfile(userId: string) {
-    const response = await apiClient.get(ENDPOINTS.PROFILES.GET(userId));
-    return response.data as ApiResponse<Profile>;
-  },
-
-  async updateProfile(data: Partial<Profile>) {
-    const response = await apiClient.put(ENDPOINTS.PROFILES.UPDATE, data);
+  async getPhotos() {
+    const response = await apiClient.get(ENDPOINTS.PROFILES.PHOTOS);
     return response.data;
   },
 
@@ -34,18 +27,18 @@ export const profileApi = {
     return response.data;
   },
 
+  async setPrimaryPhoto(photoId: string) {
+    const response = await apiClient.put(ENDPOINTS.PROFILES.SET_PRIMARY_PHOTO(photoId));
+    return response.data;
+  },
+
   async submitVerification() {
     const response = await apiClient.post(ENDPOINTS.PROFILES.VERIFY);
     return response.data;
   },
 
-  async getInterests(userId: string) {
-    const response = await apiClient.get(ENDPOINTS.PROFILES.INTERESTS(userId));
-    return response.data;
-  },
-
-  async addInterests(interestIds: string[]) {
-    const response = await apiClient.post(ENDPOINTS.PROFILES.ADD_INTERESTS, { interestIds });
+  async getVerificationStatus() {
+    const response = await apiClient.get(ENDPOINTS.PROFILES.VERIFICATION_STATUS);
     return response.data;
   },
 };

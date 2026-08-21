@@ -17,5 +17,10 @@ export function useSocket() {
     socketManager.current.emit(event, data);
   }, []);
 
-  return { socket: socketManager.current, emit, isConnected: socketManager.current.isConnected };
+  return {
+    socket: socketManager.current,
+    emit,
+    isConnected: socketManager.current.isConnected,
+    isCallsConnected: socketManager.current.isCallsConnected,
+  };
 }

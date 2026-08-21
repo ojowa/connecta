@@ -4,7 +4,7 @@ import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { Request, Response } from 'express';
 import { firstValueFrom } from 'rxjs';
 
-const USER_SERVICE = process.env.USER_SERVICE_URL || 'http://localhost:3002';
+const USER_SERVICE = process.env.USER_SERVICE_URL;
 
 @ApiTags('Crypto')
 @ApiBearerAuth()

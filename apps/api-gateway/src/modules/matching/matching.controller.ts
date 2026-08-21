@@ -4,7 +4,7 @@ import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { Request, Response } from 'express';
 import { firstValueFrom } from 'rxjs';
 
-const MATCHING_SERVICE = process.env.MATCHING_SERVICE_URL || 'http://localhost:3004';
+const MATCHING_SERVICE = process.env.MATCHING_SERVICE_URL;
 
 @ApiTags('Matching')
 @ApiBearerAuth()
@@ -122,5 +122,21 @@ export class MatchingController {
       this.http.get(`${MATCHING_SERVICE}/matching/safety-score/${userId}`, { headers: this.authHeaders(req) }),
     );
     return res.status(result.status).json(result.data);
+  }
+
+  @Get('sync')
+  @ApiOperation({ summary: 'Get sync delta for matches' })
+  async getSyncDelta(@Query('since') since: string, @Req() req: Request, @Res() res: Response) {
+    try {
+      const result = await firstValueFrom(
+        this.http.get(`${MATCHING_SERVICE}/matching/sync`, {
+          params: { since },
+          headers: this.authHeaders(req),
+        }),
+      );
+      return res.status(result.status).json(result.data);
+    } catch {
+      return res.json({ data: [] });
+    }
   }
 }

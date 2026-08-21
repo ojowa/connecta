@@ -1,6 +1,5 @@
 import { getDatabase } from '../database/connection';
 import { NetworkManager } from './NetworkManager';
-import { SyncEngine } from './SyncEngine';
 
 export interface SyncOperation {
   operation: 'CREATE' | 'UPDATE' | 'DELETE';
@@ -35,6 +34,7 @@ export class Outbox {
     );
 
     if (NetworkManager.isConnected()) {
+      const { SyncEngine } = await import('./SyncEngine');
       SyncEngine.getInstance().triggerSync();
     }
   }

@@ -4,7 +4,7 @@ import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { Request, Response } from 'express';
 import { firstValueFrom } from 'rxjs';
 
-const USER_SERVICE = process.env.USER_SERVICE_URL || 'http://localhost:3002';
+const USER_SERVICE = process.env.USER_SERVICE_URL;
 
 @ApiTags('Users')
 @ApiBearerAuth()
@@ -110,5 +110,21 @@ export class UsersController {
       this.http.post(`${USER_SERVICE}/users/${userId}/report`, body, { headers: this.authHeaders(req) }),
     );
     return res.status(result.status).json(result.data);
+  }
+
+  @Get('sync')
+  @ApiOperation({ summary: 'Get sync delta for user profiles' })
+  async getSyncDelta(@Query('since') since: string, @Req() req: Request, @Res() res: Response) {
+    try {
+      const result = await firstValueFrom(
+        this.http.get(`${USER_SERVICE}/users/sync`, {
+          params: { since },
+          headers: this.authHeaders(req),
+        }),
+      );
+      return res.status(result.status).json(result.data);
+    } catch {
+      return res.json({ data: null });
+    }
   }
 }

@@ -4,7 +4,7 @@ import { ApiTags, ApiOperation, ApiBearerAuth, ApiConsumes } from '@nestjs/swagg
 import { Request, Response } from 'express';
 import { firstValueFrom } from 'rxjs';
 
-const MEDIA_SERVICE = process.env.MEDIA_SERVICE_URL || 'http://localhost:3007';
+const MEDIA_SERVICE = process.env.MEDIA_SERVICE_URL;
 
 @ApiTags('Media')
 @ApiBearerAuth()

@@ -1,4 +1,3 @@
-import WebRTCManager from '../../webrtc/WebRTCManager';
 import { CallData } from '../../types/webrtc';
 
 type IncomingCallCallback = (data: CallData) => void;
@@ -16,58 +15,54 @@ export class CallHandler {
     this.onCallStateCallback = callback;
   }
 
-  onIncomingCall = (data: { callId: string; callerId: string; callerName: string; callerAvatar?: string; callType: 'audio' | 'video' }): void => {
+  onIncomingCall = (data: { callId: string; callerId: string; callType: 'audio' | 'video' }): void => {
     if (this.onIncomingCallCallback) {
       this.onIncomingCallCallback({
         callId: data.callId,
         callerId: data.callerId,
-        callerName: data.callerName,
-        callerAvatar: data.callerAvatar,
+        callerName: '',
         callType: data.callType,
         status: 'ringing',
       });
     }
   };
 
-  onCallAccepted = (data: { callId: string }): void => {
+  onCallAccepted = (data: { callId: string; answeredBy: string }): void => {
     if (this.onCallStateCallback) {
       this.onCallStateCallback(data.callId, 'connected');
     }
   };
 
-  onCallRejected = (data: { callId: string }): void => {
+  onCallRejected = async (data: { callId: string; rejectedBy: string }): Promise<void> => {
     if (this.onCallStateCallback) {
       this.onCallStateCallback(data.callId, 'rejected');
     }
+    const { default: WebRTCManager } = await import('../../webrtc/WebRTCManager');
     WebRTCManager.getInstance().endCall();
   };
 
-  onCallEnded = (data: { callId: string; reason?: string }): void => {
+  onCallEnded = async (data: { callId: string; endedBy: string; reason?: string }): Promise<void> => {
     if (this.onCallStateCallback) {
       this.onCallStateCallback(data.callId, 'ended');
     }
+    const { default: WebRTCManager } = await import('../../webrtc/WebRTCManager');
     WebRTCManager.getInstance().endCall();
   };
 
-  onOffer = async (data: { callId: string; sdp: RTCSessionDescriptionInit; callerId?: string }): Promise<void> => {
+  onOffer = async (data: { callId: string; offer: RTCSessionDescriptionInit; from: string }): Promise<void> => {
+    const { default: WebRTCManager } = await import('../../webrtc/WebRTCManager');
     const manager = WebRTCManager.getInstance();
-    if (data.callerId) {
-      manager.setActiveCallPeerId(data.callerId);
-    }
-    await manager.acceptCall(data.callId, data.sdp);
+    manager.setActiveCallPeerId(data.from);
+    await manager.acceptCall(data.callId, data.offer);
   };
 
-  onAnswer = async (data: { callId: string; sdp: RTCSessionDescriptionInit }): Promise<void> => {
-    await WebRTCManager.getInstance().handleAnswer(data.sdp);
+  onAnswer = async (data: { callId: string; answer: RTCSessionDescriptionInit; from: string }): Promise<void> => {
+    const { default: WebRTCManager } = await import('../../webrtc/WebRTCManager');
+    await WebRTCManager.getInstance().handleAnswer(data.answer);
   };
 
-  onIceCandidate = async (data: { callId: string; candidate: RTCIceCandidateInit }): Promise<void> => {
+  onIceCandidate = async (data: { callId: string; candidate: RTCIceCandidateInit; from: string }): Promise<void> => {
+    const { default: WebRTCManager } = await import('../../webrtc/WebRTCManager');
     await WebRTCManager.getInstance().handleIceCandidate(data.candidate);
-  };
-
-  onCallReconnecting = (data: { callId: string }): void => {
-    if (this.onCallStateCallback) {
-      this.onCallStateCallback(data.callId, 'reconnecting');
-    }
   };
 }

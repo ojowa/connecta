@@ -49,17 +49,14 @@ class WebRTCManager {
 
     this.notifyStateChange();
 
-    SocketManager.getInstance().emit('call:initiate', {
-      callId,
+    SocketManager.getInstance().emit('call.initiated', {
       calleeId: peerId,
       callType: type,
     });
 
-    SocketManager.getInstance().emit('call:signal', {
-      type: 'offer',
+    SocketManager.getInstance().emit('sdp.offer', {
       callId,
-      targetUserId: peerId,
-      sdp: offer,
+      offer,
     });
 
     this.startQualityMonitoring();
@@ -93,13 +90,12 @@ class WebRTCManager {
     this.notifyStateChange();
     this.reconnectAttempts = 0;
 
-    SocketManager.getInstance().emit('call:signal', {
-      type: 'answer',
+    SocketManager.getInstance().emit('sdp.answer', {
       callId,
-      sdp: answer,
+      answer,
     });
 
-    SocketManager.getInstance().emit('call:accept', { callId });
+    SocketManager.getInstance().emit('call.answered', { callId });
     this.startQualityMonitoring();
   }
 
@@ -127,8 +123,7 @@ class WebRTCManager {
 
     (pc as any).onicecandidate = (event: any) => {
       if (event.candidate) {
-        SocketManager.getInstance().emit('call:signal', {
-          type: 'ice-candidate',
+        SocketManager.getInstance().emit('ice.candidate', {
           callId: this.state?.callId,
           candidate: event.candidate,
         });
@@ -290,7 +285,7 @@ class WebRTCManager {
     this.state?.localStream?.getTracks().forEach((track: any) => track.stop());
 
     if (this.state?.callId) {
-      SocketManager.getInstance().emit('call:end', { callId: this.state.callId });
+      SocketManager.getInstance().emit('call.ended', { callId: this.state.callId });
     }
 
     this.state = null;

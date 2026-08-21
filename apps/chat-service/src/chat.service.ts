@@ -28,14 +28,15 @@ export class ChatService {
       const photo = otherUserId && otherProfile ? await this.photoRepo.findOne({ where: { profileId: otherProfile.id, isPrimary: true } }) : null;
       const lastMsg = conv.lastMessageId ? await this.msgRepo.findOne({ where: { id: conv.lastMessageId } }) : null;
       return {
-        conversationId: conv.id, type: conv.type,
+        id: conv.id, type: conv.type,
+        participantIds: allParts.map(ap => ap.userId),
         participant: otherUser ? { userId: otherUser.id, fullName: otherUser.fullName, avatarUrl: photo?.url, isOnline: false, lastSeenAt: otherUser.lastActiveAt } : null,
-        lastMessage: lastMsg ? { messageId: lastMsg.id, content: lastMsg.content, senderId: lastMsg.senderId, type: lastMsg.contentType, sentAt: lastMsg.createdAt } : null,
+        lastMessage: lastMsg ? { id: lastMsg.id, content: lastMsg.content, senderId: lastMsg.senderId, type: lastMsg.type, status: lastMsg.status || 'sent', createdAt: lastMsg.createdAt } : null,
         unreadCount: p.unreadCount, isArchived: false, createdAt: conv.createdAt,
       };
     }));
     const total = await this.partRepo.count({ where: { userId } });
-    return { conversations: conversations.filter(Boolean), meta: { page, limit, total, hasMore: total > page * limit } };
+    return { data: conversations.filter(Boolean), meta: { page, limit, total, hasMore: total > page * limit } };
   }
 
   async getMessages(userId: string, conversationId: string, limit = 50, before?: string, after?: string) {
@@ -45,18 +46,18 @@ export class ChatService {
     if (before) qb.andWhere('m.createdAt < (SELECT "createdAt" FROM messages WHERE id = :before)', { before });
     if (after) qb.andWhere('m.createdAt > (SELECT "createdAt" FROM messages WHERE id = :after)', { after });
     const messages = await qb.getMany();
-    return { messages, hasMore: messages.length === limit };
+    return { data: messages.map(m => ({ ...m, id: m.id })), hasMore: messages.length === limit };
   }
 
   async sendMessage(userId: string, conversationId: string, data: any) {
     const part = await this.partRepo.findOne({ where: { conversationId, userId } });
     if (!part) throw new ForbiddenException('Not a participant');
-    const msg = this.msgRepo.create({ conversationId, senderId: userId, contentType: data.type || 'text', content: data.content, encryptedContent: data.encryptedContent, replyToId: data.replyTo });
+    const msg = this.msgRepo.create({ conversationId, senderId: userId, type: data.type || 'text', content: data.content, encryptedContent: data.encryptedContent, replyToId: data.replyTo });
     const saved = await this.msgRepo.save(msg);
     await this.convRepo.update(conversationId, { lastMessageId: saved.id, lastMessageAt: new Date() });
     const otherParts = await this.partRepo.find({ where: { conversationId } });
     await Promise.all(otherParts.filter(p => p.userId !== userId).map(p => this.partRepo.update(p.id, { unreadCount: p.unreadCount + 1 })));
-    return { message: { messageId: saved.id, conversationId, senderId: userId, content: saved.content, type: saved.contentType, status: 'sent', clientMessageId: data.clientMessageId, sentAt: saved.createdAt } };
+    return { data: { id: saved.id, conversationId, senderId: userId, content: saved.content, type: saved.type, status: saved.status || 'sent', clientMessageId: data.clientMessageId, createdAt: saved.createdAt } };
   }
 
   async reactToMessage(userId: string, messageId: string, emoji: string, action: 'add' | 'remove') {

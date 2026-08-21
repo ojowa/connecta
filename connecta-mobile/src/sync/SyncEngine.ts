@@ -202,7 +202,7 @@ export class SyncEngine {
     try {
       const [messagesRes, matchesRes, profileRes] = await Promise.all([
         apiClient.get(`/chat/sync?since=${lastSync}`).catch(() => ({ data: [] })),
-        apiClient.get(`/match/sync?since=${lastSync}`).catch(() => ({ data: [] })),
+        apiClient.get(`/matching/sync?since=${lastSync}`).catch(() => ({ data: [] })),
         apiClient.get(`/users/sync?since=${lastSync}`).catch(() => ({ data: null })),
       ]);
 

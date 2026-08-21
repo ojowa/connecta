@@ -1,5 +1,4 @@
 import NetInfo, { NetInfoState } from '@react-native-community/netinfo';
-import { SyncEngine } from './SyncEngine';
 
 type ConnectivityListener = (connected: boolean) => void;
 
@@ -17,7 +16,9 @@ export class NetworkManager {
       this.details = state.details;
 
       if (!wasConnected && this.connected) {
-        SyncEngine.getInstance().triggerSync();
+        import('./SyncEngine').then(({ SyncEngine }) => {
+          SyncEngine.getInstance().triggerSync();
+        });
       }
 
       this.listeners.forEach((l) => l(this.connected));
