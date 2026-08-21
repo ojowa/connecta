@@ -1,7 +1,9 @@
-import { Injectable, BadRequestException, NotFoundException } from '@nestjs/common';
+import { Injectable, BadRequestException, NotFoundException, Inject } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, Not, In } from 'typeorm';
+import { ClientProxy } from '@nestjs/microservices';
 import { User, Profile, Like, Pass, Match, DailyLike, Photo, Conversation, ConversationParticipant, UserPreference } from '@app/common/entities';
+import { NATS_SERVICE, MATCH_EVENTS } from '@app/common';
 import { MatchmakingEngine } from './ai/matchmaking.engine';
 
 @Injectable()
@@ -18,6 +20,7 @@ export class MatchingService {
     @InjectRepository(ConversationParticipant) private partRepo: Repository<ConversationParticipant>,
     @InjectRepository(UserPreference) private prefRepo: Repository<UserPreference>,
     private matchmakingEngine: MatchmakingEngine,
+    @Inject(NATS_SERVICE) private readonly natsClient: ClientProxy,
   ) {}
 
   async getFeed(userId: string, page = 1, limit = 20) {
@@ -58,14 +61,26 @@ export class MatchingService {
         this.partRepo.create({ conversationId: conv.id, userId }),
         this.partRepo.create({ conversationId: conv.id, userId: targetUserId }),
       ]);
+
+      this.natsClient.emit(MATCH_EVENTS.MATCH_CREATED, { matchId: match.id, user1Id: userId, user2Id: targetUserId, conversationId: conv.id, matchedVia: match.matchedVia });
+      if (likeType === 'super') {
+        this.natsClient.emit(MATCH_EVENTS.SUPER_LIKE_SENT, { fromUserId: userId, toUserId: targetUserId, matchId: match.id });
+      }
+
       return { likedUserId: targetUserId, likeType, isMutual: true, match: { matchId: match.id, matchedAt: match.matchedAt, conversationId: conv.id } };
     }
+
+    this.natsClient.emit(MATCH_EVENTS.SWIPE_PERFORMED, { userId, targetUserId, type: likeType });
+
     return { likedUserId: targetUserId, likeType, isMutual: false, remainingLikes: Math.max(0, 50 - (daily ? daily.likesGiven + 1 : 1)) };
   }
 
   async pass(userId: string, targetUserId: string) {
     const existing = await this.passRepo.findOne({ where: { userId, passedUserId: targetUserId } });
     if (!existing) { await this.passRepo.save(this.passRepo.create({ userId, passedUserId: targetUserId })); }
+
+    this.natsClient.emit(MATCH_EVENTS.SWIPE_PERFORMED, { userId, targetUserId, type: 'pass' });
+
     return { passedUserId: targetUserId, passedAt: new Date() };
   }
 
@@ -118,6 +133,9 @@ export class MatchingService {
     if (!match) throw new NotFoundException('Match not found');
     if (match.user1Id !== userId && match.user2Id !== userId) throw new BadRequestException('Not your match');
     await this.matchRepo.update(matchId, { isActive: false });
+
+    this.natsClient.emit(MATCH_EVENTS.UNMATCH, { matchId, userId });
+
     return { unmatched: true, matchId };
   }
 

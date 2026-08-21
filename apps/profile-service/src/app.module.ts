@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
+import { NatsModule } from '@app/common';
 import { ProfilesController } from './profiles.controller';
 import { ProfilesService } from './profiles.service';
 import { ProfileEventsHandler } from './events/profile-events.handler';
@@ -9,6 +10,7 @@ import { Profile, Photo, Interest, ProfileInterest, User, Notification } from '@
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
+    NatsModule,
     TypeOrmModule.forRoot({
       type: 'postgres', host: process.env.DB_HOST || 'localhost', port: parseInt(process.env.DB_PORT || '5432', 10),
       username: process.env.DB_USERNAME || 'postgres', password: process.env.DB_PASSWORD || '',

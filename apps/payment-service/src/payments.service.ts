@@ -1,7 +1,9 @@
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException, Inject } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
+import { ClientProxy } from '@nestjs/microservices';
 import { Plan, Subscription, Transaction, User } from '@app/common/entities';
+import { NATS_SERVICE, PAYMENT_EVENTS } from '@app/common';
 
 @Injectable()
 export class PaymentsService {
@@ -10,6 +12,7 @@ export class PaymentsService {
     @InjectRepository(Subscription) private subRepo: Repository<Subscription>,
     @InjectRepository(Transaction) private txnRepo: Repository<Transaction>,
     @InjectRepository(User) private userRepo: Repository<User>,
+    @Inject(NATS_SERVICE) private readonly natsClient: ClientProxy,
   ) {}
 
   async getPlans(country?: string, currency?: string) {
@@ -28,7 +31,10 @@ export class PaymentsService {
     else periodEnd.setMonth(periodEnd.getMonth() + 1);
     const sub = await this.subRepo.save(this.subRepo.create({ userId, planId: plan.id, status: 'active', billingPeriod: data.billingPeriod || 'monthly', startedAt: now, currentPeriodStart: now, currentPeriodEnd: periodEnd, autoRenew: true }));
     const txn = await this.txnRepo.save(this.txnRepo.create({ userId, subscriptionId: sub.id, type: 'subscription', amount: data.billingPeriod === 'yearly' ? plan.priceYearly : plan.priceMonthly, currency: plan.currency, status: 'completed', paymentMethod: data.paymentMethod, gateway: 'paystack' }));
-    await this.userRepo.update(userId, { role: 'premium' as any });
+
+    this.natsClient.emit(PAYMENT_EVENTS.SUBSCRIPTION_ACTIVATED, { subscriptionId: sub.id, userId, planId: plan.id, planName: plan.displayName, billingPeriod: sub.billingPeriod });
+    this.natsClient.emit(PAYMENT_EVENTS.PAYMENT_SUCCESSFUL, { transactionId: txn.id, userId, amount: txn.amount, currency: txn.currency });
+
     return { subscription: { subscriptionId: sub.id, planId: plan.id, planName: plan.displayName, status: 'active', price: plan.priceMonthly, currency: plan.currency, interval: sub.billingPeriod, currentPeriodStart: sub.currentPeriodStart, currentPeriodEnd: sub.currentPeriodEnd, payment: { transactionId: txn.id, status: 'successful', paymentMethod: data.paymentMethod } } };
   }
 
@@ -36,6 +42,9 @@ export class PaymentsService {
     const sub = await this.subRepo.findOne({ where: { userId, status: 'active' } });
     if (!sub) throw new NotFoundException('No active subscription');
     await this.subRepo.update(sub.id, { status: 'cancelled', cancelledAt: new Date(), autoRenew: false });
+
+    this.natsClient.emit(PAYMENT_EVENTS.SUBSCRIPTION_CANCELLED, { subscriptionId: sub.id, userId, planId: sub.planId });
+
     return { subscriptionId: sub.id, status: 'active_until_period_end', currentPeriodEnd: sub.currentPeriodEnd, refundEligible: false };
   }
 
@@ -93,6 +102,8 @@ export class PaymentsService {
       completedAt: new Date(),
       gatewayResponse: JSON.stringify({ verified: true, verifiedAt: new Date().toISOString() }) as any,
     });
+
+    this.natsClient.emit(PAYMENT_EVENTS.PAYMENT_SUCCESSFUL, { transactionId: txn.id, userId, amount: txn.amount, currency: txn.currency });
 
     return {
       transactionId: txn.id,

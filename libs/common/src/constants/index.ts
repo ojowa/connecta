@@ -1,3 +1,5 @@
+export * from './events';
+
 export const QUEUES = {
   EMAIL: 'email-queue',
   NOTIFICATION: 'notification-queue',

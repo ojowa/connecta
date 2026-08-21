@@ -2,13 +2,16 @@ import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { JwtModule } from '@nestjs/jwt';
+import { NatsModule } from '@app/common';
 import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
+import { AuthEventsHandler } from './events/auth-events.handler';
 import { User, Session, OtpCode, Plan, Subscription, BiometricCredential } from '@app/common/entities';
 
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
+    NatsModule,
     TypeOrmModule.forRoot({
       type: 'postgres',
       host: process.env.DB_HOST || 'localhost',
@@ -28,6 +31,6 @@ import { User, Session, OtpCode, Plan, Subscription, BiometricCredential } from 
     }),
   ],
   controllers: [AuthController],
-  providers: [AuthService],
+  providers: [AuthService, AuthEventsHandler],
 })
 export class AppModule {}

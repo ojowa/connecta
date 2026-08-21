@@ -3,6 +3,7 @@ import { ConfigModule } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { JwtModule } from '@nestjs/jwt';
 import { PassportModule } from '@nestjs/passport';
+import { NatsModule } from '@app/common';
 import { CallsController } from './calls.controller';
 import { CallsService } from './calls.service';
 import { CallsGateway } from './calls.gateway';
@@ -12,6 +13,7 @@ import { CallSession, User } from '@app/common/entities';
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
+    NatsModule,
     TypeOrmModule.forRoot({
       type: 'postgres',
       host: process.env.DB_HOST || 'localhost',

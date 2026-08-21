@@ -6,6 +6,8 @@ export const USER_EVENTS = {
   USER_REACTIVATED: 'user.reactivated',
   USER_BANNED: 'user.banned',
   USER_UNBANNED: 'user.unbanned',
+  USER_LOGGED_IN: 'user.logged_in',
+  USER_LOGGED_OUT: 'user.logged_out',
   EMAIL_VERIFIED: 'email.verified',
   PHONE_VERIFIED: 'phone.verified',
   PASSWORD_CHANGED: 'password.changed',
@@ -68,6 +70,7 @@ export const PAYMENT_EVENTS = {
   PAYMENT_SUCCESSFUL: 'payment.successful',
   PAYMENT_FAILED: 'payment.failed',
   SUBSCRIPTION_ACTIVATED: 'subscription.activated',
+  SUBSCRIPTION_CANCELLED: 'subscription.cancelled',
   SUBSCRIPTION_EXPIRED: 'subscription.expired',
   SUBSCRIPTION_RENEWED: 'subscription.renewed',
 } as const;

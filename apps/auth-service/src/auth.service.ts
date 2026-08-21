@@ -1,9 +1,11 @@
-import { Injectable, ConflictException, UnauthorizedException, BadRequestException, NotFoundException } from '@nestjs/common';
+import { Injectable, ConflictException, UnauthorizedException, BadRequestException, NotFoundException, Inject } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { JwtService } from '@nestjs/jwt';
+import { ClientProxy } from '@nestjs/microservices';
 import * as bcrypt from 'bcryptjs';
 import { User, UserRole, UserStatus, Session, OtpCode, BiometricCredential } from '@app/common/entities';
+import { NATS_SERVICE, USER_EVENTS } from '@app/common';
 import { v4 as uuid } from 'uuid';
 
 @Injectable()
@@ -14,6 +16,7 @@ export class AuthService {
     @InjectRepository(OtpCode) private otpRepo: Repository<OtpCode>,
     @InjectRepository(BiometricCredential) private biometricRepo: Repository<BiometricCredential>,
     private jwtService: JwtService,
+    @Inject(NATS_SERVICE) private readonly natsClient: ClientProxy,
   ) {}
 
   async register(data: any) {
@@ -38,6 +41,8 @@ export class AuthService {
 
     const tokens = await this.generateTokens(saved);
     await this.createSession(saved.id, tokens.refreshToken, deviceId, platform, osVersion, appVersion);
+
+    this.natsClient.emit(USER_EVENTS.USER_CREATED, { userId: saved.id, email: saved.email, phone: saved.phone, fullName: saved.fullName, gender: saved.gender, dateOfBirth: saved.dateOfBirth });
 
     return {
       user: this.sanitizeUser(saved),
@@ -72,6 +77,8 @@ export class AuthService {
     const tokens = await this.generateTokens(user);
     await this.createSession(user.id, tokens.refreshToken, deviceId, platform, osVersion, appVersion);
 
+    this.natsClient.emit(USER_EVENTS.USER_LOGGED_IN, { userId: user.id, email: user.email });
+
     return {
       user: this.sanitizeUser(user),
       tokens: { ...tokens, expiresIn: 900 },
@@ -105,6 +112,9 @@ export class AuthService {
     } else {
       await this.sessionRepo.update({ userId, isActive: true }, { isActive: false });
     }
+
+    this.natsClient.emit(USER_EVENTS.USER_LOGGED_OUT, { userId });
+
     return { loggedOut: true, sessionsRevoked: 1 };
   }
 
@@ -160,8 +170,13 @@ export class AuthService {
 
     let user = otp.userId ? await this.userRepo.findOne({ where: { id: otp.userId } }) : null;
     if (user) {
-      if (purpose === 'registration') await this.userRepo.update(user.id, { emailVerified: true, status: UserStatus.ACTIVE });
-      else if (purpose === 'phone_verify') await this.userRepo.update(user.id, { phoneVerified: true });
+      if (purpose === 'registration') {
+        await this.userRepo.update(user.id, { emailVerified: true, status: UserStatus.ACTIVE });
+        this.natsClient.emit(USER_EVENTS.EMAIL_VERIFIED, { userId: user.id, email: user.email });
+      } else if (purpose === 'phone_verify') {
+        await this.userRepo.update(user.id, { phoneVerified: true });
+        this.natsClient.emit(USER_EVENTS.PHONE_VERIFIED, { userId: user.id, phone: user.phone });
+      }
       const tokens = await this.generateTokens(user);
       return { verified: true, purpose, userId: user.id, tokens: { ...tokens, expiresIn: 900 } };
     }
@@ -205,6 +220,8 @@ export class AuthService {
     await this.userRepo.update(otp.userId!, { passwordHash });
     await this.otpRepo.update(otp.id, { verifiedAt: new Date() });
     await this.sessionRepo.update({ userId: otp.userId!, isActive: true }, { isActive: false });
+
+    this.natsClient.emit(USER_EVENTS.PASSWORD_CHANGED, { userId: otp.userId });
 
     return { passwordReset: true, sessionsRevoked: 3, message: 'Password updated. All sessions have been revoked.' };
   }

@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { JwtModule } from '@nestjs/jwt';
+import { NatsModule } from '@app/common';
 import { AdminController } from './admin.controller';
 import { AdminService } from './admin.service';
 import { ModerationEventsHandler } from './events/moderation-events.handler';
@@ -10,6 +11,7 @@ import { AdminUser, AdminSession, AuditLog, SystemSetting, User, Report, Subscri
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
+    NatsModule,
     TypeOrmModule.forRoot({
       type: 'postgres', host: process.env.DB_HOST || 'localhost', port: parseInt(process.env.DB_PORT || '5432', 10),
       username: process.env.DB_USERNAME || 'postgres', password: process.env.DB_PASSWORD || '',

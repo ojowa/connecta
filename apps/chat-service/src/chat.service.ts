@@ -1,7 +1,9 @@
-import { Injectable, NotFoundException, BadRequestException, ForbiddenException } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException, ForbiddenException, Inject } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
+import { ClientProxy } from '@nestjs/microservices';
 import { User, Profile, Photo, Conversation, ConversationParticipant, Message, MessageReaction, ReadReceipt } from '@app/common/entities';
+import { NATS_SERVICE, CHAT_EVENTS } from '@app/common';
 
 @Injectable()
 export class ChatService {
@@ -14,6 +16,7 @@ export class ChatService {
     @InjectRepository(Message) private msgRepo: Repository<Message>,
     @InjectRepository(MessageReaction) private reactRepo: Repository<MessageReaction>,
     @InjectRepository(ReadReceipt) private readRepo: Repository<ReadReceipt>,
+    @Inject(NATS_SERVICE) private readonly natsClient: ClientProxy,
   ) {}
 
   async getConversations(userId: string, page = 1, limit = 20, filter = 'all') {
@@ -57,6 +60,10 @@ export class ChatService {
     await this.convRepo.update(conversationId, { lastMessageId: saved.id, lastMessageAt: new Date() });
     const otherParts = await this.partRepo.find({ where: { conversationId } });
     await Promise.all(otherParts.filter(p => p.userId !== userId).map(p => this.partRepo.update(p.id, { unreadCount: p.unreadCount + 1 })));
+
+    const participantUserIds = otherParts.filter(p => p.userId !== userId).map(p => p.userId);
+    this.natsClient.emit(CHAT_EVENTS.MESSAGE_SENT, { messageId: saved.id, conversationId, senderId: userId, content: saved.content, type: saved.type, participantUserIds });
+
     return { data: { id: saved.id, conversationId, senderId: userId, content: saved.content, type: saved.type, status: saved.status || 'sent', clientMessageId: data.clientMessageId, createdAt: saved.createdAt } };
   }
 
@@ -73,6 +80,9 @@ export class ChatService {
 
   async markAsRead(userId: string, conversationId: string, lastReadMessageId: string) {
     await this.partRepo.update({ conversationId, userId }, { lastReadAt: new Date(), unreadCount: 0 });
+
+    this.natsClient.emit(CHAT_EVENTS.MESSAGE_READ, { userId, conversationId, lastReadMessageId });
+
     return { conversationId, lastReadMessageId, readAt: new Date(), unreadCount: 0 };
   }
 
@@ -92,6 +102,9 @@ export class ChatService {
     if (!msg) throw new NotFoundException('Message not found');
     if (msg.senderId !== userId) throw new ForbiddenException('Can only delete your own messages');
     await this.msgRepo.update(messageId, { isDeleted: true, deletedAt: new Date() });
+
+    this.natsClient.emit(CHAT_EVENTS.MESSAGE_DELETED, { messageId, userId, conversationId: msg.conversationId });
+
     return { deleted: true, messageId, visibleToSender: true, visibleToRecipient: false };
   }
 

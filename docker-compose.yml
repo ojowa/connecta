@@ -1,0 +1,32 @@
+version: '3.8'
+
+services:
+  nats:
+    image: nats:2-alpine
+    container_name: connecta-nats
+    ports:
+      - '4222:4222'
+      - '8222:8222'
+    command: ['-a', '0.0.0.0', '--http_port', '8222']
+    restart: unless-stopped
+    healthcheck:
+      test: ['CMD', 'wget', '--spider', '-q', 'http://localhost:8222/healthz']
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+  postgres:
+    image: postgres:16-alpine
+    container_name: connecta-postgres
+    environment:
+      POSTGRES_DB: connecta_db
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: Aarinola
+    ports:
+      - '5432:5432'
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    restart: unless-stopped
+
+volumes:
+  pgdata:
