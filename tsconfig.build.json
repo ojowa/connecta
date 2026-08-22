@@ -10,6 +10,7 @@
     "test",
     "dist",
     "connecta-mobile",
+    "apps/admin-web",
     "**/*spec.ts",
     "**/*e2e-spec.ts"
   ]

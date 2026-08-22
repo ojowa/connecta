@@ -1,3 +1,4 @@
+import 'dotenv/config';
 import { NestFactory } from '@nestjs/core';
 import { Logger, ValidationPipe } from '@nestjs/common';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
@@ -35,8 +36,10 @@ async function bootstrap() {
     app.get(AuditLogInterceptor),
   );
 
-  app.use(RequestIdMiddleware);
-  app.use(DeviceInfoMiddleware);
+  const requestId = new RequestIdMiddleware();
+  app.use(requestId.use.bind(requestId));
+  const deviceInfo = new DeviceInfoMiddleware();
+  app.use(deviceInfo.use.bind(deviceInfo));
 
   app.enableCors({
     origin: process.env.CORS_ORIGIN || '*',
