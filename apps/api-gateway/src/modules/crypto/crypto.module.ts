@@ -1,9 +1,14 @@
 import { Module } from '@nestjs/common';
-import { HttpModule } from '@nestjs/axios';
+import { TypeOrmModule } from '@nestjs/typeorm';
 import { CryptoController } from './crypto.controller';
+import { UsersModule } from '../users/users.module';
+import { PreKeyBundle, User } from '@app/common/entities';
 
 @Module({
-  imports: [HttpModule],
+  imports: [
+    TypeOrmModule.forFeature([PreKeyBundle, User]),
+    UsersModule,
+  ],
   controllers: [CryptoController],
 })
 export class CryptoModule {}

@@ -1,133 +1,95 @@
-import { Controller, Get, Post, Put, Delete, Body, Param, Query, Req, Res } from '@nestjs/common';
-import { HttpService } from '@nestjs/axios';
+import { Controller, Get, Post, Put, Delete, Body, Param, Query } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
-import { Request, Response } from 'express';
-import { proxyGet, proxyPost, proxyPut, proxyDelete } from '../../helpers/proxy.helper';
-
-const CHAT_SERVICE = process.env.CHAT_SERVICE_URL;
+import { ChatService } from './chat.service';
+import {
+  SendMessageDto,
+  ReactToMessageDto,
+  MarkReadDto,
+  TypingIndicatorDto,
+  SearchMessagesQueryDto,
+} from './dto';
 
 @ApiTags('Chat')
 @ApiBearerAuth()
 @Controller('chat')
 export class ChatController {
-  constructor(private readonly http: HttpService) {}
+  constructor(private readonly chatService: ChatService) {}
 
   @Get('conversations')
-  @ApiOperation({ summary: 'Get list of conversations' })
-  async getConversations(@Query() query: any, @Req() req: Request, @Res() res: Response) {
-    return proxyGet(this.http, `${CHAT_SERVICE}/chat/conversations`, req, res);
-  }
-
-  @Get('conversations/:conversationId/messages')
-  @ApiOperation({ summary: 'Get messages in a conversation' })
-  async getMessages(
-    @Param('conversationId') conversationId: string,
-    @Query() query: any,
-    @Req() req: Request,
-    @Res() res: Response,
+  @ApiOperation({ summary: 'List conversations' })
+  getConversations(
+    @Body('_userId') userId: string,
+    @Query('page') page?: number,
+    @Query('limit') limit?: number,
+    @Query('filter') filter?: string,
   ) {
-    return proxyGet(
-      this.http,
-      `${CHAT_SERVICE}/chat/conversations/${conversationId}/messages`,
-      req,
-      res,
-    );
+    return this.chatService.getConversations(userId, page, limit, filter);
   }
 
-  @Post('conversations/:conversationId/messages')
-  @ApiOperation({ summary: 'Send a message' })
-  async sendMessage(
-    @Param('conversationId') conversationId: string,
-    @Body() body: any,
-    @Req() req: Request,
-    @Res() res: Response,
+  @Get('conversations/:id/messages')
+  @ApiOperation({ summary: 'Get messages' })
+  getMessages(
+    @Body('_userId') userId: string,
+    @Param('id') id: string,
+    @Query('limit') limit?: number,
+    @Query('before') before?: string,
+    @Query('after') after?: string,
   ) {
-    return proxyPost(
-      this.http,
-      `${CHAT_SERVICE}/chat/conversations/${conversationId}/messages`,
-      body,
-      req,
-      res,
-    );
+    return this.chatService.getMessages(userId, id, limit, before, after);
   }
 
-  @Post('conversations/:conversationId/messages/:messageId/reactions')
-  @ApiOperation({ summary: 'React to a message' })
-  async reactToMessage(
-    @Param('conversationId') conversationId: string,
+  @Post('conversations/:id/messages')
+  @ApiOperation({ summary: 'Send message' })
+  sendMessage(
+    @Body('_userId') userId: string,
+    @Param('id') id: string,
+    @Body() body: SendMessageDto,
+  ) {
+    return this.chatService.sendMessage(userId, id, body);
+  }
+
+  @Post('conversations/:id/messages/:messageId/reactions')
+  @ApiOperation({ summary: 'React to message' })
+  react(
+    @Body('_userId') userId: string,
     @Param('messageId') messageId: string,
-    @Body() body: any,
-    @Req() req: Request,
-    @Res() res: Response,
+    @Body() body: ReactToMessageDto,
   ) {
-    return proxyPost(
-      this.http,
-      `${CHAT_SERVICE}/chat/conversations/${conversationId}/messages/${messageId}/reactions`,
-      body,
-      req,
-      res,
-    );
+    return this.chatService.reactToMessage(userId, messageId, body.emoji, body.action);
   }
 
-  @Put('conversations/:conversationId/read')
-  @ApiOperation({ summary: 'Mark conversation as read' })
-  async markRead(
-    @Param('conversationId') conversationId: string,
-    @Body() body: any,
-    @Req() req: Request,
-    @Res() res: Response,
-  ) {
-    return proxyPut(
-      this.http,
-      `${CHAT_SERVICE}/chat/conversations/${conversationId}/read`,
-      body,
-      req,
-      res,
-    );
-  }
-
-  @Post('conversations/:conversationId/typing')
-  @ApiOperation({ summary: 'Send typing indicator' })
-  async sendTyping(
-    @Param('conversationId') conversationId: string,
-    @Body() body: any,
-    @Req() req: Request,
-    @Res() res: Response,
-  ) {
-    return proxyPost(
-      this.http,
-      `${CHAT_SERVICE}/chat/conversations/${conversationId}/typing`,
-      body,
-      req,
-      res,
-    );
+  @Put('conversations/:id/read')
+  @ApiOperation({ summary: 'Mark as read' })
+  markRead(@Body('_userId') userId: string, @Param('id') id: string, @Body() body: MarkReadDto) {
+    return this.chatService.markAsRead(userId, id, body.lastReadMessageId);
   }
 
   @Get('messages/search')
   @ApiOperation({ summary: 'Search messages' })
-  async searchMessages(@Query() query: any, @Req() req: Request, @Res() res: Response) {
-    return proxyGet(this.http, `${CHAT_SERVICE}/chat/messages/search`, req, res);
+  search(@Body('_userId') userId: string, @Query() query: SearchMessagesQueryDto) {
+    return this.chatService.searchMessages(userId, query.q, query.conversation_id, query.page, query.limit);
   }
 
-  @Delete('conversations/:conversationId/messages/:messageId')
-  @ApiOperation({ summary: 'Delete a message' })
-  async deleteMessage(
-    @Param('conversationId') conversationId: string,
-    @Param('messageId') messageId: string,
-    @Req() req: Request,
-    @Res() res: Response,
+  @Post('conversations/:id/typing')
+  @ApiOperation({ summary: 'Send typing indicator' })
+  sendTyping(
+    @Body('_userId') userId: string,
+    @Param('id') id: string,
+    @Body() body: TypingIndicatorDto,
   ) {
-    return proxyDelete(
-      this.http,
-      `${CHAT_SERVICE}/chat/conversations/${conversationId}/messages/${messageId}`,
-      req,
-      res,
-    );
+    return this.chatService.sendTyping(userId, id, body.is_typing);
+  }
+
+  @Delete('conversations/:id/messages/:messageId')
+  @ApiOperation({ summary: 'Delete message' })
+  deleteMessage(@Body('_userId') userId: string, @Param('messageId') messageId: string) {
+    return this.chatService.deleteMessage(userId, messageId);
   }
 
   @Get('sync')
   @ApiOperation({ summary: 'Get sync delta for messages' })
-  async getSyncDelta(@Req() req: Request, @Res() res: Response) {
-    return proxyGet(this.http, `${CHAT_SERVICE}/chat/sync`, req, res);
+  getSync(@Body('_userId') userId: string, @Query('since') since?: string) {
+    const sinceTime = since ? parseInt(since, 10) : 0;
+    return this.chatService.getSyncDelta(userId, sinceTime);
   }
 }

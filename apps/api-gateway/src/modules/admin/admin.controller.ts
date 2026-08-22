@@ -1,136 +1,122 @@
-import { Controller, Get, Put, Post, Body, Param, Query, Req, Res } from '@nestjs/common';
-import { HttpService } from '@nestjs/axios';
+import { Controller, Get, Post, Put, Body, Param, Query } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
-import { Request, Response } from 'express';
-import { proxyGet, proxyPost, proxyPut } from '../../helpers/proxy.helper';
-
-const ADMIN_SERVICE = process.env.ADMIN_SERVICE_URL;
+import { AdminService } from './admin.service';
+import {
+  AdminLoginDto,
+  Verify2faDto,
+  SuspendUserDto,
+  BanUserDto,
+  ResolveReportDto,
+  UpdateSettingsDto,
+  AnalyticsQueryDto,
+  AdminBroadcastDto,
+} from './dto';
 
 @ApiTags('Admin')
 @Controller('admin')
 export class AdminController {
-  constructor(private readonly http: HttpService) {}
+  constructor(private readonly adminService: AdminService) {}
 
   @Post('login')
   @ApiOperation({ summary: 'Admin login' })
-  async login(@Body() body: any, @Req() req: Request, @Res() res: Response) {
-    return proxyPost(this.http, `${ADMIN_SERVICE}/admin/login`, body, req, res);
+  login(@Body() body: AdminLoginDto) {
+    return this.adminService.login(body);
   }
 
   @Post('2fa/verify')
   @ApiOperation({ summary: 'Verify admin 2FA code' })
-  async verify2fa(@Body() body: any, @Req() req: Request, @Res() res: Response) {
-    return proxyPost(this.http, `${ADMIN_SERVICE}/admin/2fa/verify`, body, req, res);
+  verify2fa(@Body() body: Verify2faDto) {
+    return this.adminService.verify2fa(body);
   }
 
   @Get('dashboard')
-  @ApiOperation({ summary: 'Get dashboard metrics' })
+  @ApiOperation({ summary: 'Dashboard' })
   @ApiBearerAuth()
-  async getDashboard(@Query('period') period: string, @Req() req: Request, @Res() res: Response) {
-    return proxyGet(this.http, `${ADMIN_SERVICE}/admin/dashboard`, req, res);
+  dashboard(@Query('period') period?: string) {
+    return this.adminService.getDashboard(period);
   }
 
   @Get('users')
-  @ApiOperation({ summary: 'Get all users (admin)' })
+  @ApiOperation({ summary: 'List users' })
   @ApiBearerAuth()
-  async getUsers(@Query() query: any, @Req() req: Request, @Res() res: Response) {
-    return proxyGet(this.http, `${ADMIN_SERVICE}/admin/users`, req, res);
+  getUsers(@Query() query: any) {
+    return this.adminService.getUsers(query);
   }
 
   @Get('users/:id')
-  @ApiOperation({ summary: 'Get user details (admin)' })
+  @ApiOperation({ summary: 'User detail' })
   @ApiBearerAuth()
-  async getUser(@Param('id') id: string, @Req() req: Request, @Res() res: Response) {
-    return proxyGet(this.http, `${ADMIN_SERVICE}/admin/users/${id}`, req, res);
+  getUser(@Param('id') id: string) {
+    return this.adminService.getUserDetail(id);
   }
 
   @Post('users/:id/suspend')
   @ApiOperation({ summary: 'Suspend user' })
   @ApiBearerAuth()
-  async suspendUser(
-    @Param('id') id: string,
-    @Body() body: any,
-    @Req() req: Request,
-    @Res() res: Response,
-  ) {
-    return proxyPost(this.http, `${ADMIN_SERVICE}/admin/users/${id}/suspend`, body, req, res);
+  suspend(@Param('id') id: string, @Body() body: SuspendUserDto) {
+    return this.adminService.suspendUser(id, body);
   }
 
   @Post('users/:id/ban')
   @ApiOperation({ summary: 'Ban user' })
   @ApiBearerAuth()
-  async banUser(
-    @Param('id') id: string,
-    @Body() body: any,
-    @Req() req: Request,
-    @Res() res: Response,
-  ) {
-    return proxyPost(this.http, `${ADMIN_SERVICE}/admin/users/${id}/ban`, body, req, res);
+  ban(@Param('id') id: string, @Body() body: BanUserDto) {
+    return this.adminService.banUser(id, body);
   }
 
   @Post('users/:id/unsuspend')
   @ApiOperation({ summary: 'Unsuspend user' })
   @ApiBearerAuth()
-  async unsuspendUser(
-    @Param('id') id: string,
-    @Body() body: any,
-    @Req() req: Request,
-    @Res() res: Response,
-  ) {
-    return proxyPost(this.http, `${ADMIN_SERVICE}/admin/users/${id}/unsuspend`, body, req, res);
+  unsuspend(@Param('id') id: string) {
+    return this.adminService.unsuspendUser(id);
   }
 
   @Get('reports')
-  @ApiOperation({ summary: 'Get reports queue' })
+  @ApiOperation({ summary: 'List reports' })
   @ApiBearerAuth()
-  async getReports(@Query() query: any, @Req() req: Request, @Res() res: Response) {
-    return proxyGet(this.http, `${ADMIN_SERVICE}/admin/reports`, req, res);
+  getReports(@Query() query: any) {
+    return this.adminService.getReports(query);
   }
 
   @Post('reports/:id/resolve')
-  @ApiOperation({ summary: 'Resolve a report' })
+  @ApiOperation({ summary: 'Resolve report' })
   @ApiBearerAuth()
-  async resolveReport(
-    @Param('id') id: string,
-    @Body() body: any,
-    @Req() req: Request,
-    @Res() res: Response,
-  ) {
-    return proxyPost(this.http, `${ADMIN_SERVICE}/admin/reports/${id}/resolve`, body, req, res);
+  resolveReport(@Param('id') id: string, @Body() body: ResolveReportDto) {
+    return this.adminService.resolveReport(id, body);
+  }
+
+  @Get('audit-log')
+  @ApiOperation({ summary: 'Audit log' })
+  @ApiBearerAuth()
+  getAuditLog(@Query() query: any) {
+    return this.adminService.getAuditLog(query);
+  }
+
+  @Get('settings')
+  @ApiOperation({ summary: 'Get settings' })
+  @ApiBearerAuth()
+  getSettings() {
+    return this.adminService.getSettings();
+  }
+
+  @Put('settings')
+  @ApiOperation({ summary: 'Update settings' })
+  @ApiBearerAuth()
+  updateSettings(@Body() body: UpdateSettingsDto) {
+    return this.adminService.updateSettings(body);
   }
 
   @Get('analytics')
   @ApiOperation({ summary: 'Get platform analytics' })
   @ApiBearerAuth()
-  async getAnalytics(@Query() query: any, @Req() req: Request, @Res() res: Response) {
-    return proxyGet(this.http, `${ADMIN_SERVICE}/admin/analytics`, req, res);
-  }
-
-  @Get('audit-log')
-  @ApiOperation({ summary: 'Get admin audit log' })
-  @ApiBearerAuth()
-  async getAuditLog(@Query() query: any, @Req() req: Request, @Res() res: Response) {
-    return proxyGet(this.http, `${ADMIN_SERVICE}/admin/audit-log`, req, res);
-  }
-
-  @Get('settings')
-  @ApiOperation({ summary: 'Get system settings' })
-  @ApiBearerAuth()
-  async getSettings(@Req() req: Request, @Res() res: Response) {
-    return proxyGet(this.http, `${ADMIN_SERVICE}/admin/settings`, req, res);
-  }
-
-  @Put('settings')
-  @ApiOperation({ summary: 'Update system settings' })
-  @ApiBearerAuth()
-  async updateSettings(@Body() body: any, @Req() req: Request, @Res() res: Response) {
-    return proxyPut(this.http, `${ADMIN_SERVICE}/admin/settings`, body, req, res);
+  getAnalytics(@Query() query: AnalyticsQueryDto) {
+    return this.adminService.getAnalytics(query);
   }
 
   @Post('broadcast')
   @ApiOperation({ summary: 'Send broadcast notification' })
   @ApiBearerAuth()
-  async broadcast(@Body() body: any, @Req() req: Request, @Res() res: Response) {
-    return proxyPost(this.http, `${ADMIN_SERVICE}/admin/broadcast`, body, req, res);
+  broadcast(@Body() body: AdminBroadcastDto) {
+    return this.adminService.broadcast(body);
   }
 }

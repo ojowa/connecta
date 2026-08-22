@@ -1,95 +1,102 @@
-import { Controller, Get, Post, Delete, Body, Param, Query, Req, Res } from '@nestjs/common';
-import { HttpService } from '@nestjs/axios';
+import { Controller, Get, Post, Delete, Body, Param, Query } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
-import { Request, Response } from 'express';
-import { proxyGet, proxyPost, proxyDelete } from '../../helpers/proxy.helper';
-
-const MATCHING_SERVICE = process.env.MATCHING_SERVICE_URL;
+import { MatchingService } from './matching.service';
+import { LikeUserDto, FeedQueryDto } from './dto';
 
 @ApiTags('Matching')
 @ApiBearerAuth()
 @Controller('matching')
 export class MatchingController {
-  constructor(private readonly http: HttpService) {}
+  constructor(private readonly matchingService: MatchingService) {}
 
   @Get('feed')
-  @ApiOperation({ summary: 'Get discovery feed' })
-  async getFeed(@Query() query: any, @Req() req: Request, @Res() res: Response) {
-    return proxyGet(this.http, `${MATCHING_SERVICE}/matching/feed`, req, res);
+  @ApiOperation({ summary: 'Get discovery feed with AI-powered scoring' })
+  getFeed(@Body('_userId') userId: string, @Query() query: FeedQueryDto) {
+    const safeLimit = Math.min(Math.max(Number(query.limit) || 20, 1), 100);
+    const safePage = Math.max(Number(query.page) || 1, 1);
+    return this.matchingService.getFeed(userId, safePage, safeLimit);
   }
 
   @Post('like/:userId')
   @ApiOperation({ summary: 'Like a user' })
-  async likeUser(
-    @Param('userId') userId: string,
-    @Body() body: any,
-    @Req() req: Request,
-    @Res() res: Response,
+  like(
+    @Body('_userId') userId: string,
+    @Param('userId') targetUserId: string,
+    @Body() body: LikeUserDto,
   ) {
-    return proxyPost(this.http, `${MATCHING_SERVICE}/matching/like/${userId}`, body, req, res);
+    return this.matchingService.like(userId, targetUserId, body.likeType);
   }
 
   @Post('pass/:userId')
   @ApiOperation({ summary: 'Pass on a user' })
-  async passUser(@Param('userId') userId: string, @Req() req: Request, @Res() res: Response) {
-    return proxyPost(this.http, `${MATCHING_SERVICE}/matching/pass/${userId}`, null, req, res);
+  pass(@Body('_userId') userId: string, @Param('userId') targetUserId: string) {
+    return this.matchingService.pass(userId, targetUserId);
   }
 
   @Post('superlike/:userId')
   @ApiOperation({ summary: 'Super like a user' })
-  async superLikeUser(@Param('userId') userId: string, @Req() req: Request, @Res() res: Response) {
-    return proxyPost(this.http, `${MATCHING_SERVICE}/matching/superlike/${userId}`, null, req, res);
+  superLike(@Body('_userId') userId: string, @Param('userId') targetUserId: string) {
+    return this.matchingService.superLike(userId, targetUserId);
   }
 
   @Post('undo')
   @ApiOperation({ summary: 'Undo last swipe' })
-  async undoSwipe(@Req() req: Request, @Res() res: Response) {
-    return proxyPost(this.http, `${MATCHING_SERVICE}/matching/undo`, null, req, res);
+  undo(@Body('_userId') userId: string) {
+    return this.matchingService.undo(userId);
   }
 
   @Get('matches')
-  @ApiOperation({ summary: 'Get list of matches' })
-  async getMatches(@Query() query: any, @Req() req: Request, @Res() res: Response) {
-    return proxyGet(this.http, `${MATCHING_SERVICE}/matching/matches`, req, res);
+  @ApiOperation({ summary: 'Get matches' })
+  getMatches(
+    @Body('_userId') userId: string,
+    @Query('page') page?: number,
+    @Query('limit') limit?: number,
+  ) {
+    const safeLimit = Math.min(Math.max(Number(limit) || 20, 1), 100);
+    const safePage = Math.max(Number(page) || 1, 1);
+    return this.matchingService.getMatches(userId, safePage, safeLimit);
   }
 
   @Delete('matches/:matchId')
-  @ApiOperation({ summary: 'Unmatch a user' })
-  async unmatch(@Param('matchId') matchId: string, @Req() req: Request, @Res() res: Response) {
-    return proxyDelete(this.http, `${MATCHING_SERVICE}/matching/matches/${matchId}`, req, res);
+  @ApiOperation({ summary: 'Unmatch' })
+  unmatch(@Body('_userId') userId: string, @Param('matchId') matchId: string) {
+    return this.matchingService.unmatch(userId, matchId);
   }
 
   @Get('liked-you')
-  @ApiOperation({ summary: 'Get users who liked you (premium)' })
-  async getLikedYou(@Query() query: any, @Req() req: Request, @Res() res: Response) {
-    return proxyGet(this.http, `${MATCHING_SERVICE}/matching/liked-you`, req, res);
+  @ApiOperation({ summary: 'Get users who liked you' })
+  getLikedYou(
+    @Body('_userId') userId: string,
+    @Query('page') page?: number,
+    @Query('limit') limit?: number,
+  ) {
+    const safeLimit = Math.min(Math.max(Number(limit) || 20, 1), 100);
+    const safePage = Math.max(Number(page) || 1, 1);
+    return this.matchingService.getLikedYou(userId, safePage, safeLimit);
   }
 
   @Get('compatibility/:userId')
-  @ApiOperation({ summary: 'Get compatibility score with a user' })
-  async getCompatibility(
-    @Param('userId') userId: string,
-    @Req() req: Request,
-    @Res() res: Response,
-  ) {
-    return proxyGet(this.http, `${MATCHING_SERVICE}/matching/compatibility/${userId}`, req, res);
+  @ApiOperation({ summary: 'Get AI-powered compatibility score' })
+  getCompatibility(@Body('_userId') userId: string, @Param('userId') targetUserId: string) {
+    return this.matchingService.getCompatibility(userId, targetUserId);
   }
 
   @Get('scam-check/:userId')
   @ApiOperation({ summary: 'Check scam risk for a conversation' })
-  async checkScamRisk(@Param('userId') userId: string, @Req() req: Request, @Res() res: Response) {
-    return proxyGet(this.http, `${MATCHING_SERVICE}/matching/scam-check/${userId}`, req, res);
+  checkScamRisk(@Body('_userId') userId: string, @Param('userId') targetUserId: string) {
+    return this.matchingService.checkScamRisk(userId, targetUserId);
   }
 
   @Get('safety-score/:userId')
   @ApiOperation({ summary: 'Get behavioral safety score for a user' })
-  async getSafetyScore(@Param('userId') userId: string, @Req() req: Request, @Res() res: Response) {
-    return proxyGet(this.http, `${MATCHING_SERVICE}/matching/safety-score/${userId}`, req, res);
+  getSafetyScore(@Body('_userId') userId: string, @Param('userId') targetUserId: string) {
+    return this.matchingService.getBehavioralAnalysis(targetUserId);
   }
 
   @Get('sync')
   @ApiOperation({ summary: 'Get sync delta for matches' })
-  async getSyncDelta(@Req() req: Request, @Res() res: Response) {
-    return proxyGet(this.http, `${MATCHING_SERVICE}/matching/sync`, req, res);
+  getSync(@Body('_userId') userId: string, @Query('since') since?: string) {
+    const sinceTime = since ? parseInt(since, 10) : 0;
+    return this.matchingService.getSyncDelta(userId, sinceTime);
   }
 }

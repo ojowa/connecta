@@ -1,61 +1,56 @@
-import { Controller, Get, Post, Body, Param, Query, Req, Res, UseGuards } from '@nestjs/common';
-import { HttpService } from '@nestjs/axios';
+import { Controller, Get, Post, Body, Param, Query, UseGuards } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
-import { Request, Response } from 'express';
+import { CallsService } from './calls.service';
+import { StartCallDto, RejectCallDto, EndCallDto, CallHistoryQueryDto } from './dto';
 import { JwtAuthGuard } from '@app/common/guards/jwt-auth.guard';
-import { proxyGet, proxyPost } from '../../helpers/proxy.helper';
-
-const CALL_SERVICE = process.env.CALL_SERVICE_URL;
+import { CurrentUser } from '@app/common/decorators';
 
 @ApiTags('Calls')
 @ApiBearerAuth()
 @UseGuards(JwtAuthGuard)
 @Controller('calls')
 export class CallsController {
-  constructor(private readonly http: HttpService) {}
+  constructor(private readonly callsService: CallsService) {}
 
   @Post('start')
-  @ApiOperation({ summary: 'Start a call' })
-  async startCall(@Body() body: any, @Req() req: Request, @Res() res: Response) {
-    return proxyPost(this.http, `${CALL_SERVICE}/calls/start`, body, req, res);
+  @ApiOperation({ summary: 'Start call' })
+  start(@Body() body: StartCallDto, @CurrentUser('id') userId: string) {
+    return this.callsService.startCall({
+      callerId: userId,
+      recipientId: body.recipientId,
+      callType: body.callType,
+    });
   }
 
   @Post(':callId/answer')
-  @ApiOperation({ summary: 'Answer a call' })
-  async answerCall(
-    @Param('callId') callId: string,
-    @Body() body: any,
-    @Req() req: Request,
-    @Res() res: Response,
-  ) {
-    return proxyPost(this.http, `${CALL_SERVICE}/calls/${callId}/answer`, body, req, res);
+  @ApiOperation({ summary: 'Answer call' })
+  answer(@Param('callId') callId: string, @CurrentUser('id') userId: string) {
+    return this.callsService.answerCall(callId, userId);
   }
 
   @Post(':callId/reject')
-  @ApiOperation({ summary: 'Reject a call' })
-  async rejectCall(
+  @ApiOperation({ summary: 'Reject call' })
+  reject(
     @Param('callId') callId: string,
-    @Body() body: any,
-    @Req() req: Request,
-    @Res() res: Response,
+    @CurrentUser('id') userId: string,
+    @Body() body: RejectCallDto,
   ) {
-    return proxyPost(this.http, `${CALL_SERVICE}/calls/${callId}/reject`, body, req, res);
+    return this.callsService.rejectCall(callId, userId, body.reason);
   }
 
   @Post(':callId/end')
-  @ApiOperation({ summary: 'End a call' })
-  async endCall(
+  @ApiOperation({ summary: 'End call' })
+  end(
     @Param('callId') callId: string,
-    @Body() body: any,
-    @Req() req: Request,
-    @Res() res: Response,
+    @CurrentUser('id') userId: string,
+    @Body() body: EndCallDto,
   ) {
-    return proxyPost(this.http, `${CALL_SERVICE}/calls/${callId}/end`, body, req, res);
+    return this.callsService.endCall(callId, userId, body.reason);
   }
 
   @Get('history')
-  @ApiOperation({ summary: 'Get call history' })
-  async getCallHistory(@Query() query: any, @Req() req: Request, @Res() res: Response) {
-    return proxyGet(this.http, `${CALL_SERVICE}/calls/history`, req, res);
+  @ApiOperation({ summary: 'Call history' })
+  history(@CurrentUser('id') userId: string, @Query() query: CallHistoryQueryDto) {
+    return this.callsService.getHistory(userId, query.page, query.limit, query.call_type, query.direction);
   }
 }

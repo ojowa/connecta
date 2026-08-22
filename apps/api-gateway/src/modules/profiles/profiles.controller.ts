@@ -1,105 +1,59 @@
-import { Controller, Get, Put, Post, Delete, Body, Param, Req, Res } from '@nestjs/common';
-import { HttpService } from '@nestjs/axios';
+import { Controller, Get, Put, Post, Delete, Body, Param } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth, ApiConsumes } from '@nestjs/swagger';
-import { Request, Response } from 'express';
-import {
-  proxyGet,
-  proxyPost,
-  proxyPut,
-  proxyDelete,
-  handleError,
-} from '../../helpers/proxy.helper';
-import { firstValueFrom } from 'rxjs';
-
-const PROFILE_SERVICE = process.env.PROFILE_SERVICE_URL;
+import { ProfilesService } from './profiles.service';
 
 @ApiTags('Profile')
 @ApiBearerAuth()
 @Controller('profile')
 export class ProfilesController {
-  constructor(private readonly http: HttpService) {}
+  constructor(private readonly profilesService: ProfilesService) {}
 
   @Get('photos')
   @ApiOperation({ summary: 'Get user photos' })
-  async getPhotos(@Req() req: Request, @Res() res: Response) {
-    return proxyGet(this.http, `${PROFILE_SERVICE}/profiles/me/photos`, req, res);
+  getPhotos(@Body('_userId') userId: string) {
+    return this.profilesService.getPhotos(userId);
   }
 
   @Post('photos')
   @ApiOperation({ summary: 'Upload profile photo' })
   @ApiConsumes('multipart/form-data')
-  async uploadPhoto(@Req() req: Request, @Res() res: Response) {
-    try {
-      const result = await firstValueFrom(
-        this.http.post(`${PROFILE_SERVICE}/profiles/me/photos`, req, {
-          headers: {
-            authorization: req.headers.authorization,
-            'content-type': req.headers['content-type'],
-          },
-        }),
-      );
-      return res.status(result.status).json(result.data);
-    } catch (err) {
-      return handleError(err, `${PROFILE_SERVICE}/profiles/me/photos`, res);
-    }
+  uploadPhoto(@Body('_userId') userId: string, @Body() body: { url: string; isPrimary?: boolean }) {
+    return this.profilesService.uploadPhoto(userId, body.url, body.isPrimary);
   }
 
   @Delete('photos/:photoId')
   @ApiOperation({ summary: 'Delete profile photo' })
-  async deletePhoto(@Param('photoId') photoId: string, @Req() req: Request, @Res() res: Response) {
-    return proxyDelete(this.http, `${PROFILE_SERVICE}/profiles/me/photos/${photoId}`, req, res);
+  deletePhoto(@Body('_userId') userId: string, @Param('photoId') photoId: string) {
+    return this.profilesService.deletePhoto(userId, photoId);
   }
 
   @Put('photos/order')
   @ApiOperation({ summary: 'Reorder profile photos' })
-  async reorderPhotos(@Body() body: any, @Req() req: Request, @Res() res: Response) {
-    return proxyPut(this.http, `${PROFILE_SERVICE}/profiles/me/photos/order`, body, req, res);
+  reorderPhotos(@Body('_userId') userId: string, @Body() body: { photoIds: string[] }) {
+    return this.profilesService.reorderPhotos(userId, body.photoIds);
   }
 
   @Put('photos/:photoId/primary')
   @ApiOperation({ summary: 'Set primary photo' })
-  async setPrimaryPhoto(
-    @Param('photoId') photoId: string,
-    @Req() req: Request,
-    @Res() res: Response,
-  ) {
-    return proxyPut(
-      this.http,
-      `${PROFILE_SERVICE}/profiles/me/photos/${photoId}/primary`,
-      null,
-      req,
-      res,
-    );
+  setPrimaryPhoto(@Body('_userId') userId: string, @Param('photoId') photoId: string) {
+    return this.profilesService.setPrimaryPhoto(userId, photoId);
   }
 
   @Post('verification/request')
   @ApiOperation({ summary: 'Request identity verification' })
-  @ApiConsumes('multipart/form-data')
-  async requestVerification(@Req() req: Request, @Res() res: Response) {
-    try {
-      const result = await firstValueFrom(
-        this.http.post(`${PROFILE_SERVICE}/profiles/verification/request`, req, {
-          headers: {
-            authorization: req.headers.authorization,
-            'content-type': req.headers['content-type'],
-          },
-        }),
-      );
-      return res.status(result.status).json(result.data);
-    } catch (err) {
-      return handleError(err, `${PROFILE_SERVICE}/profiles/verification/request`, res);
-    }
+  requestVerification(@Body('_userId') userId: string) {
+    return this.profilesService.requestVerification(userId);
   }
 
   @Get('verification')
   @ApiOperation({ summary: 'Get verification status' })
-  async getVerificationStatus(@Req() req: Request, @Res() res: Response) {
-    return proxyGet(this.http, `${PROFILE_SERVICE}/profiles/verification`, req, res);
+  getVerificationStatus(@Body('_userId') userId: string) {
+    return this.profilesService.getVerificationStatus(userId);
   }
 
   @Get(':userId')
   @ApiOperation({ summary: 'Get user profile by ID' })
-  async getProfile(@Param('userId') userId: string, @Req() req: Request, @Res() res: Response) {
-    return proxyGet(this.http, `${PROFILE_SERVICE}/profiles/${userId}`, req, res);
+  getProfile(@Param('userId') userId: string) {
+    return this.profilesService.getProfile(userId);
   }
 }

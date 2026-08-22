@@ -1,5 +1,7 @@
 import { Module, MiddlewareConsumer, NestModule } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
+import { TypeOrmModule } from '@nestjs/typeorm';
+import { EventEmitterModule } from '@nestjs/event-emitter';
 import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
 import { APP_GUARD } from '@nestjs/core';
 import { LoggerLibModule } from '@app/logger';
@@ -9,9 +11,7 @@ import { UsersModule } from './modules/users/users.module';
 import { ProfilesModule } from './modules/profiles/profiles.module';
 import { MatchingModule } from './modules/matching/matching.module';
 import { ChatModule } from './modules/chat/chat.module';
-import { ChatWsProxy } from './modules/chat/chat-ws-proxy';
 import { CallsModule } from './modules/calls/calls.module';
-import { CallsWsProxy } from './modules/calls/calls-ws-proxy';
 import { MediaModule } from './modules/media/media.module';
 import { PaymentsModule } from './modules/payments/payments.module';
 import { NotificationsModule } from './modules/notifications/notifications.module';
@@ -25,10 +25,41 @@ import { RequestLoggingInterceptor } from './interceptors/request-logging.interc
 import { TimeoutInterceptor } from './interceptors/timeout.interceptor';
 import { ResponseTransformInterceptor } from './interceptors/response-transform.interceptor';
 import { AuditLogInterceptor } from './interceptors/audit-log.interceptor';
+import {
+  User, Session, OtpCode, Profile, Photo, Interest, ProfileInterest,
+  UserPreference, Like, Pass, Match, DailyLike, Conversation,
+  ConversationParticipant, Message, MessageReaction, ReadReceipt,
+  Block, Report, Plan, Subscription, Transaction, Notification,
+  NotificationPreference, CallSession, AdminUser, AdminSession,
+  AuditLog, SystemSetting, Media, PreKeyBundle, BiometricCredential,
+  DeviceToken,
+} from '@app/common/entities';
+
+const entities = [
+  User, Session, OtpCode, Profile, Photo, Interest, ProfileInterest,
+  UserPreference, Like, Pass, Match, DailyLike, Conversation,
+  ConversationParticipant, Message, MessageReaction, ReadReceipt,
+  Block, Report, Plan, Subscription, Transaction, Notification,
+  NotificationPreference, CallSession, AdminUser, AdminSession,
+  AuditLog, SystemSetting, Media, PreKeyBundle, BiometricCredential,
+  DeviceToken,
+];
 
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
+    TypeOrmModule.forRoot({
+      type: 'postgres',
+      host: process.env.DB_HOST || 'localhost',
+      port: parseInt(process.env.DB_PORT || '5432', 10),
+      username: process.env.DB_USERNAME || 'connecta_user',
+      password: process.env.DB_PASSWORD || 'connecta_password',
+      database: process.env.DB_NAME || 'connecta_db',
+      entities,
+      synchronize: process.env.NODE_ENV !== 'production',
+      logging: process.env.DB_LOGGING === 'true',
+    }),
+    EventEmitterModule.forRoot(),
     ThrottlerModule.forRoot([{ name: 'default', ttl: 60000, limit: 120 }]),
     LoggerLibModule,
     HealthModule,
@@ -55,8 +86,6 @@ import { AuditLogInterceptor } from './interceptors/audit-log.interceptor';
     TimeoutInterceptor,
     ResponseTransformInterceptor,
     AuditLogInterceptor,
-    ChatWsProxy,
-    CallsWsProxy,
   ],
 })
 export class AppModule implements NestModule {

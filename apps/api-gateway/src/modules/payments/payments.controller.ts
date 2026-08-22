@@ -1,73 +1,86 @@
-import { Controller, Get, Post, Put, Body, Param, Query, Req, Res } from '@nestjs/common';
-import { HttpService } from '@nestjs/axios';
+import { Controller, Get, Post, Put, Body, Param, Query } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
-import { Request, Response } from 'express';
-import { proxyGet, proxyPost, proxyPut } from '../../helpers/proxy.helper';
-
-const PAYMENT_SERVICE = process.env.PAYMENT_SERVICE_URL;
+import { PaymentsService } from './payments.service';
+import {
+  SubscribeDto,
+  CancelSubscriptionDto,
+  UpgradePlanDto,
+  InitializePaymentDto,
+  VerifyPaymentDto,
+  RequestRefundDto,
+} from './dto';
 
 @ApiTags('Payments')
-@ApiBearerAuth()
 @Controller('payments')
 export class PaymentsController {
-  constructor(private readonly http: HttpService) {}
+  constructor(private readonly paymentsService: PaymentsService) {}
 
   @Get('plans')
-  @ApiOperation({ summary: 'Get available subscription plans' })
-  async getPlans(@Query() query: any, @Req() req: Request, @Res() res: Response) {
-    return proxyGet(this.http, `${PAYMENT_SERVICE}/payments/plans`, req, res);
+  @ApiOperation({ summary: 'Get subscription plans' })
+  getPlans(@Query('country') country?: string, @Query('currency') currency?: string) {
+    return this.paymentsService.getPlans(country, currency);
   }
 
   @Post('subscribe')
-  @ApiOperation({ summary: 'Subscribe to a plan' })
-  async subscribe(@Body() body: any, @Req() req: Request, @Res() res: Response) {
-    return proxyPost(this.http, `${PAYMENT_SERVICE}/payments/subscribe`, body, req, res);
+  @ApiOperation({ summary: 'Subscribe to plan' })
+  @ApiBearerAuth()
+  subscribe(@Body('_userId') userId: string, @Body() body: SubscribeDto) {
+    return this.paymentsService.subscribe(userId, body);
   }
 
   @Post('subscribe/cancel')
   @ApiOperation({ summary: 'Cancel subscription' })
-  async cancelSubscription(@Body() body: any, @Req() req: Request, @Res() res: Response) {
-    return proxyPost(this.http, `${PAYMENT_SERVICE}/payments/subscribe/cancel`, body, req, res);
+  @ApiBearerAuth()
+  cancel(@Body('_userId') userId: string, @Body() body: CancelSubscriptionDto) {
+    return this.paymentsService.cancelSubscription(userId, body);
   }
 
   @Put('subscribe/upgrade')
-  @ApiOperation({ summary: 'Upgrade or downgrade subscription' })
-  async upgradeSubscription(@Body() body: any, @Req() req: Request, @Res() res: Response) {
-    return proxyPut(this.http, `${PAYMENT_SERVICE}/payments/subscribe/upgrade`, body, req, res);
+  @ApiOperation({ summary: 'Upgrade plan' })
+  @ApiBearerAuth()
+  upgrade(@Body('_userId') userId: string, @Body() body: UpgradePlanDto) {
+    return this.paymentsService.upgradePlan(userId, body);
   }
 
   @Post('initialize')
-  @ApiOperation({ summary: 'Initialize a one-time payment' })
-  async initializePayment(@Body() body: any, @Req() req: Request, @Res() res: Response) {
-    return proxyPost(this.http, `${PAYMENT_SERVICE}/payments/initialize`, body, req, res);
+  @ApiOperation({ summary: 'Initialize payment' })
+  @ApiBearerAuth()
+  initialize(@Body('_userId') userId: string, @Body() body: InitializePaymentDto) {
+    return this.paymentsService.initializePayment(userId, body);
   }
 
   @Post('verify')
-  @ApiOperation({ summary: 'Verify a payment transaction' })
-  async verifyPayment(@Body() body: any, @Req() req: Request, @Res() res: Response) {
-    return proxyPost(this.http, `${PAYMENT_SERVICE}/payments/verify`, body, req, res);
+  @ApiOperation({ summary: 'Verify payment' })
+  @ApiBearerAuth()
+  verify(@Body('_userId') userId: string, @Body() body: VerifyPaymentDto) {
+    return this.paymentsService.verifyPayment(userId, body.reference);
   }
 
   @Get('history')
-  @ApiOperation({ summary: 'Get payment history' })
-  async getPaymentHistory(@Query() query: any, @Req() req: Request, @Res() res: Response) {
-    return proxyGet(this.http, `${PAYMENT_SERVICE}/payments/history`, req, res);
+  @ApiOperation({ summary: 'Payment history' })
+  @ApiBearerAuth()
+  history(
+    @Body('_userId') userId: string,
+    @Query('page') page?: number,
+    @Query('limit') limit?: number,
+  ) {
+    return this.paymentsService.getPaymentHistory(userId, page, limit);
   }
 
   @Post('refund/:transactionId')
-  @ApiOperation({ summary: 'Request a refund' })
-  async requestRefund(
-    @Param('transactionId') transactionId: string,
-    @Body() body: any,
-    @Req() req: Request,
-    @Res() res: Response,
+  @ApiOperation({ summary: 'Request refund' })
+  @ApiBearerAuth()
+  refund(
+    @Body('_userId') userId: string,
+    @Param('transactionId') txnId: string,
+    @Body() body: RequestRefundDto,
   ) {
-    return proxyPost(
-      this.http,
-      `${PAYMENT_SERVICE}/payments/refund/${transactionId}`,
-      body,
-      req,
-      res,
-    );
+    return this.paymentsService.requestRefund(userId, txnId, body);
+  }
+
+  @Post('webhook/paystack')
+  @ApiOperation({ summary: 'Paystack webhook' })
+  webhook(@Body() payload: any, @Query('signature') signature?: string) {
+    return this.paymentsService.handleWebhook(payload, signature || '');
   }
 }
