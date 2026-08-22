@@ -2,6 +2,7 @@ import { Controller, Get, Patch, Put, Post, Delete, Body, Param, Req, Res, Query
 import { HttpService } from '@nestjs/axios';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { Request, Response } from 'express';
+import { proxyGet, proxyPost, proxyPut, proxyPatch, proxyDelete, handleError } from '../../helpers/proxy.helper';
 import { firstValueFrom } from 'rxjs';
 
 const USER_SERVICE = process.env.USER_SERVICE_URL;
@@ -12,119 +13,79 @@ const USER_SERVICE = process.env.USER_SERVICE_URL;
 export class UsersController {
   constructor(private readonly http: HttpService) {}
 
-  private authHeaders(req: Request) {
-    return { authorization: req.headers.authorization };
-  }
-
   @Get('me')
   @ApiOperation({ summary: 'Get current user profile' })
   async getMe(@Req() req: Request, @Res() res: Response) {
-    const result = await firstValueFrom(
-      this.http.get(`${USER_SERVICE}/users/me`, { headers: this.authHeaders(req) }),
-    );
-    return res.status(result.status).json(result.data);
+    return proxyGet(this.http, `${USER_SERVICE}/users/me`, req, res);
   }
 
   @Patch('me')
   @ApiOperation({ summary: 'Update current user profile' })
   async updateMe(@Body() body: any, @Req() req: Request, @Res() res: Response) {
-    const result = await firstValueFrom(
-      this.http.patch(`${USER_SERVICE}/users/me`, body, { headers: this.authHeaders(req) }),
-    );
-    return res.status(result.status).json(result.data);
+    return proxyPatch(this.http, `${USER_SERVICE}/users/me`, body, req, res);
   }
 
   @Delete('me')
   @ApiOperation({ summary: 'Delete current user account' })
   async deleteMe(@Body() body: any, @Req() req: Request, @Res() res: Response) {
-    const result = await firstValueFrom(
-      this.http.delete(`${USER_SERVICE}/users/me`, {
-        headers: this.authHeaders(req),
-        data: body,
-      }),
-    );
-    return res.status(result.status).json(result.data);
+    try {
+      const result = await firstValueFrom(
+        this.http.delete(`${USER_SERVICE}/users/me`, {
+          headers: { authorization: req.headers.authorization },
+          data: body,
+        }),
+      );
+      return res.status(result.status).json(result.data);
+    } catch (err) {
+      return handleError(err, `${USER_SERVICE}/users/me`, res);
+    }
   }
 
   @Get(':userId')
   @ApiOperation({ summary: 'Get user public profile' })
   async getUser(@Param('userId') userId: string, @Req() req: Request, @Res() res: Response) {
-    const result = await firstValueFrom(
-      this.http.get(`${USER_SERVICE}/users/${userId}`, { headers: this.authHeaders(req) }),
-    );
-    return res.status(result.status).json(result.data);
+    return proxyGet(this.http, `${USER_SERVICE}/users/${userId}`, req, res);
   }
 
   @Get('me/preferences')
   @ApiOperation({ summary: 'Get user preferences' })
   async getPreferences(@Req() req: Request, @Res() res: Response) {
-    const result = await firstValueFrom(
-      this.http.get(`${USER_SERVICE}/users/me/preferences`, { headers: this.authHeaders(req) }),
-    );
-    return res.status(result.status).json(result.data);
+    return proxyGet(this.http, `${USER_SERVICE}/users/me/preferences`, req, res);
   }
 
   @Put('me/preferences')
   @ApiOperation({ summary: 'Update user preferences' })
   async updatePreferences(@Body() body: any, @Req() req: Request, @Res() res: Response) {
-    const result = await firstValueFrom(
-      this.http.put(`${USER_SERVICE}/users/me/preferences`, body, { headers: this.authHeaders(req) }),
-    );
-    return res.status(result.status).json(result.data);
+    return proxyPut(this.http, `${USER_SERVICE}/users/me/preferences`, body, req, res);
   }
 
   @Post(':userId/block')
   @ApiOperation({ summary: 'Block a user' })
   async blockUser(@Param('userId') userId: string, @Body() body: any, @Req() req: Request, @Res() res: Response) {
-    const result = await firstValueFrom(
-      this.http.post(`${USER_SERVICE}/users/${userId}/block`, body, { headers: this.authHeaders(req) }),
-    );
-    return res.status(result.status).json(result.data);
+    return proxyPost(this.http, `${USER_SERVICE}/users/${userId}/block`, body, req, res);
   }
 
   @Delete(':userId/block')
   @ApiOperation({ summary: 'Unblock a user' })
   async unblockUser(@Param('userId') userId: string, @Req() req: Request, @Res() res: Response) {
-    const result = await firstValueFrom(
-      this.http.delete(`${USER_SERVICE}/users/${userId}/block`, { headers: this.authHeaders(req) }),
-    );
-    return res.status(result.status).json(result.data);
+    return proxyDelete(this.http, `${USER_SERVICE}/users/${userId}/block`, req, res);
   }
 
   @Get('me/blocks')
   @ApiOperation({ summary: 'List blocked users' })
   async listBlockedUsers(@Query() query: any, @Req() req: Request, @Res() res: Response) {
-    const result = await firstValueFrom(
-      this.http.get(`${USER_SERVICE}/users/me/blocks`, {
-        params: query,
-        headers: this.authHeaders(req),
-      }),
-    );
-    return res.status(result.status).json(result.data);
+    return proxyGet(this.http, `${USER_SERVICE}/users/me/blocks`, req, res);
   }
 
   @Post(':userId/report')
   @ApiOperation({ summary: 'Report a user' })
   async reportUser(@Param('userId') userId: string, @Body() body: any, @Req() req: Request, @Res() res: Response) {
-    const result = await firstValueFrom(
-      this.http.post(`${USER_SERVICE}/users/${userId}/report`, body, { headers: this.authHeaders(req) }),
-    );
-    return res.status(result.status).json(result.data);
+    return proxyPost(this.http, `${USER_SERVICE}/users/${userId}/report`, body, req, res);
   }
 
   @Get('sync')
   @ApiOperation({ summary: 'Get sync delta for user profiles' })
-  async getSyncDelta(@Query('since') since: string, @Req() req: Request, @Res() res: Response) {
-    try {
-      const result = await firstValueFrom(
-        this.http.get(`${USER_SERVICE}/users/sync`, {
-          params: { since },
-          headers: this.authHeaders(req),
-        }),
-      );
-      return res.status(result.status).json(result.data);
-    } catch {
-      return res.json({ data: null });
-    }
+  async getSyncDelta(@Req() req: Request, @Res() res: Response) {
+    return proxyGet(this.http, `${USER_SERVICE}/users/sync`, req, res);
   }
 }

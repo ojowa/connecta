@@ -2,6 +2,7 @@ import { Controller, Get, Put, Post, Body, Query, Req, Res } from '@nestjs/commo
 import { HttpService } from '@nestjs/axios';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { Request, Response } from 'express';
+import { proxyGet, proxyPost, proxyPut, handleError } from '../../helpers/proxy.helper';
 import { firstValueFrom } from 'rxjs';
 
 const NOTIFICATION_SERVICE = process.env.NOTIFICATION_SERVICE_URL;
@@ -12,70 +13,39 @@ const NOTIFICATION_SERVICE = process.env.NOTIFICATION_SERVICE_URL;
 export class NotificationsController {
   constructor(private readonly http: HttpService) {}
 
-  private authHeaders(req: Request) {
-    return { authorization: req.headers.authorization };
-  }
-
   @Get()
   @ApiOperation({ summary: 'Get notifications' })
   async getNotifications(@Query() query: any, @Req() req: Request, @Res() res: Response) {
-    const result = await firstValueFrom(
-      this.http.get(`${NOTIFICATION_SERVICE}/notifications`, {
-        params: query,
-        headers: this.authHeaders(req),
-      }),
-    );
-    return res.status(result.status).json(result.data);
+    return proxyGet(this.http, `${NOTIFICATION_SERVICE}/notifications`, req, res);
   }
 
   @Get('preferences')
   @ApiOperation({ summary: 'Get notification preferences' })
   async getPreferences(@Req() req: Request, @Res() res: Response) {
-    const result = await firstValueFrom(
-      this.http.get(`${NOTIFICATION_SERVICE}/notifications/preferences`, {
-        headers: this.authHeaders(req),
-      }),
-    );
-    return res.status(result.status).json(result.data);
+    return proxyGet(this.http, `${NOTIFICATION_SERVICE}/notifications/preferences`, req, res);
   }
 
   @Put('preferences')
   @ApiOperation({ summary: 'Update notification preferences' })
   async updatePreferences(@Body() body: any, @Req() req: Request, @Res() res: Response) {
-    const result = await firstValueFrom(
-      this.http.put(`${NOTIFICATION_SERVICE}/notifications/preferences`, body, { headers: this.authHeaders(req) }),
-    );
-    return res.status(result.status).json(result.data);
+    return proxyPut(this.http, `${NOTIFICATION_SERVICE}/notifications/preferences`, body, req, res);
   }
 
   @Put('read')
   @ApiOperation({ summary: 'Mark notifications as read' })
   async markRead(@Body() body: any, @Req() req: Request, @Res() res: Response) {
-    const result = await firstValueFrom(
-      this.http.put(`${NOTIFICATION_SERVICE}/notifications/read`, body, { headers: this.authHeaders(req) }),
-    );
-    return res.status(result.status).json(result.data);
+    return proxyPut(this.http, `${NOTIFICATION_SERVICE}/notifications/read`, body, req, res);
   }
 
   @Post('broadcast')
   @ApiOperation({ summary: 'Send broadcast notification (admin)' })
   async broadcast(@Body() body: any, @Req() req: Request, @Res() res: Response) {
-    const result = await firstValueFrom(
-      this.http.post(`${NOTIFICATION_SERVICE}/notifications/broadcast`, body, { headers: this.authHeaders(req) }),
-    );
-    return res.status(result.status).json(result.data);
+    return proxyPost(this.http, `${NOTIFICATION_SERVICE}/notifications/broadcast`, body, req, res);
   }
 
   @Post('register')
   @ApiOperation({ summary: 'Register push notification token' })
   async registerToken(@Body() body: any, @Req() req: Request, @Res() res: Response) {
-    try {
-      const result = await firstValueFrom(
-        this.http.post(`${NOTIFICATION_SERVICE}/notifications/register`, body, { headers: this.authHeaders(req) }),
-      );
-      return res.status(result.status).json(result.data);
-    } catch {
-      return res.json({ data: { success: true } });
-    }
+    return proxyPost(this.http, `${NOTIFICATION_SERVICE}/notifications/register`, body, req, res);
   }
 }

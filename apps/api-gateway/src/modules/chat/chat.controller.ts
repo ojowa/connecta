@@ -2,7 +2,7 @@ import { Controller, Get, Post, Put, Delete, Body, Param, Query, Req, Res } from
 import { HttpService } from '@nestjs/axios';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { Request, Response } from 'express';
-import { firstValueFrom } from 'rxjs';
+import { proxyGet, proxyPost, proxyPut, proxyDelete } from '../../helpers/proxy.helper';
 
 const CHAT_SERVICE = process.env.CHAT_SERVICE_URL;
 
@@ -12,41 +12,22 @@ const CHAT_SERVICE = process.env.CHAT_SERVICE_URL;
 export class ChatController {
   constructor(private readonly http: HttpService) {}
 
-  private authHeaders(req: Request) {
-    return { authorization: req.headers.authorization };
-  }
-
   @Get('conversations')
   @ApiOperation({ summary: 'Get list of conversations' })
   async getConversations(@Query() query: any, @Req() req: Request, @Res() res: Response) {
-    const result = await firstValueFrom(
-      this.http.get(`${CHAT_SERVICE}/chat/conversations`, {
-        params: query,
-        headers: this.authHeaders(req),
-      }),
-    );
-    return res.status(result.status).json(result.data);
+    return proxyGet(this.http, `${CHAT_SERVICE}/chat/conversations`, req, res);
   }
 
   @Get('conversations/:conversationId/messages')
   @ApiOperation({ summary: 'Get messages in a conversation' })
   async getMessages(@Param('conversationId') conversationId: string, @Query() query: any, @Req() req: Request, @Res() res: Response) {
-    const result = await firstValueFrom(
-      this.http.get(`${CHAT_SERVICE}/chat/conversations/${conversationId}/messages`, {
-        params: query,
-        headers: this.authHeaders(req),
-      }),
-    );
-    return res.status(result.status).json(result.data);
+    return proxyGet(this.http, `${CHAT_SERVICE}/chat/conversations/${conversationId}/messages`, req, res);
   }
 
   @Post('conversations/:conversationId/messages')
   @ApiOperation({ summary: 'Send a message' })
   async sendMessage(@Param('conversationId') conversationId: string, @Body() body: any, @Req() req: Request, @Res() res: Response) {
-    const result = await firstValueFrom(
-      this.http.post(`${CHAT_SERVICE}/chat/conversations/${conversationId}/messages`, body, { headers: this.authHeaders(req) }),
-    );
-    return res.status(result.status).json(result.data);
+    return proxyPost(this.http, `${CHAT_SERVICE}/chat/conversations/${conversationId}/messages`, body, req, res);
   }
 
   @Post('conversations/:conversationId/messages/:messageId/reactions')
@@ -58,10 +39,7 @@ export class ChatController {
     @Req() req: Request,
     @Res() res: Response,
   ) {
-    const result = await firstValueFrom(
-      this.http.post(`${CHAT_SERVICE}/chat/conversations/${conversationId}/messages/${messageId}/reactions`, body, { headers: this.authHeaders(req) }),
-    );
-    return res.status(result.status).json(result.data);
+    return proxyPost(this.http, `${CHAT_SERVICE}/chat/conversations/${conversationId}/messages/${messageId}/reactions`, body, req, res);
   }
 
   @Put('conversations/:conversationId/read')
@@ -72,10 +50,7 @@ export class ChatController {
     @Req() req: Request,
     @Res() res: Response,
   ) {
-    const result = await firstValueFrom(
-      this.http.put(`${CHAT_SERVICE}/chat/conversations/${conversationId}/read`, body, { headers: this.authHeaders(req) }),
-    );
-    return res.status(result.status).json(result.data);
+    return proxyPut(this.http, `${CHAT_SERVICE}/chat/conversations/${conversationId}/read`, body, req, res);
   }
 
   @Post('conversations/:conversationId/typing')
@@ -86,22 +61,13 @@ export class ChatController {
     @Req() req: Request,
     @Res() res: Response,
   ) {
-    const result = await firstValueFrom(
-      this.http.post(`${CHAT_SERVICE}/chat/conversations/${conversationId}/typing`, body, { headers: this.authHeaders(req) }),
-    );
-    return res.status(result.status).json(result.data);
+    return proxyPost(this.http, `${CHAT_SERVICE}/chat/conversations/${conversationId}/typing`, body, req, res);
   }
 
   @Get('messages/search')
   @ApiOperation({ summary: 'Search messages' })
   async searchMessages(@Query() query: any, @Req() req: Request, @Res() res: Response) {
-    const result = await firstValueFrom(
-      this.http.get(`${CHAT_SERVICE}/chat/messages/search`, {
-        params: query,
-        headers: this.authHeaders(req),
-      }),
-    );
-    return res.status(result.status).json(result.data);
+    return proxyGet(this.http, `${CHAT_SERVICE}/chat/messages/search`, req, res);
   }
 
   @Delete('conversations/:conversationId/messages/:messageId')
@@ -112,25 +78,12 @@ export class ChatController {
     @Req() req: Request,
     @Res() res: Response,
   ) {
-    const result = await firstValueFrom(
-      this.http.delete(`${CHAT_SERVICE}/chat/conversations/${conversationId}/messages/${messageId}`, { headers: this.authHeaders(req) }),
-    );
-    return res.status(result.status).json(result.data);
+    return proxyDelete(this.http, `${CHAT_SERVICE}/chat/conversations/${conversationId}/messages/${messageId}`, req, res);
   }
 
   @Get('sync')
   @ApiOperation({ summary: 'Get sync delta for messages' })
-  async getSyncDelta(@Query('since') since: string, @Req() req: Request, @Res() res: Response) {
-    try {
-      const result = await firstValueFrom(
-        this.http.get(`${CHAT_SERVICE}/chat/sync`, {
-          params: { since },
-          headers: this.authHeaders(req),
-        }),
-      );
-      return res.status(result.status).json(result.data);
-    } catch {
-      return res.json({ data: [] });
-    }
+  async getSyncDelta(@Req() req: Request, @Res() res: Response) {
+    return proxyGet(this.http, `${CHAT_SERVICE}/chat/sync`, req, res);
   }
 }

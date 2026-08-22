@@ -2,7 +2,7 @@ import { Controller, Get, Post, Delete, Body, Param, Req, Res } from '@nestjs/co
 import { HttpService } from '@nestjs/axios';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { Request, Response } from 'express';
-import { firstValueFrom } from 'rxjs';
+import { proxyGet, proxyPost, proxyDelete } from '../../helpers/proxy.helper';
 
 const USER_SERVICE = process.env.USER_SERVICE_URL;
 
@@ -12,84 +12,45 @@ const USER_SERVICE = process.env.USER_SERVICE_URL;
 export class CryptoController {
   constructor(private readonly http: HttpService) {}
 
-  private authHeaders(req: Request) {
-    return { authorization: req.headers.authorization };
-  }
-
   @Post('prekeys')
   @ApiOperation({ summary: 'Upload pre-key bundle (identity key, signed pre-key, one-time pre-keys)' })
   async uploadPreKeyBundle(@Body() body: any, @Req() req: Request, @Res() res: Response) {
-    const result = await firstValueFrom(
-      this.http.post(`${USER_SERVICE}/crypto/prekeys`, body, {
-        headers: this.authHeaders(req),
-      }),
-    );
-    return res.status(result.status).json(result.data);
+    return proxyPost(this.http, `${USER_SERVICE}/crypto/prekeys`, body, req, res);
   }
 
   @Get('prekeys/:userId')
   @ApiOperation({ summary: 'Get pre-key bundle for a user' })
   async getPreKeyBundle(@Param('userId') userId: string, @Req() req: Request, @Res() res: Response) {
-    const result = await firstValueFrom(
-      this.http.get(`${USER_SERVICE}/crypto/prekeys/${userId}`, {
-        headers: this.authHeaders(req),
-      }),
-    );
-    return res.status(result.status).json(result.data);
+    return proxyGet(this.http, `${USER_SERVICE}/crypto/prekeys/${userId}`, req, res);
   }
 
   @Post('prekeys/claim/:keyId')
   @ApiOperation({ summary: 'Claim a one-time pre-key' })
   async claimOneTimePreKey(@Param('keyId') keyId: string, @Req() req: Request, @Res() res: Response) {
-    const result = await firstValueFrom(
-      this.http.post(`${USER_SERVICE}/crypto/prekeys/claim/${keyId}`, null, {
-        headers: this.authHeaders(req),
-      }),
-    );
-    return res.status(result.status).json(result.data);
+    return proxyPost(this.http, `${USER_SERVICE}/crypto/prekeys/claim/${keyId}`, null, req, res);
   }
 
   @Delete('prekeys/:keyId')
   @ApiOperation({ summary: 'Delete a consumed one-time pre-key' })
   async deleteOneTimePreKey(@Param('keyId') keyId: string, @Req() req: Request, @Res() res: Response) {
-    const result = await firstValueFrom(
-      this.http.delete(`${USER_SERVICE}/crypto/prekeys/${keyId}`, {
-        headers: this.authHeaders(req),
-      }),
-    );
-    return res.status(result.status).json(result.data);
+    return proxyDelete(this.http, `${USER_SERVICE}/crypto/prekeys/${keyId}`, req, res);
   }
 
   @Get('sessions/:userId')
   @ApiOperation({ summary: 'Get active sessions for a user' })
   async getActiveSessions(@Param('userId') userId: string, @Req() req: Request, @Res() res: Response) {
-    const result = await firstValueFrom(
-      this.http.get(`${USER_SERVICE}/crypto/sessions/${userId}`, {
-        headers: this.authHeaders(req),
-      }),
-    );
-    return res.status(result.status).json(result.data);
+    return proxyGet(this.http, `${USER_SERVICE}/crypto/sessions/${userId}`, req, res);
   }
 
   @Post('backup')
   @ApiOperation({ summary: 'Upload encrypted key backup' })
   async uploadBackup(@Body() body: any, @Req() req: Request, @Res() res: Response) {
-    const result = await firstValueFrom(
-      this.http.post(`${USER_SERVICE}/crypto/backup`, body, {
-        headers: this.authHeaders(req),
-      }),
-    );
-    return res.status(result.status).json(result.data);
+    return proxyPost(this.http, `${USER_SERVICE}/crypto/backup`, body, req, res);
   }
 
   @Get('backup')
   @ApiOperation({ summary: 'Get encrypted key backup' })
   async getBackup(@Req() req: Request, @Res() res: Response) {
-    const result = await firstValueFrom(
-      this.http.get(`${USER_SERVICE}/crypto/backup`, {
-        headers: this.authHeaders(req),
-      }),
-    );
-    return res.status(result.status).json(result.data);
+    return proxyGet(this.http, `${USER_SERVICE}/crypto/backup`, req, res);
   }
 }
