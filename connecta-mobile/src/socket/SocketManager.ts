@@ -6,6 +6,7 @@ import { TypingHandler } from './eventHandlers/typingHandler';
 import { PresenceHandler } from './eventHandlers/presenceHandler';
 import { MatchHandler } from './eventHandlers/matchHandler';
 import { CallHandler } from './eventHandlers/callHandler';
+import { resolveWsUrl } from '../lib/network';
 
 class SocketManager {
   private static instance: SocketManager;
@@ -32,11 +33,11 @@ class SocketManager {
     this.callHandler = new CallHandler();
   }
 
-  connect(): void {
+  async connect(): Promise<void> {
     const { token } = useAppStore.getState();
     if (!token) return;
 
-    const wsUrl = process.env.EXPO_PUBLIC_WS_URL;
+    const wsUrl = await resolveWsUrl();
     if (!wsUrl) return;
 
     if (!this.chatSocket?.connected) {
