@@ -4,12 +4,11 @@ import {
   UnauthorizedException,
   BadRequestException,
   NotFoundException,
-  Inject,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { JwtService } from '@nestjs/jwt';
-import { ClientProxy } from '@nestjs/microservices';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 import * as bcrypt from 'bcryptjs';
 import {
   User,
@@ -19,7 +18,7 @@ import {
   OtpCode,
   BiometricCredential,
 } from '@app/common/entities';
-import { NATS_SERVICE, USER_EVENTS } from '@app/common';
+import { USER_EVENTS } from '@app/common/constants/events';
 import { v4 as uuid } from 'uuid';
 
 @Injectable()
@@ -30,7 +29,7 @@ export class AuthService {
     @InjectRepository(OtpCode) private otpRepo: Repository<OtpCode>,
     @InjectRepository(BiometricCredential) private biometricRepo: Repository<BiometricCredential>,
     private jwtService: JwtService,
-    @Inject(NATS_SERVICE) private readonly natsClient: ClientProxy,
+    private readonly eventEmitter: EventEmitter2,
   ) {}
 
   async register(data: any) {
@@ -87,7 +86,7 @@ export class AuthService {
       appVersion,
     );
 
-    this.natsClient.emit(USER_EVENTS.USER_CREATED, {
+    this.eventEmitter.emit(USER_EVENTS.USER_CREATED, {
       userId: saved.id,
       email: saved.email,
       phone: saved.phone,
@@ -146,7 +145,7 @@ export class AuthService {
       appVersion,
     );
 
-    this.natsClient.emit(USER_EVENTS.USER_LOGGED_IN, { userId: user.id, email: user.email });
+    this.eventEmitter.emit(USER_EVENTS.USER_LOGGED_IN, { userId: user.id, email: user.email });
 
     return {
       user: this.sanitizeUser(user),
@@ -190,7 +189,7 @@ export class AuthService {
       await this.sessionRepo.update({ userId, isActive: true }, { isActive: false });
     }
 
-    this.natsClient.emit(USER_EVENTS.USER_LOGGED_OUT, { userId });
+    this.eventEmitter.emit(USER_EVENTS.USER_LOGGED_OUT, { userId });
 
     return { loggedOut: true, sessionsRevoked: 1 };
   }
@@ -250,10 +249,10 @@ export class AuthService {
     if (user) {
       if (purpose === 'registration') {
         await this.userRepo.update(user.id, { emailVerified: true, status: UserStatus.ACTIVE });
-        this.natsClient.emit(USER_EVENTS.EMAIL_VERIFIED, { userId: user.id, email: user.email });
+        this.eventEmitter.emit(USER_EVENTS.EMAIL_VERIFIED, { userId: user.id, email: user.email });
       } else if (purpose === 'phone_verify') {
         await this.userRepo.update(user.id, { phoneVerified: true });
-        this.natsClient.emit(USER_EVENTS.PHONE_VERIFIED, { userId: user.id, phone: user.phone });
+        this.eventEmitter.emit(USER_EVENTS.PHONE_VERIFIED, { userId: user.id, phone: user.phone });
       }
       const tokens = await this.generateTokens(user);
       return { verified: true, purpose, userId: user.id, tokens: { ...tokens, expiresIn: 900 } };
@@ -306,7 +305,7 @@ export class AuthService {
     await this.otpRepo.update(otp.id, { verifiedAt: new Date() });
     await this.sessionRepo.update({ userId: otp.userId!, isActive: true }, { isActive: false });
 
-    this.natsClient.emit(USER_EVENTS.PASSWORD_CHANGED, { userId: otp.userId });
+    this.eventEmitter.emit(USER_EVENTS.PASSWORD_CHANGED, { userId: otp.userId });
 
     return {
       passwordReset: true,

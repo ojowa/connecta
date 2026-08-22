@@ -8,4 +8,3 @@ export * from './pipes';
 export * from './interfaces';
 export * from './utils';
 export * from './constants';
-export * from './nats';
