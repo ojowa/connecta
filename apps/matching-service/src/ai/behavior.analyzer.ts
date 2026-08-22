@@ -24,7 +24,8 @@ export class BehaviorAnalyzer {
 
   async analyze(userId: string): Promise<BehavioralAnalysis> {
     const user = await this.userRepo.findOne({ where: { id: userId } });
-    if (!user) return { riskScore: 1, flags: ['user_not_found'], isSuspicious: true, safetyScore: 0 };
+    if (!user)
+      return { riskScore: 1, flags: ['user_not_found'], isSuspicious: true, safetyScore: 0 };
 
     const profile = await this.profileRepo.findOne({ where: { userId } });
     const flags: string[] = [];
@@ -36,15 +37,16 @@ export class BehaviorAnalyzer {
     const accountAgeMs = now.getTime() - user.createdAt.getTime();
     const accountAgeDays = accountAgeMs / (24 * 60 * 60 * 1000);
 
-    const [messages24h, likesGiven24h, totalLikes, totalReports, photoCount, sessionCount] = await Promise.all([
-      this.msgRepo.count({ where: { senderId: userId, createdAt: MoreThan(oneDayAgo) } }),
-      this.likeRepo.count({ where: { userId, createdAt: MoreThan(oneDayAgo) } }),
-      this.likeRepo.count({ where: { userId } }),
-      this.reportRepo.count({ where: { reportedId: userId } }),
-      this.photoRepo.count({ where: { profileId: profile?.id || '' } }),
-      // M5: Only count active sessions, not all historical sessions
-      this.sessionRepo.count({ where: { userId, isActive: true } }),
-    ]);
+    const [messages24h, likesGiven24h, totalLikes, totalReports, photoCount, sessionCount] =
+      await Promise.all([
+        this.msgRepo.count({ where: { senderId: userId, createdAt: MoreThan(oneDayAgo) } }),
+        this.likeRepo.count({ where: { userId, createdAt: MoreThan(oneDayAgo) } }),
+        this.likeRepo.count({ where: { userId } }),
+        this.reportRepo.count({ where: { reportedId: userId } }),
+        this.photoRepo.count({ where: { profileId: profile?.id || '' } }),
+        // M5: Only count active sessions, not all historical sessions
+        this.sessionRepo.count({ where: { userId, isActive: true } }),
+      ]);
 
     if (messages24h > 200) {
       flags.push('mass_messaging');

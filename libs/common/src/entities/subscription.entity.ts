@@ -1,4 +1,11 @@
-import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, ManyToOne, JoinColumn } from 'typeorm';
+import {
+  Entity,
+  PrimaryGeneratedColumn,
+  Column,
+  CreateDateColumn,
+  ManyToOne,
+  JoinColumn,
+} from 'typeorm';
 import { Plan } from './plan.entity';
 
 @Entity('subscriptions')
@@ -14,6 +21,7 @@ export class Subscription {
   @Column({ nullable: true }) cancelledAt: Date;
   @Column({ default: true }) autoRenew: boolean;
   @ManyToOne(() => Plan)
-  @JoinColumn({ name: 'planId' }) plan: Plan;
+  @JoinColumn({ name: 'planId' })
+  plan: Plan;
   @CreateDateColumn() createdAt: Date;
 }

@@ -102,7 +102,13 @@ export class CallsService {
       endReason: reason || 'user_ended',
     });
 
-    return { callId, status: 'ended', durationSeconds: duration, endedBy: userId, endedAt: new Date() };
+    return {
+      callId,
+      status: 'ended',
+      durationSeconds: duration,
+      endedBy: userId,
+      endedAt: new Date(),
+    };
   }
 
   async getHistory(userId: string, page = 1, limit = 20, callType?: string, direction?: string) {

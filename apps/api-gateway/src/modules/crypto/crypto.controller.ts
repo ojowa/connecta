@@ -13,32 +13,50 @@ export class CryptoController {
   constructor(private readonly http: HttpService) {}
 
   @Post('prekeys')
-  @ApiOperation({ summary: 'Upload pre-key bundle (identity key, signed pre-key, one-time pre-keys)' })
+  @ApiOperation({
+    summary: 'Upload pre-key bundle (identity key, signed pre-key, one-time pre-keys)',
+  })
   async uploadPreKeyBundle(@Body() body: any, @Req() req: Request, @Res() res: Response) {
     return proxyPost(this.http, `${USER_SERVICE}/crypto/prekeys`, body, req, res);
   }
 
   @Get('prekeys/:userId')
   @ApiOperation({ summary: 'Get pre-key bundle for a user' })
-  async getPreKeyBundle(@Param('userId') userId: string, @Req() req: Request, @Res() res: Response) {
+  async getPreKeyBundle(
+    @Param('userId') userId: string,
+    @Req() req: Request,
+    @Res() res: Response,
+  ) {
     return proxyGet(this.http, `${USER_SERVICE}/crypto/prekeys/${userId}`, req, res);
   }
 
   @Post('prekeys/claim/:keyId')
   @ApiOperation({ summary: 'Claim a one-time pre-key' })
-  async claimOneTimePreKey(@Param('keyId') keyId: string, @Req() req: Request, @Res() res: Response) {
+  async claimOneTimePreKey(
+    @Param('keyId') keyId: string,
+    @Req() req: Request,
+    @Res() res: Response,
+  ) {
     return proxyPost(this.http, `${USER_SERVICE}/crypto/prekeys/claim/${keyId}`, null, req, res);
   }
 
   @Delete('prekeys/:keyId')
   @ApiOperation({ summary: 'Delete a consumed one-time pre-key' })
-  async deleteOneTimePreKey(@Param('keyId') keyId: string, @Req() req: Request, @Res() res: Response) {
+  async deleteOneTimePreKey(
+    @Param('keyId') keyId: string,
+    @Req() req: Request,
+    @Res() res: Response,
+  ) {
     return proxyDelete(this.http, `${USER_SERVICE}/crypto/prekeys/${keyId}`, req, res);
   }
 
   @Get('sessions/:userId')
   @ApiOperation({ summary: 'Get active sessions for a user' })
-  async getActiveSessions(@Param('userId') userId: string, @Req() req: Request, @Res() res: Response) {
+  async getActiveSessions(
+    @Param('userId') userId: string,
+    @Req() req: Request,
+    @Res() res: Response,
+  ) {
     return proxyGet(this.http, `${USER_SERVICE}/crypto/sessions/${userId}`, req, res);
   }
 

@@ -2,7 +2,13 @@ import { Controller, Get, Put, Post, Delete, Body, Param, Req, Res } from '@nest
 import { HttpService } from '@nestjs/axios';
 import { ApiTags, ApiOperation, ApiBearerAuth, ApiConsumes } from '@nestjs/swagger';
 import { Request, Response } from 'express';
-import { proxyGet, proxyPost, proxyPut, proxyDelete, handleError } from '../../helpers/proxy.helper';
+import {
+  proxyGet,
+  proxyPost,
+  proxyPut,
+  proxyDelete,
+  handleError,
+} from '../../helpers/proxy.helper';
 import { firstValueFrom } from 'rxjs';
 
 const PROFILE_SERVICE = process.env.PROFILE_SERVICE_URL;
@@ -52,8 +58,18 @@ export class ProfilesController {
 
   @Put('photos/:photoId/primary')
   @ApiOperation({ summary: 'Set primary photo' })
-  async setPrimaryPhoto(@Param('photoId') photoId: string, @Req() req: Request, @Res() res: Response) {
-    return proxyPut(this.http, `${PROFILE_SERVICE}/profiles/me/photos/${photoId}/primary`, null, req, res);
+  async setPrimaryPhoto(
+    @Param('photoId') photoId: string,
+    @Req() req: Request,
+    @Res() res: Response,
+  ) {
+    return proxyPut(
+      this.http,
+      `${PROFILE_SERVICE}/profiles/me/photos/${photoId}/primary`,
+      null,
+      req,
+      res,
+    );
   }
 
   @Post('verification/request')

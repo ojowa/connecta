@@ -15,16 +15,31 @@ export class ProfilesService {
   async getProfile(userId: string) {
     const profile = await this.profileRepo.findOne({ where: { userId } });
     if (!profile) throw new NotFoundException('Profile not found');
-    const photos = await this.photoRepo.find({ where: { profileId: profile.id }, order: { order: 'ASC' } });
+    const photos = await this.photoRepo.find({
+      where: { profileId: profile.id },
+      order: { order: 'ASC' },
+    });
     const interests = await this.piRepo.find({ where: { profileId: profile.id } });
     return { ...profile, photos, interests };
   }
 
   async updateProfile(userId: string, data: any) {
-    let profile = await this.profileRepo.findOne({ where: { userId } });
+    const profile = await this.profileRepo.findOne({ where: { userId } });
     if (!profile) throw new NotFoundException('Profile not found');
-    const allowed = ['bio', 'jobTitle', 'company', 'school', 'city', 'country', 'relationshipGoal', 'latitude', 'longitude'];
-    for (const key of allowed) { if (data[key] !== undefined) (profile as any)[key] = data[key]; }
+    const allowed = [
+      'bio',
+      'jobTitle',
+      'company',
+      'school',
+      'city',
+      'country',
+      'relationshipGoal',
+      'latitude',
+      'longitude',
+    ];
+    for (const key of allowed) {
+      if (data[key] !== undefined) (profile as any)[key] = data[key];
+    }
     if (data.interestIds) {
       await this.piRepo.delete({ profileId: profile.id });
       for (const interestId of data.interestIds) {
@@ -38,7 +53,10 @@ export class ProfilesService {
   async getPhotos(userId: string) {
     const profile = await this.profileRepo.findOne({ where: { userId } });
     if (!profile) throw new NotFoundException('Profile not found');
-    const photos = await this.photoRepo.find({ where: { profileId: profile.id }, order: { order: 'ASC' } });
+    const photos = await this.photoRepo.find({
+      where: { profileId: profile.id },
+      order: { order: 'ASC' },
+    });
     return { photos, total: photos.length, maxPhotos: 9 };
   }
 
@@ -48,7 +66,12 @@ export class ProfilesService {
     const count = await this.photoRepo.count({ where: { profileId: profile.id } });
     if (count >= 9) throw new BadRequestException('Maximum 9 photos allowed');
     if (isPrimary) await this.photoRepo.update({ profileId: profile.id }, { isPrimary: false });
-    const photo = this.photoRepo.create({ profileId: profile.id, url, order: count + 1, isPrimary });
+    const photo = this.photoRepo.create({
+      profileId: profile.id,
+      url,
+      order: count + 1,
+      isPrimary,
+    });
     return this.photoRepo.save(photo);
   }
 
@@ -113,8 +136,18 @@ export class ProfilesService {
 
   private calculateCompletion(profile: Profile): number {
     let score = 0;
-    const checks = [profile.firstName, profile.bio, profile.dateOfBirth, profile.gender, profile.jobTitle, profile.school, profile.relationshipGoal];
-    checks.forEach((c) => { if (c) score += Math.floor(100 / checks.length); });
+    const checks = [
+      profile.firstName,
+      profile.bio,
+      profile.dateOfBirth,
+      profile.gender,
+      profile.jobTitle,
+      profile.school,
+      profile.relationshipGoal,
+    ];
+    checks.forEach((c) => {
+      if (c) score += Math.floor(100 / checks.length);
+    });
     return Math.min(score, 100);
   }
 }

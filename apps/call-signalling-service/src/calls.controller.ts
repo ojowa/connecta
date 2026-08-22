@@ -14,19 +14,17 @@ export class CallsController {
 
   @Post('start')
   @ApiOperation({ summary: 'Start call' })
-  start(
-    @Body() body: StartCallDto,
-    @CurrentUser('id') userId: string,
-  ) {
-    return this.callsService.startCall({ callerId: userId, recipientId: body.recipientId, callType: body.callType });
+  start(@Body() body: StartCallDto, @CurrentUser('id') userId: string) {
+    return this.callsService.startCall({
+      callerId: userId,
+      recipientId: body.recipientId,
+      callType: body.callType,
+    });
   }
 
   @Post(':callId/answer')
   @ApiOperation({ summary: 'Answer call' })
-  answer(
-    @Param('callId') callId: string,
-    @CurrentUser('id') userId: string,
-  ) {
+  answer(@Param('callId') callId: string, @CurrentUser('id') userId: string) {
     return this.callsService.answerCall(callId, userId);
   }
 
@@ -52,10 +50,13 @@ export class CallsController {
 
   @Get('history')
   @ApiOperation({ summary: 'Call history' })
-  history(
-    @CurrentUser('id') userId: string,
-    @Query() query: CallHistoryQueryDto,
-  ) {
-    return this.callsService.getHistory(userId, query.page, query.limit, query.call_type, query.direction);
+  history(@CurrentUser('id') userId: string, @Query() query: CallHistoryQueryDto) {
+    return this.callsService.getHistory(
+      userId,
+      query.page,
+      query.limit,
+      query.call_type,
+      query.direction,
+    );
   }
 }

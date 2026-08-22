@@ -17,7 +17,13 @@ export async function proxyGet(http: HttpService, url: string, req: Request, res
   }
 }
 
-export async function proxyPost(http: HttpService, url: string, body: any, req: Request, res: Response) {
+export async function proxyPost(
+  http: HttpService,
+  url: string,
+  body: any,
+  req: Request,
+  res: Response,
+) {
   try {
     const result = await firstValueFrom(
       http.post(url, body, { headers: { authorization: req.headers.authorization } }),
@@ -28,7 +34,13 @@ export async function proxyPost(http: HttpService, url: string, body: any, req: 
   }
 }
 
-export async function proxyPut(http: HttpService, url: string, body: any, req: Request, res: Response) {
+export async function proxyPut(
+  http: HttpService,
+  url: string,
+  body: any,
+  req: Request,
+  res: Response,
+) {
   try {
     const result = await firstValueFrom(
       http.put(url, body, { headers: { authorization: req.headers.authorization } }),
@@ -39,7 +51,13 @@ export async function proxyPut(http: HttpService, url: string, body: any, req: R
   }
 }
 
-export async function proxyPatch(http: HttpService, url: string, body: any, req: Request, res: Response) {
+export async function proxyPatch(
+  http: HttpService,
+  url: string,
+  body: any,
+  req: Request,
+  res: Response,
+) {
   try {
     const result = await firstValueFrom(
       http.patch(url, body, { headers: { authorization: req.headers.authorization } }),

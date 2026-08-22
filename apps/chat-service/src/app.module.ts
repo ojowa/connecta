@@ -6,7 +6,17 @@ import { NatsModule } from '@app/common';
 import { ChatController } from './chat.controller';
 import { ChatService } from './chat.service';
 import { ChatGateway } from './chat.gateway';
-import { User, Profile, Photo, Conversation, ConversationParticipant, Message, MessageReaction, ReadReceipt, Match } from '@app/common/entities';
+import {
+  User,
+  Profile,
+  Photo,
+  Conversation,
+  ConversationParticipant,
+  Message,
+  MessageReaction,
+  ReadReceipt,
+  Match,
+} from '@app/common/entities';
 import { AppConfigService } from '@app/config/config.service';
 
 @Module({
@@ -14,11 +24,26 @@ import { AppConfigService } from '@app/config/config.service';
     ConfigModule.forRoot({ isGlobal: true }),
     NatsModule,
     TypeOrmModule.forRoot({
-      type: 'postgres', host: process.env.DB_HOST || 'localhost', port: parseInt(process.env.DB_PORT || '5432', 10),
-      username: process.env.DB_USERNAME || 'postgres', password: process.env.DB_PASSWORD || '',
-      database: process.env.DB_NAME || 'connecta_db', autoLoadEntities: true, synchronize: false,
+      type: 'postgres',
+      host: process.env.DB_HOST || 'localhost',
+      port: parseInt(process.env.DB_PORT || '5432', 10),
+      username: process.env.DB_USERNAME || 'postgres',
+      password: process.env.DB_PASSWORD || '',
+      database: process.env.DB_NAME || 'connecta_db',
+      autoLoadEntities: true,
+      synchronize: false,
     }),
-    TypeOrmModule.forFeature([User, Profile, Photo, Conversation, ConversationParticipant, Message, MessageReaction, ReadReceipt, Match]),
+    TypeOrmModule.forFeature([
+      User,
+      Profile,
+      Photo,
+      Conversation,
+      ConversationParticipant,
+      Message,
+      MessageReaction,
+      ReadReceipt,
+      Match,
+    ]),
     JwtModule.register({
       secret: process.env.JWT_SECRET || '',
       signOptions: { expiresIn: '15m' },

@@ -21,7 +21,12 @@ export class PaymentEventsHandler {
     private notificationRepository: Repository<Notification>,
   ) {}
 
-  async handlePaymentSuccessful(payload: { transactionId: string; userId: string; amount: number; currency: string }) {
+  async handlePaymentSuccessful(payload: {
+    transactionId: string;
+    userId: string;
+    amount: number;
+    currency: string;
+  }) {
     this.logger.log(`Handling payment.successful for ${payload.userId}`);
 
     const transaction = await this.transactionRepository.findOne({
@@ -68,7 +73,11 @@ export class PaymentEventsHandler {
     );
   }
 
-  async handleSubscriptionActivated(payload: { subscriptionId: string; userId: string; planId: string }) {
+  async handleSubscriptionActivated(payload: {
+    subscriptionId: string;
+    userId: string;
+    planId: string;
+  }) {
     this.logger.log(`Handling subscription.activated for ${payload.userId}`);
 
     const plan = await this.planRepository.findOne({
@@ -110,7 +119,11 @@ export class PaymentEventsHandler {
     );
   }
 
-  async handleSubscriptionRenewed(payload: { subscriptionId: string; userId: string; newEndDate: Date }) {
+  async handleSubscriptionRenewed(payload: {
+    subscriptionId: string;
+    userId: string;
+    newEndDate: Date;
+  }) {
     this.logger.log(`Handling subscription.renewed for ${payload.userId}`);
 
     await this.subscriptionRepository.update(payload.subscriptionId, {

@@ -2,7 +2,18 @@ import { Injectable, BadRequestException, NotFoundException, Inject } from '@nes
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, Not, In } from 'typeorm';
 import { ClientProxy } from '@nestjs/microservices';
-import { User, Profile, Like, Pass, Match, DailyLike, Photo, Conversation, ConversationParticipant, UserPreference } from '@app/common/entities';
+import {
+  User,
+  Profile,
+  Like,
+  Pass,
+  Match,
+  DailyLike,
+  Photo,
+  Conversation,
+  ConversationParticipant,
+  UserPreference,
+} from '@app/common/entities';
 import { NATS_SERVICE, MATCH_EVENTS } from '@app/common';
 import { MatchmakingEngine } from './ai/matchmaking.engine';
 
@@ -17,7 +28,8 @@ export class MatchingService {
     @InjectRepository(DailyLike) private dailyLikeRepo: Repository<DailyLike>,
     @InjectRepository(Photo) private photoRepo: Repository<Photo>,
     @InjectRepository(Conversation) private convRepo: Repository<Conversation>,
-    @InjectRepository(ConversationParticipant) private partRepo: Repository<ConversationParticipant>,
+    @InjectRepository(ConversationParticipant)
+    private partRepo: Repository<ConversationParticipant>,
     @InjectRepository(UserPreference) private prefRepo: Repository<UserPreference>,
     private matchmakingEngine: MatchmakingEngine,
     @Inject(NATS_SERVICE) private readonly natsClient: ClientProxy,
@@ -25,7 +37,10 @@ export class MatchingService {
 
   async getFeed(userId: string, page = 1, limit = 20) {
     const feed = await this.matchmakingEngine.generateFeed(userId, page, limit);
-    return { profiles: feed, meta: { page, limit, total: feed.length, hasMore: feed.length === limit } };
+    return {
+      profiles: feed,
+      meta: { page, limit, total: feed.length, hasMore: feed.length === limit },
+    };
   }
 
   async like(userId: string, targetUserId: string, likeType = 'normal') {
@@ -34,10 +49,15 @@ export class MatchingService {
     if (existing) throw new BadRequestException('Already liked this user');
     const target = await this.userRepo.findOne({ where: { id: targetUserId } });
     if (!target) throw new NotFoundException('User not found');
-    const like = this.likeRepo.create({ userId, likedUserId: targetUserId, isSuperLike: likeType === 'super' });
+    const like = this.likeRepo.create({
+      userId,
+      likedUserId: targetUserId,
+      isSuperLike: likeType === 'super',
+    });
     await this.likeRepo.save(like);
     // Atomic increment: insert row with likesGiven=1 if new today, otherwise increment
-    const today = new Date(); today.setHours(0, 0, 0, 0);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
     await this.dailyLikeRepo
       .createQueryBuilder()
       .insert()
@@ -53,31 +73,62 @@ export class MatchingService {
       .where('userId = :userId AND date = :date', { userId, date: today })
       .execute();
     const daily = await this.dailyLikeRepo.findOne({ where: { userId, date: new Date() } });
-    const mutualLike = await this.likeRepo.findOne({ where: { userId: targetUserId, likedUserId: userId } });
+    const mutualLike = await this.likeRepo.findOne({
+      where: { userId: targetUserId, likedUserId: userId },
+    });
     if (mutualLike) {
       const conv = await this.convRepo.save(this.convRepo.create({ type: 'direct' }));
-      const match = await this.matchRepo.save(this.matchRepo.create({ user1Id: userId, user2Id: targetUserId, conversationId: conv.id, matchedVia: likeType === 'super' ? 'super_like' : 'like' }));
+      const match = await this.matchRepo.save(
+        this.matchRepo.create({
+          user1Id: userId,
+          user2Id: targetUserId,
+          conversationId: conv.id,
+          matchedVia: likeType === 'super' ? 'super_like' : 'like',
+        }),
+      );
       await this.partRepo.save([
         this.partRepo.create({ conversationId: conv.id, userId }),
         this.partRepo.create({ conversationId: conv.id, userId: targetUserId }),
       ]);
 
-      this.natsClient.emit(MATCH_EVENTS.MATCH_CREATED, { matchId: match.id, user1Id: userId, user2Id: targetUserId, conversationId: conv.id, matchedVia: match.matchedVia });
+      this.natsClient.emit(MATCH_EVENTS.MATCH_CREATED, {
+        matchId: match.id,
+        user1Id: userId,
+        user2Id: targetUserId,
+        conversationId: conv.id,
+        matchedVia: match.matchedVia,
+      });
       if (likeType === 'super') {
-        this.natsClient.emit(MATCH_EVENTS.SUPER_LIKE_SENT, { fromUserId: userId, toUserId: targetUserId, matchId: match.id });
+        this.natsClient.emit(MATCH_EVENTS.SUPER_LIKE_SENT, {
+          fromUserId: userId,
+          toUserId: targetUserId,
+          matchId: match.id,
+        });
       }
 
-      return { likedUserId: targetUserId, likeType, isMutual: true, match: { matchId: match.id, matchedAt: match.matchedAt, conversationId: conv.id } };
+      return {
+        likedUserId: targetUserId,
+        likeType,
+        isMutual: true,
+        match: { matchId: match.id, matchedAt: match.matchedAt, conversationId: conv.id },
+      };
     }
 
     this.natsClient.emit(MATCH_EVENTS.SWIPE_PERFORMED, { userId, targetUserId, type: likeType });
 
-    return { likedUserId: targetUserId, likeType, isMutual: false, remainingLikes: Math.max(0, 50 - (daily ? daily.likesGiven + 1 : 1)) };
+    return {
+      likedUserId: targetUserId,
+      likeType,
+      isMutual: false,
+      remainingLikes: Math.max(0, 50 - (daily ? daily.likesGiven + 1 : 1)),
+    };
   }
 
   async pass(userId: string, targetUserId: string) {
     const existing = await this.passRepo.findOne({ where: { userId, passedUserId: targetUserId } });
-    if (!existing) { await this.passRepo.save(this.passRepo.create({ userId, passedUserId: targetUserId })); }
+    if (!existing) {
+      await this.passRepo.save(this.passRepo.create({ userId, passedUserId: targetUserId }));
+    }
 
     this.natsClient.emit(MATCH_EVENTS.SWIPE_PERFORMED, { userId, targetUserId, type: 'pass' });
 
@@ -89,7 +140,10 @@ export class MatchingService {
   }
 
   async undo(userId: string) {
-    const lastLike = await this.likeRepo.findOne({ where: { userId }, order: { createdAt: 'DESC' } });
+    const lastLike = await this.likeRepo.findOne({
+      where: { userId },
+      order: { createdAt: 'DESC' },
+    });
     if (!lastLike) throw new BadRequestException('Nothing to undo');
 
     // H3: Check if this like created a mutual match — if so, clean it up
@@ -111,27 +165,56 @@ export class MatchingService {
     }
 
     await this.likeRepo.remove(lastLike);
-    return { undone: true, previousAction: lastLike.isSuperLike ? 'super_like' : 'like', remainingUndos: 2 };
+    return {
+      undone: true,
+      previousAction: lastLike.isSuperLike ? 'super_like' : 'like',
+      remainingUndos: 2,
+    };
   }
 
   async getMatches(userId: string, page = 1, limit = 20) {
     const [matches, total] = await this.matchRepo.findAndCount({
-      where: [{ user1Id: userId, isActive: true }, { user2Id: userId, isActive: true }],
-      order: { matchedAt: 'DESC' }, skip: (page - 1) * limit, take: limit,
+      where: [
+        { user1Id: userId, isActive: true },
+        { user2Id: userId, isActive: true },
+      ],
+      order: { matchedAt: 'DESC' },
+      skip: (page - 1) * limit,
+      take: limit,
     });
-    const enriched = await Promise.all(matches.map(async (m) => {
-      const otherUserId = m.user1Id === userId ? m.user2Id : m.user1Id;
-      const user = await this.userRepo.findOne({ where: { id: otherUserId } });
-      const profile = await this.profileRepo.findOne({ where: { userId: otherUserId } });
-      return { id: m.id, user1Id: m.user1Id, user2Id: m.user2Id, matchedAt: m.matchedAt, conversationId: m.conversationId, otherUser: user ? { id: user.id, email: user.email, fullName: user.fullName, role: user.role, status: user.status, createdAt: user.createdAt } : null, profile };
-    }));
+    const enriched = await Promise.all(
+      matches.map(async (m) => {
+        const otherUserId = m.user1Id === userId ? m.user2Id : m.user1Id;
+        const user = await this.userRepo.findOne({ where: { id: otherUserId } });
+        const profile = await this.profileRepo.findOne({ where: { userId: otherUserId } });
+        return {
+          id: m.id,
+          user1Id: m.user1Id,
+          user2Id: m.user2Id,
+          matchedAt: m.matchedAt,
+          conversationId: m.conversationId,
+          otherUser: user
+            ? {
+                id: user.id,
+                email: user.email,
+                fullName: user.fullName,
+                role: user.role,
+                status: user.status,
+                createdAt: user.createdAt,
+              }
+            : null,
+          profile,
+        };
+      }),
+    );
     return { data: enriched, meta: { page, limit, total, hasMore: total > page * limit } };
   }
 
   async unmatch(userId: string, matchId: string) {
     const match = await this.matchRepo.findOne({ where: { id: matchId } });
     if (!match) throw new NotFoundException('Match not found');
-    if (match.user1Id !== userId && match.user2Id !== userId) throw new BadRequestException('Not your match');
+    if (match.user1Id !== userId && match.user2Id !== userId)
+      throw new BadRequestException('Not your match');
     await this.matchRepo.update(matchId, { isActive: false });
 
     this.natsClient.emit(MATCH_EVENTS.UNMATCH, { matchId, userId });
@@ -141,13 +224,27 @@ export class MatchingService {
 
   async getLikedYou(userId: string, page = 1, limit = 20) {
     const [likes, total] = await this.likeRepo.findAndCount({
-      where: { likedUserId: userId }, order: { createdAt: 'DESC' }, skip: (page - 1) * limit, take: limit,
+      where: { likedUserId: userId },
+      order: { createdAt: 'DESC' },
+      skip: (page - 1) * limit,
+      take: limit,
     });
-    const enriched = await Promise.all(likes.map(async (l) => {
-      const user = await this.userRepo.findOne({ where: { id: l.userId } });
-      return { likeId: l.id, fromUser: { userId: l.userId, fullName: user?.fullName }, likeType: l.isSuperLike ? 'super' : 'normal', likedAt: l.createdAt };
-    }));
-    return { data: enriched, totalLikes: total, meta: { page, limit, total, hasMore: total > page * limit } };
+    const enriched = await Promise.all(
+      likes.map(async (l) => {
+        const user = await this.userRepo.findOne({ where: { id: l.userId } });
+        return {
+          likeId: l.id,
+          fromUser: { userId: l.userId, fullName: user?.fullName },
+          likeType: l.isSuperLike ? 'super' : 'normal',
+          likedAt: l.createdAt,
+        };
+      }),
+    );
+    return {
+      data: enriched,
+      totalLikes: total,
+      meta: { page, limit, total, hasMore: total > page * limit },
+    };
   }
 
   async getCompatibility(userId: string, targetUserId: string) {

@@ -1,7 +1,17 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, In } from 'typeorm';
-import { User, Profile, UserPreference, Like, Pass, Block, Photo, ProfileInterest, Interest } from '@app/common/entities';
+import {
+  User,
+  Profile,
+  UserPreference,
+  Like,
+  Pass,
+  Block,
+  Photo,
+  ProfileInterest,
+  Interest,
+} from '@app/common/entities';
 
 export interface CandidateProfile {
   userId: string;
@@ -43,13 +53,27 @@ export class CandidateGenerator {
 
     // C4: Bounded queries — cap at 10000 to prevent memory issues for active users
     const [likedIds, passedIds, blockedByMeIds, blockedMeIds] = await Promise.all([
-      this.likeRepo.find({ where: { userId }, select: ['likedUserId'], take: 10000 }).then(likes => likes.map(l => l.likedUserId)),
-      this.passRepo.find({ where: { userId }, select: ['passedUserId'], take: 10000 }).then(passes => passes.map(p => p.passedUserId)),
-      this.blockRepo.find({ where: { blockerId: userId }, select: ['blockedId'], take: 10000 }).then(blocks => blocks.map(b => b.blockedId)),
-      this.blockRepo.find({ where: { blockedId: userId }, select: ['blockerId'], take: 10000 }).then(blocks => blocks.map(b => b.blockerId)),
+      this.likeRepo
+        .find({ where: { userId }, select: ['likedUserId'], take: 10000 })
+        .then((likes) => likes.map((l) => l.likedUserId)),
+      this.passRepo
+        .find({ where: { userId }, select: ['passedUserId'], take: 10000 })
+        .then((passes) => passes.map((p) => p.passedUserId)),
+      this.blockRepo
+        .find({ where: { blockerId: userId }, select: ['blockedId'], take: 10000 })
+        .then((blocks) => blocks.map((b) => b.blockedId)),
+      this.blockRepo
+        .find({ where: { blockedId: userId }, select: ['blockerId'], take: 10000 })
+        .then((blocks) => blocks.map((b) => b.blockerId)),
     ]);
 
-    const excludeIds = new Set([userId, ...likedIds, ...passedIds, ...blockedByMeIds, ...blockedMeIds]);
+    const excludeIds = new Set([
+      userId,
+      ...likedIds,
+      ...passedIds,
+      ...blockedByMeIds,
+      ...blockedMeIds,
+    ]);
 
     const genderFilter = this.resolveGenderFilter(prefs.showMe);
 
@@ -58,28 +82,33 @@ export class CandidateGenerator {
       .createQueryBuilder('p')
       .where('p."userId" != :userId', { userId })
       .andWhere('p."isActive" = true')
-      .andWhere('p."userId" IN (SELECT u.id FROM users u WHERE u.status = :status)', { status: 'active' })
+      .andWhere('p."userId" IN (SELECT u.id FROM users u WHERE u.status = :status)', {
+        status: 'active',
+      })
       .andWhere(prefs.showVerifiedOnly ? 'p."verified" = true' : '1=1')
-      .andWhere(prefs.showProfilesWithPhotosOnly ? 'p.id IN (SELECT ph."profileId" FROM photos ph)' : '1=1')
+      .andWhere(
+        prefs.showProfilesWithPhotosOnly ? 'p.id IN (SELECT ph."profileId" FROM photos ph)' : '1=1',
+      )
       .andWhere(genderFilter ? 'p.gender = :gender' : '1=1', { gender: genderFilter })
       .orderBy('p."completionPercentage"', 'DESC')
       .take(limit * 2)
       .getMany();
 
-    const filtered = candidates.filter(c => !excludeIds.has(c.userId));
+    const filtered = candidates.filter((c) => !excludeIds.has(c.userId));
 
     // M2: Fix falsy zero — use != null instead of && (which treats 0 as falsy)
     const withDistance = filtered
-      .filter(c => c.dateOfBirth != null) // M3: Reject candidates without DOB
-      .map(c => ({
+      .filter((c) => c.dateOfBirth != null) // M3: Reject candidates without DOB
+      .map((c) => ({
         ...c,
-        distanceKm: (userLat != null && userLon != null && c.latitude != null && c.longitude != null)
-          ? this.haversineDistance(userLat, userLon, c.latitude, c.longitude)
-          : 9999,
+        distanceKm:
+          userLat != null && userLon != null && c.latitude != null && c.longitude != null
+            ? this.haversineDistance(userLat, userLon, c.latitude, c.longitude)
+            : 9999,
       }))
-      .filter(c => c.distanceKm <= prefs.maxDistanceKm);
+      .filter((c) => c.distanceKm <= prefs.maxDistanceKm);
 
-    const ageFiltered = withDistance.filter(c => {
+    const ageFiltered = withDistance.filter((c) => {
       const age = this.calculateAge(c.dateOfBirth!);
       return age >= prefs.ageMin && age <= prefs.ageMax;
     });
@@ -89,14 +118,17 @@ export class CandidateGenerator {
       .slice(0, limit);
 
     // H1: Pass distanceKm into enrichCandidate so it's not lost
-    return Promise.all(sorted.map(c => this.enrichCandidate(c)));
+    return Promise.all(sorted.map((c) => this.enrichCandidate(c)));
   }
 
   private resolveGenderFilter(showMe: string): string | null {
     switch (showMe) {
-      case 'men': return 'male';
-      case 'women': return 'female';
-      default: return null;
+      case 'men':
+        return 'male';
+      case 'women':
+        return 'female';
+      default:
+        return null;
     }
   }
 
@@ -106,8 +138,10 @@ export class CandidateGenerator {
     const dLon = this.toRad(lon2 - lon1);
     const a =
       Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-      Math.cos(this.toRad(lat1)) * Math.cos(this.toRad(lat2)) *
-      Math.sin(dLon / 2) * Math.sin(dLon / 2);
+      Math.cos(this.toRad(lat1)) *
+        Math.cos(this.toRad(lat2)) *
+        Math.sin(dLon / 2) *
+        Math.sin(dLon / 2);
     const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
     return Number((R * c).toFixed(1));
   }
@@ -128,7 +162,9 @@ export class CandidateGenerator {
   }
 
   // H1: Accept distanceKm as parameter instead of discarding it
-  private async enrichCandidate(profile: Profile & { distanceKm?: number }): Promise<CandidateProfile> {
+  private async enrichCandidate(
+    profile: Profile & { distanceKm?: number },
+  ): Promise<CandidateProfile> {
     const [user, photos, interests] = await Promise.all([
       this.userRepo.findOne({ where: { id: profile.userId } }),
       this.photoRepo.find({ where: { profileId: profile.id }, order: { order: 'ASC' }, take: 5 }),
@@ -148,7 +184,7 @@ export class CandidateGenerator {
       distanceKm: profile.distanceKm ?? 0,
       verified: profile.verified,
       completionPercentage: profile.completionPercentage,
-      photos: photos.map(p => ({ url: p.url, isPrimary: p.isPrimary })),
+      photos: photos.map((p) => ({ url: p.url, isPrimary: p.isPrimary })),
       interests,
       relationshipGoal: profile.relationshipGoal || '',
     };
@@ -159,6 +195,6 @@ export class CandidateGenerator {
       where: { profileId },
       relations: ['interest'],
     });
-    return profileInterests.map(pi => pi.interest?.name).filter((n): n is string => !!n);
+    return profileInterests.map((pi) => pi.interest?.name).filter((n): n is string => !!n);
   }
 }

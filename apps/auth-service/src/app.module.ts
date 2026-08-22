@@ -6,7 +6,14 @@ import { NatsModule } from '@app/common';
 import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
 import { AuthEventsHandler } from './events/auth-events.handler';
-import { User, Session, OtpCode, Plan, Subscription, BiometricCredential } from '@app/common/entities';
+import {
+  User,
+  Session,
+  OtpCode,
+  Plan,
+  Subscription,
+  BiometricCredential,
+} from '@app/common/entities';
 
 @Module({
   imports: [

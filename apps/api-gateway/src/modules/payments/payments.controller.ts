@@ -56,7 +56,18 @@ export class PaymentsController {
 
   @Post('refund/:transactionId')
   @ApiOperation({ summary: 'Request a refund' })
-  async requestRefund(@Param('transactionId') transactionId: string, @Body() body: any, @Req() req: Request, @Res() res: Response) {
-    return proxyPost(this.http, `${PAYMENT_SERVICE}/payments/refund/${transactionId}`, body, req, res);
+  async requestRefund(
+    @Param('transactionId') transactionId: string,
+    @Body() body: any,
+    @Req() req: Request,
+    @Res() res: Response,
+  ) {
+    return proxyPost(
+      this.http,
+      `${PAYMENT_SERVICE}/payments/refund/${transactionId}`,
+      body,
+      req,
+      res,
+    );
   }
 }

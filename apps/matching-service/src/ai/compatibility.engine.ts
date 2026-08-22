@@ -20,10 +20,10 @@ export interface CompatibilityResult {
 
 const WEIGHTS: Record<keyof CompatibilityBreakdown, number> = {
   interestOverlap: 0.25,
-  lifestyleCompatibility: 0.20,
-  valuesAlignment: 0.30,
+  lifestyleCompatibility: 0.2,
+  valuesAlignment: 0.3,
   communicationStyle: 0.15,
-  goalAlignment: 0.10,
+  goalAlignment: 0.1,
 };
 
 @Injectable()
@@ -41,7 +41,12 @@ export class CompatibilityEngine {
     ]);
 
     if (!userProfile || !candidateProfile) {
-      return { overallScore: 0, breakdown: this.emptyBreakdown(), sharedInterests: [], insights: [] };
+      return {
+        overallScore: 0,
+        breakdown: this.emptyBreakdown(),
+        sharedInterests: [],
+        insights: [],
+      };
     }
 
     const [userInterests, candidateInterests] = await Promise.all([
@@ -65,8 +70,13 @@ export class CompatibilityEngine {
         .toFixed(2),
     );
 
-    const sharedInterests = userInterests.filter(i => candidateInterests.includes(i));
-    const insights = this.generateInsights(breakdown, sharedInterests, userProfile, candidateProfile);
+    const sharedInterests = userInterests.filter((i) => candidateInterests.includes(i));
+    const insights = this.generateInsights(
+      breakdown,
+      sharedInterests,
+      userProfile,
+      candidateProfile,
+    );
 
     return { overallScore, breakdown, sharedInterests, insights };
   }
@@ -74,9 +84,9 @@ export class CompatibilityEngine {
   private interestScore(userInterests: string[], candidateInterests: string[]): number {
     // M1: Return 0 when either list is empty instead of defaulting to 0.5
     if (!userInterests.length || !candidateInterests.length) return 0;
-    const userSet = new Set(userInterests.map(i => i.toLowerCase()));
-    const candSet = new Set(candidateInterests.map(i => i.toLowerCase()));
-    const intersection = [...userSet].filter(i => candSet.has(i));
+    const userSet = new Set(userInterests.map((i) => i.toLowerCase()));
+    const candSet = new Set(candidateInterests.map((i) => i.toLowerCase()));
+    const intersection = [...userSet].filter((i) => candSet.has(i));
     const union = new Set([...userSet, ...candSet]);
     return union.size > 0 ? Number((intersection.length / union.size).toFixed(2)) : 0;
   }
@@ -96,16 +106,21 @@ export class CompatibilityEngine {
       const userJobLower = user.jobTitle.toLowerCase();
       const candJobLower = candidate.jobTitle.toLowerCase();
       if (userJobLower === candJobLower) score += 0.1;
-      else if (userJobLower.split(' ').some(w => candJobLower.includes(w))) score += 0.05;
+      else if (userJobLower.split(' ').some((w) => candJobLower.includes(w))) score += 0.05;
     }
 
-    if (user.prompts && candidate.prompts && Array.isArray(user.prompts) && Array.isArray(candidate.prompts)) {
+    if (
+      user.prompts &&
+      candidate.prompts &&
+      Array.isArray(user.prompts) &&
+      Array.isArray(candidate.prompts)
+    ) {
       const userAnswers = user.prompts.map((p: any) => (p.answer || '').toLowerCase());
       const candAnswers = candidate.prompts.map((p: any) => (p.answer || '').toLowerCase());
-      const commonWords = userAnswers.flatMap(a => a.split(/\s+/)).filter(w => w.length > 3);
-      const candWords = candAnswers.flatMap(a => a.split(/\s+/)).filter(w => w.length > 3);
+      const commonWords = userAnswers.flatMap((a) => a.split(/\s+/)).filter((w) => w.length > 3);
+      const candWords = candAnswers.flatMap((a) => a.split(/\s+/)).filter((w) => w.length > 3);
       if (commonWords.length && candWords.length) {
-        const overlap = commonWords.filter(w => candWords.includes(w));
+        const overlap = commonWords.filter((w) => candWords.includes(w));
         score += Math.min(overlap.length / Math.max(commonWords.length, 1), 0.15);
       }
     }
@@ -119,13 +134,29 @@ export class CompatibilityEngine {
     if (user.verified && candidate.verified) score += 0.1;
     if (user.completionPercentage >= 70 && candidate.completionPercentage >= 70) score += 0.1;
 
-    if (user.prompts && candidate.prompts && Array.isArray(user.prompts) && Array.isArray(candidate.prompts)) {
-      const valueKeywords = ['family', 'faith', 'honest', 'loyal', 'respect', 'kind', 'ambitious', 'growth', 'trust', 'commitment'];
+    if (
+      user.prompts &&
+      candidate.prompts &&
+      Array.isArray(user.prompts) &&
+      Array.isArray(candidate.prompts)
+    ) {
+      const valueKeywords = [
+        'family',
+        'faith',
+        'honest',
+        'loyal',
+        'respect',
+        'kind',
+        'ambitious',
+        'growth',
+        'trust',
+        'commitment',
+      ];
       const userText = user.prompts.map((p: any) => (p.answer || '').toLowerCase()).join(' ');
       const candText = candidate.prompts.map((p: any) => (p.answer || '').toLowerCase()).join(' ');
-      const userMatches = valueKeywords.filter(k => userText.includes(k));
-      const candMatches = valueKeywords.filter(k => candText.includes(k));
-      const overlap = userMatches.filter(k => candMatches.includes(k));
+      const userMatches = valueKeywords.filter((k) => userText.includes(k));
+      const candMatches = valueKeywords.filter((k) => candText.includes(k));
+      const overlap = userMatches.filter((k) => candMatches.includes(k));
       score += Math.min(overlap.length * 0.05, 0.2);
     }
 
@@ -174,9 +205,7 @@ export class CompatibilityEngine {
       where: { profileId },
       relations: ['interest'],
     });
-    return profileInterests
-      .map(pi => pi.interest?.name)
-      .filter((name): name is string => !!name);
+    return profileInterests.map((pi) => pi.interest?.name).filter((name): name is string => !!name);
   }
 
   private generateInsights(
@@ -188,7 +217,9 @@ export class CompatibilityEngine {
     const insights: string[] = [];
 
     if (sharedInterests.length >= 3) {
-      insights.push(`You share ${sharedInterests.length} interests including ${sharedInterests.slice(0, 3).join(', ')}`);
+      insights.push(
+        `You share ${sharedInterests.length} interests including ${sharedInterests.slice(0, 3).join(', ')}`,
+      );
     } else if (sharedInterests.length > 0) {
       insights.push(`You both enjoy ${sharedInterests.join(' and ')}`);
     }
@@ -198,7 +229,9 @@ export class CompatibilityEngine {
     }
 
     if (breakdown.goalAlignment >= 0.7) {
-      insights.push(`You both seem interested in ${user.relationshipGoal?.replace('_', ' ') || 'similar relationship goals'}`);
+      insights.push(
+        `You both seem interested in ${user.relationshipGoal?.replace('_', ' ') || 'similar relationship goals'}`,
+      );
     }
 
     if (breakdown.lifestyleCompatibility >= 0.6) {
@@ -217,6 +250,12 @@ export class CompatibilityEngine {
   }
 
   private emptyBreakdown(): CompatibilityBreakdown {
-    return { interestOverlap: 0, lifestyleCompatibility: 0, valuesAlignment: 0, communicationStyle: 0, goalAlignment: 0 };
+    return {
+      interestOverlap: 0,
+      lifestyleCompatibility: 0,
+      valuesAlignment: 0,
+      communicationStyle: 0,
+      goalAlignment: 0,
+    };
   }
 }

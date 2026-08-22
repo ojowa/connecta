@@ -20,14 +20,35 @@ export class ChatController {
 
   @Get('conversations/:conversationId/messages')
   @ApiOperation({ summary: 'Get messages in a conversation' })
-  async getMessages(@Param('conversationId') conversationId: string, @Query() query: any, @Req() req: Request, @Res() res: Response) {
-    return proxyGet(this.http, `${CHAT_SERVICE}/chat/conversations/${conversationId}/messages`, req, res);
+  async getMessages(
+    @Param('conversationId') conversationId: string,
+    @Query() query: any,
+    @Req() req: Request,
+    @Res() res: Response,
+  ) {
+    return proxyGet(
+      this.http,
+      `${CHAT_SERVICE}/chat/conversations/${conversationId}/messages`,
+      req,
+      res,
+    );
   }
 
   @Post('conversations/:conversationId/messages')
   @ApiOperation({ summary: 'Send a message' })
-  async sendMessage(@Param('conversationId') conversationId: string, @Body() body: any, @Req() req: Request, @Res() res: Response) {
-    return proxyPost(this.http, `${CHAT_SERVICE}/chat/conversations/${conversationId}/messages`, body, req, res);
+  async sendMessage(
+    @Param('conversationId') conversationId: string,
+    @Body() body: any,
+    @Req() req: Request,
+    @Res() res: Response,
+  ) {
+    return proxyPost(
+      this.http,
+      `${CHAT_SERVICE}/chat/conversations/${conversationId}/messages`,
+      body,
+      req,
+      res,
+    );
   }
 
   @Post('conversations/:conversationId/messages/:messageId/reactions')
@@ -39,7 +60,13 @@ export class ChatController {
     @Req() req: Request,
     @Res() res: Response,
   ) {
-    return proxyPost(this.http, `${CHAT_SERVICE}/chat/conversations/${conversationId}/messages/${messageId}/reactions`, body, req, res);
+    return proxyPost(
+      this.http,
+      `${CHAT_SERVICE}/chat/conversations/${conversationId}/messages/${messageId}/reactions`,
+      body,
+      req,
+      res,
+    );
   }
 
   @Put('conversations/:conversationId/read')
@@ -50,7 +77,13 @@ export class ChatController {
     @Req() req: Request,
     @Res() res: Response,
   ) {
-    return proxyPut(this.http, `${CHAT_SERVICE}/chat/conversations/${conversationId}/read`, body, req, res);
+    return proxyPut(
+      this.http,
+      `${CHAT_SERVICE}/chat/conversations/${conversationId}/read`,
+      body,
+      req,
+      res,
+    );
   }
 
   @Post('conversations/:conversationId/typing')
@@ -61,7 +94,13 @@ export class ChatController {
     @Req() req: Request,
     @Res() res: Response,
   ) {
-    return proxyPost(this.http, `${CHAT_SERVICE}/chat/conversations/${conversationId}/typing`, body, req, res);
+    return proxyPost(
+      this.http,
+      `${CHAT_SERVICE}/chat/conversations/${conversationId}/typing`,
+      body,
+      req,
+      res,
+    );
   }
 
   @Get('messages/search')
@@ -78,7 +117,12 @@ export class ChatController {
     @Req() req: Request,
     @Res() res: Response,
   ) {
-    return proxyDelete(this.http, `${CHAT_SERVICE}/chat/conversations/${conversationId}/messages/${messageId}`, req, res);
+    return proxyDelete(
+      this.http,
+      `${CHAT_SERVICE}/chat/conversations/${conversationId}/messages/${messageId}`,
+      req,
+      res,
+    );
   }
 
   @Get('sync')

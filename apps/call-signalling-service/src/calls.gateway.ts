@@ -28,7 +28,10 @@ export class CallsGateway implements OnGatewayInit, OnGatewayConnection, OnGatew
 
   private logger = new Logger('CallsGateway');
   private userSockets = new Map<string, Set<string>>();
-  private activeCalls = new Map<string, { callerId: string; calleeId: string; callerSocketId: string }>();
+  private activeCalls = new Map<
+    string,
+    { callerId: string; calleeId: string; callerSocketId: string }
+  >();
 
   constructor(
     private callsService: CallsService,
@@ -43,7 +46,9 @@ export class CallsGateway implements OnGatewayInit, OnGatewayConnection, OnGatew
 
   async handleConnection(client: Socket) {
     try {
-      const token = client.handshake.auth?.token || client.handshake.headers?.authorization?.replace('Bearer ', '');
+      const token =
+        client.handshake.auth?.token ||
+        client.handshake.headers?.authorization?.replace('Bearer ', '');
       if (!token) {
         client.disconnect();
         return;

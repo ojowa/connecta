@@ -64,7 +64,10 @@ export class AuditLogInterceptor implements NestInterceptor {
       'POST /v1/admin/users': 'admin.user_action',
       'POST /v1/admin/reports': 'admin.report_action',
     };
-    return routeMap[`${method} ${path.split('?')[0]}`] || `${method.toLowerCase()}.${path.split('/')[2] || 'root'}`;
+    return (
+      routeMap[`${method} ${path.split('?')[0]}`] ||
+      `${method.toLowerCase()}.${path.split('/')[2] || 'root'}`
+    );
   }
 
   private extractTargetType(path: string): string | undefined {
@@ -77,6 +80,12 @@ export class AuditLogInterceptor implements NestInterceptor {
   }
 
   private extractTargetId(request: any): string | undefined {
-    return request.params?.id || request.params?.userId || request.params?.matchId || request.params?.messageId || undefined;
+    return (
+      request.params?.id ||
+      request.params?.userId ||
+      request.params?.matchId ||
+      request.params?.messageId ||
+      undefined
+    );
   }
 }

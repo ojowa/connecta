@@ -33,7 +33,7 @@ async function seed() {
   const passwordHash = await bcrypt.hash(password, 12);
   const result = await ds.query(
     'INSERT INTO admin_users (email, "passwordHash", name, role, "isActive", "tfaEnabled", "createdAt", "updatedAt") VALUES ($1, $2, $3, $4, true, false, NOW(), NOW()) RETURNING id, email, name, role',
-    [email, passwordHash, name, role]
+    [email, passwordHash, name, role],
   );
 
   console.log('Admin created:', result[0]);

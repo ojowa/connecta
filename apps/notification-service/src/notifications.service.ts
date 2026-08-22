@@ -14,14 +14,34 @@ export class NotificationsService {
     const where: any = { userId };
     if (filter === 'unread') where.status = 'pending';
     else if (filter === 'read') where.readAt = { $ne: null } as any;
-    const [notifications, total] = await this.notifRepo.findAndCount({ where, order: { createdAt: 'DESC' }, skip: (page - 1) * limit, take: limit });
-      const unreadCount = await this.notifRepo.count({ where: { userId, readAt: undefined as any } });
-    return { notifications: notifications.map(n => ({ id: n.id, type: n.type, title: n.title, body: n.body, data: n.data, read: !!n.readAt, createdAt: n.createdAt })), unreadCount, meta: { page, limit, total, hasMore: total > page * limit } };
+    const [notifications, total] = await this.notifRepo.findAndCount({
+      where,
+      order: { createdAt: 'DESC' },
+      skip: (page - 1) * limit,
+      take: limit,
+    });
+    const unreadCount = await this.notifRepo.count({ where: { userId, readAt: undefined as any } });
+    return {
+      notifications: notifications.map((n) => ({
+        id: n.id,
+        type: n.type,
+        title: n.title,
+        body: n.body,
+        data: n.data,
+        read: !!n.readAt,
+        createdAt: n.createdAt,
+      })),
+      unreadCount,
+      meta: { page, limit, total, hasMore: total > page * limit },
+    };
   }
 
   async getPreferences(userId: string) {
     let prefs = await this.prefRepo.findOne({ where: { userId } });
-    if (!prefs) { prefs = this.prefRepo.create({ userId }); await this.prefRepo.save(prefs); }
+    if (!prefs) {
+      prefs = this.prefRepo.create({ userId });
+      await this.prefRepo.save(prefs);
+    }
     return prefs;
   }
 
@@ -34,29 +54,38 @@ export class NotificationsService {
 
   async markAsRead(userId: string, data: any) {
     if (data.markAs === 'all' || data.markAll) {
-      const result = await this.notifRepo.update({ userId, readAt: undefined as any }, { readAt: new Date() });
-      const unreadCount = await this.notifRepo.count({ where: { userId, readAt: undefined as any } });
+      const result = await this.notifRepo.update(
+        { userId, readAt: undefined as any },
+        { readAt: new Date() },
+      );
+      const unreadCount = await this.notifRepo.count({
+        where: { userId, readAt: undefined as any },
+      });
       return { markedRead: result.affected || 0, unreadCount };
     }
     if (data.notificationIds?.length) {
       await this.notifRepo.update(data.notificationIds, { readAt: new Date() });
-      const unreadCount = await this.notifRepo.count({ where: { userId, readAt: undefined as any } });
+      const unreadCount = await this.notifRepo.count({
+        where: { userId, readAt: undefined as any },
+      });
       return { markedRead: data.notificationIds.length, unreadCount };
     }
     return { markedRead: 0, unreadCount: 0 };
   }
 
   async send(data: any) {
-    const notif = await this.notifRepo.save(this.notifRepo.create({
-      userId: data.userId,
-      type: data.type,
-      title: data.title,
-      body: data.body,
-      data: data.data,
-      channel: data.channel || 'push',
-      status: 'sent',
-      sentAt: new Date(),
-    }));
+    const notif = await this.notifRepo.save(
+      this.notifRepo.create({
+        userId: data.userId,
+        type: data.type,
+        title: data.title,
+        body: data.body,
+        data: data.data,
+        channel: data.channel || 'push',
+        status: 'sent',
+        sentAt: new Date(),
+      }),
+    );
 
     // In production, send via Firebase Cloud Messaging:
     // import * as admin from 'firebase-admin';
@@ -102,7 +131,10 @@ export class NotificationsService {
     };
   }
 
-  async registerDeviceToken(userId: string, data: { token: string; platform: string; deviceId?: string }) {
+  async registerDeviceToken(
+    userId: string,
+    data: { token: string; platform: string; deviceId?: string },
+  ) {
     return { success: true, userId, platform: data.platform };
   }
 }

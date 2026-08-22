@@ -1,8 +1,27 @@
-import { Controller, Get, Patch, Put, Post, Delete, Body, Param, Req, Res, Query } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Patch,
+  Put,
+  Post,
+  Delete,
+  Body,
+  Param,
+  Req,
+  Res,
+  Query,
+} from '@nestjs/common';
 import { HttpService } from '@nestjs/axios';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { Request, Response } from 'express';
-import { proxyGet, proxyPost, proxyPut, proxyPatch, proxyDelete, handleError } from '../../helpers/proxy.helper';
+import {
+  proxyGet,
+  proxyPost,
+  proxyPut,
+  proxyPatch,
+  proxyDelete,
+  handleError,
+} from '../../helpers/proxy.helper';
 import { firstValueFrom } from 'rxjs';
 
 const USER_SERVICE = process.env.USER_SERVICE_URL;
@@ -61,7 +80,12 @@ export class UsersController {
 
   @Post(':userId/block')
   @ApiOperation({ summary: 'Block a user' })
-  async blockUser(@Param('userId') userId: string, @Body() body: any, @Req() req: Request, @Res() res: Response) {
+  async blockUser(
+    @Param('userId') userId: string,
+    @Body() body: any,
+    @Req() req: Request,
+    @Res() res: Response,
+  ) {
     return proxyPost(this.http, `${USER_SERVICE}/users/${userId}/block`, body, req, res);
   }
 
@@ -79,7 +103,12 @@ export class UsersController {
 
   @Post(':userId/report')
   @ApiOperation({ summary: 'Report a user' })
-  async reportUser(@Param('userId') userId: string, @Body() body: any, @Req() req: Request, @Res() res: Response) {
+  async reportUser(
+    @Param('userId') userId: string,
+    @Body() body: any,
+    @Req() req: Request,
+    @Res() res: Response,
+  ) {
     return proxyPost(this.http, `${USER_SERVICE}/users/${userId}/report`, body, req, res);
   }
 

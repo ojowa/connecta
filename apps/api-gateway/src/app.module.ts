@@ -29,9 +29,7 @@ import { AuditLogInterceptor } from './interceptors/audit-log.interceptor';
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
-    ThrottlerModule.forRoot([
-      { name: 'default', ttl: 60000, limit: 120 },
-    ]),
+    ThrottlerModule.forRoot([{ name: 'default', ttl: 60000, limit: 120 }]),
     LoggerLibModule,
     HealthModule,
     AuthModule,

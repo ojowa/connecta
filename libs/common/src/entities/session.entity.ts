@@ -1,4 +1,12 @@
-import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, ManyToOne, JoinColumn, Index } from 'typeorm';
+import {
+  Entity,
+  PrimaryGeneratedColumn,
+  Column,
+  CreateDateColumn,
+  ManyToOne,
+  JoinColumn,
+  Index,
+} from 'typeorm';
 import { User } from './user.entity';
 
 @Entity('sessions')
@@ -15,6 +23,7 @@ export class Session {
   @Column() expiresAt: Date;
   @Column({ default: true }) isActive: boolean;
   @ManyToOne(() => User, { onDelete: 'CASCADE' })
-  @JoinColumn({ name: 'userId' }) user: User;
+  @JoinColumn({ name: 'userId' })
+  user: User;
   @CreateDateColumn() createdAt: Date;
 }

@@ -85,7 +85,8 @@ export class ScamDetector {
   constructor(
     @InjectRepository(Message) private msgRepo: Repository<Message>,
     @InjectRepository(Conversation) private convRepo: Repository<Conversation>,
-    @InjectRepository(ConversationParticipant) private partRepo: Repository<ConversationParticipant>,
+    @InjectRepository(ConversationParticipant)
+    private partRepo: Repository<ConversationParticipant>,
   ) {}
 
   async analyzeConversation(userId: string, targetUserId: string): Promise<ScamAnalysis> {
@@ -100,38 +101,41 @@ export class ScamDetector {
 
     if (!messages.length) return { riskScore: 0, flags: [], isScamSuspected: false };
 
-    const targetMessages = messages.filter(m => m.senderId === targetUserId);
+    const targetMessages = messages.filter((m) => m.senderId === targetUserId);
     if (!targetMessages.length) return { riskScore: 0, flags: [], isScamSuspected: false };
 
     return this.analyzeMessages(targetMessages, messages.length);
   }
 
-  async analyzeMessages(messages: Message[], totalConversationLength: number): Promise<ScamAnalysis> {
+  async analyzeMessages(
+    messages: Message[],
+    totalConversationLength: number,
+  ): Promise<ScamAnalysis> {
     const flags: string[] = [];
     let riskScore = 0;
 
-    const fullText = messages.map(m => m.content || '').join(' ');
+    const fullText = messages.map((m) => m.content || '').join(' ');
 
-    const moneyMatches = MONEY_PATTERNS.filter(p => p.test(fullText));
+    const moneyMatches = MONEY_PATTERNS.filter((p) => p.test(fullText));
     if (moneyMatches.length > 0) {
       flags.push('money_mention');
       riskScore += 0.4;
     }
 
     // H5: Detect love bombing regardless of conversation length
-    const loveBombCount = LOVE_BOMBING_PATTERNS.filter(p => p.test(fullText)).length;
+    const loveBombCount = LOVE_BOMBING_PATTERNS.filter((p) => p.test(fullText)).length;
     if (loveBombCount >= 2) {
       flags.push('rapid_emotional_escalation');
       riskScore += 0.35;
     }
 
-    const sobCount = SOB_STORY_PATTERNS.filter(p => p.test(fullText)).length;
+    const sobCount = SOB_STORY_PATTERNS.filter((p) => p.test(fullText)).length;
     if (sobCount >= 2) {
       flags.push('sob_story_pattern');
       riskScore += 0.25;
     }
 
-    const urgencyCount = URGENCY_PATTERNS.filter(p => p.test(fullText)).length;
+    const urgencyCount = URGENCY_PATTERNS.filter((p) => p.test(fullText)).length;
     if (urgencyCount >= 2) {
       flags.push('high_urgency');
       riskScore += 0.2;
@@ -139,7 +143,7 @@ export class ScamDetector {
 
     const urls = fullText.match(EXTERNAL_LINK_PATTERN) || [];
     if (urls.length > 0) {
-      const suspiciousUrls = urls.filter(u =>
+      const suspiciousUrls = urls.filter((u) =>
         /bit\.ly|tinyurl|t\.co|shorturl|crypto|bitcoin|invest/i.test(u),
       );
       if (suspiciousUrls.length > 0) {
@@ -152,7 +156,8 @@ export class ScamDetector {
     }
 
     if (messages.length > 5) {
-      const avgLength = messages.reduce((sum, m) => sum + (m.content?.length || 0), 0) / messages.length;
+      const avgLength =
+        messages.reduce((sum, m) => sum + (m.content?.length || 0), 0) / messages.length;
       if (avgLength < 10 && messages.length > 10) {
         flags.push('generic_short_messages');
         riskScore += 0.1;
@@ -172,12 +177,15 @@ export class ScamDetector {
     };
   }
 
-  private async findConversationBetween(userId: string, targetUserId: string): Promise<Conversation | null> {
+  private async findConversationBetween(
+    userId: string,
+    targetUserId: string,
+  ): Promise<Conversation | null> {
     const userParts = await this.partRepo.find({ where: { userId } });
     const targetParts = await this.partRepo.find({ where: { userId: targetUserId } });
 
-    const userConvIds = new Set(userParts.map(p => p.conversationId));
-    const commonConv = targetParts.find(p => userConvIds.has(p.conversationId));
+    const userConvIds = new Set(userParts.map((p) => p.conversationId));
+    const commonConv = targetParts.find((p) => userConvIds.has(p.conversationId));
 
     if (!commonConv) return null;
     return this.convRepo.findOne({ where: { id: commonConv.conversationId } });

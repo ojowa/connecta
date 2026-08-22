@@ -22,7 +22,12 @@ export class ModerationEventsHandler {
     private auditLogRepository: Repository<AuditLog>,
   ) {}
 
-  async handleContentReported(payload: { reportId: string; reporterId: string; reportedId: string; reason: string }) {
+  async handleContentReported(payload: {
+    reportId: string;
+    reporterId: string;
+    reportedId: string;
+    reason: string;
+  }) {
     this.logger.log(`Handling content.reported: ${payload.reportId}`);
 
     await this.auditLogRepository.save(
@@ -55,7 +60,11 @@ export class ModerationEventsHandler {
     }
   }
 
-  async handleContentReviewed(payload: { reportId: string; reviewedBy: string; actionTaken: string }) {
+  async handleContentReviewed(payload: {
+    reportId: string;
+    reviewedBy: string;
+    actionTaken: string;
+  }) {
     this.logger.log(`Handling content.reviewed: ${payload.reportId}`);
 
     await this.reportRepository.update(payload.reportId, {

@@ -9,7 +9,9 @@ async function bootstrap() {
     origin: process.env.CORS_ORIGIN,
     credentials: true,
   });
-  app.useGlobalPipes(new ValidationPipe({ whitelist: true, forbidNonWhitelisted: true, transform: true }));
+  app.useGlobalPipes(
+    new ValidationPipe({ whitelist: true, forbidNonWhitelisted: true, transform: true }),
+  );
 
   app.connectMicroservice<MicroserviceOptions>({
     transport: Transport.NATS,

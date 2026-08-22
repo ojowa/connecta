@@ -1,7 +1,15 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { Match, Like, Conversation, ConversationParticipant, User, Profile, Notification } from '@app/common/entities';
+import {
+  Match,
+  Like,
+  Conversation,
+  ConversationParticipant,
+  User,
+  Profile,
+  Notification,
+} from '@app/common/entities';
 import { MATCH_EVENTS } from '@app/common/constants/events';
 
 @Injectable()
@@ -25,7 +33,12 @@ export class MatchEventsHandler {
     private notificationRepository: Repository<Notification>,
   ) {}
 
-  async handleMatchCreated(payload: { matchId: string; user1Id: string; user2Id: string; matchedVia: string }) {
+  async handleMatchCreated(payload: {
+    matchId: string;
+    user1Id: string;
+    user2Id: string;
+    matchedVia: string;
+  }) {
     this.logger.log(`Handling match.created: ${payload.matchId}`);
 
     const conversation = this.conversationRepository.create({});

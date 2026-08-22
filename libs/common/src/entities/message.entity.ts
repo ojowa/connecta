@@ -1,4 +1,13 @@
-import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, ManyToOne, JoinColumn, Index } from 'typeorm';
+import {
+  Entity,
+  PrimaryGeneratedColumn,
+  Column,
+  CreateDateColumn,
+  UpdateDateColumn,
+  ManyToOne,
+  JoinColumn,
+  Index,
+} from 'typeorm';
 import { Conversation } from './conversation.entity';
 
 @Entity('messages')
@@ -16,7 +25,8 @@ export class Message {
   @Column({ default: false }) isDeleted: boolean;
   @Column({ nullable: true }) deletedAt: Date;
   @ManyToOne(() => Conversation, { onDelete: 'CASCADE' })
-  @JoinColumn({ name: 'conversationId' }) conversation: Conversation;
+  @JoinColumn({ name: 'conversationId' })
+  conversation: Conversation;
   @CreateDateColumn() createdAt: Date;
   @UpdateDateColumn() updatedAt: Date;
 }

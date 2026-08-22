@@ -22,19 +22,34 @@ export class CallsController {
 
   @Post(':callId/answer')
   @ApiOperation({ summary: 'Answer a call' })
-  async answerCall(@Param('callId') callId: string, @Body() body: any, @Req() req: Request, @Res() res: Response) {
+  async answerCall(
+    @Param('callId') callId: string,
+    @Body() body: any,
+    @Req() req: Request,
+    @Res() res: Response,
+  ) {
     return proxyPost(this.http, `${CALL_SERVICE}/calls/${callId}/answer`, body, req, res);
   }
 
   @Post(':callId/reject')
   @ApiOperation({ summary: 'Reject a call' })
-  async rejectCall(@Param('callId') callId: string, @Body() body: any, @Req() req: Request, @Res() res: Response) {
+  async rejectCall(
+    @Param('callId') callId: string,
+    @Body() body: any,
+    @Req() req: Request,
+    @Res() res: Response,
+  ) {
     return proxyPost(this.http, `${CALL_SERVICE}/calls/${callId}/reject`, body, req, res);
   }
 
   @Post(':callId/end')
   @ApiOperation({ summary: 'End a call' })
-  async endCall(@Param('callId') callId: string, @Body() body: any, @Req() req: Request, @Res() res: Response) {
+  async endCall(
+    @Param('callId') callId: string,
+    @Body() body: any,
+    @Req() req: Request,
+    @Res() res: Response,
+  ) {
     return proxyPost(this.http, `${CALL_SERVICE}/calls/${callId}/end`, body, req, res);
   }
 

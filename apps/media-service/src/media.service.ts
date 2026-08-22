@@ -6,20 +6,20 @@ import { v4 as uuid } from 'uuid';
 
 @Injectable()
 export class MediaService {
-  constructor(
-    @InjectRepository(Media) private mediaRepo: Repository<Media>,
-  ) {}
+  constructor(@InjectRepository(Media) private mediaRepo: Repository<Media>) {}
 
   async upload(userId: string, data: any) {
-    const media = await this.mediaRepo.save(this.mediaRepo.create({
-      userId,
-      url: data.url || data.cdnUrl,
-      mimeType: data.mimeType || 'image/jpeg',
-      sizeBytes: data.sizeBytes || 0,
-      purpose: data.purpose || 'photo',
-      status: 'active',
-      metadata: data.key ? JSON.stringify({ key: data.key }) : undefined,
-    }));
+    const media = await this.mediaRepo.save(
+      this.mediaRepo.create({
+        userId,
+        url: data.url || data.cdnUrl,
+        mimeType: data.mimeType || 'image/jpeg',
+        sizeBytes: data.sizeBytes || 0,
+        purpose: data.purpose || 'photo',
+        status: 'active',
+        metadata: data.key ? JSON.stringify({ key: data.key }) : undefined,
+      }),
+    );
     return {
       media: {
         id: media.id,

@@ -8,7 +8,9 @@ export class ProfileInterest {
   @Column() profileId: string;
   @Column() interestId: string;
   @ManyToOne(() => Profile, { onDelete: 'CASCADE' })
-  @JoinColumn({ name: 'profileId' }) profile: Profile;
+  @JoinColumn({ name: 'profileId' })
+  profile: Profile;
   @ManyToOne(() => Interest, { onDelete: 'CASCADE' })
-  @JoinColumn({ name: 'interestId' }) interest: Interest;
+  @JoinColumn({ name: 'interestId' })
+  interest: Interest;
 }

@@ -114,10 +114,7 @@ export class UserEventsHandler {
   async handleUserDeactivated(payload: { userId: string }) {
     this.logger.log(`Handling user.deactivated for ${payload.userId}`);
 
-    await this.profileRepository.update(
-      { userId: payload.userId },
-      { isActive: false },
-    );
+    await this.profileRepository.update({ userId: payload.userId }, { isActive: false });
 
     await this.userRepository.update(payload.userId, {
       status: UserStatus.DEACTIVATED,
@@ -132,10 +129,7 @@ export class UserEventsHandler {
       status: UserStatus.SUSPENDED,
     });
 
-    await this.profileRepository.update(
-      { userId: payload.userId },
-      { isActive: false },
-    );
+    await this.profileRepository.update({ userId: payload.userId }, { isActive: false });
 
     await this.notificationRepository.save(
       this.notificationRepository.create({

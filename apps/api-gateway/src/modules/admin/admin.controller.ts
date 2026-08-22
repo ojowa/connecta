@@ -47,21 +47,36 @@ export class AdminController {
   @Post('users/:id/suspend')
   @ApiOperation({ summary: 'Suspend user' })
   @ApiBearerAuth()
-  async suspendUser(@Param('id') id: string, @Body() body: any, @Req() req: Request, @Res() res: Response) {
+  async suspendUser(
+    @Param('id') id: string,
+    @Body() body: any,
+    @Req() req: Request,
+    @Res() res: Response,
+  ) {
     return proxyPost(this.http, `${ADMIN_SERVICE}/admin/users/${id}/suspend`, body, req, res);
   }
 
   @Post('users/:id/ban')
   @ApiOperation({ summary: 'Ban user' })
   @ApiBearerAuth()
-  async banUser(@Param('id') id: string, @Body() body: any, @Req() req: Request, @Res() res: Response) {
+  async banUser(
+    @Param('id') id: string,
+    @Body() body: any,
+    @Req() req: Request,
+    @Res() res: Response,
+  ) {
     return proxyPost(this.http, `${ADMIN_SERVICE}/admin/users/${id}/ban`, body, req, res);
   }
 
   @Post('users/:id/unsuspend')
   @ApiOperation({ summary: 'Unsuspend user' })
   @ApiBearerAuth()
-  async unsuspendUser(@Param('id') id: string, @Body() body: any, @Req() req: Request, @Res() res: Response) {
+  async unsuspendUser(
+    @Param('id') id: string,
+    @Body() body: any,
+    @Req() req: Request,
+    @Res() res: Response,
+  ) {
     return proxyPost(this.http, `${ADMIN_SERVICE}/admin/users/${id}/unsuspend`, body, req, res);
   }
 
@@ -75,7 +90,12 @@ export class AdminController {
   @Post('reports/:id/resolve')
   @ApiOperation({ summary: 'Resolve a report' })
   @ApiBearerAuth()
-  async resolveReport(@Param('id') id: string, @Body() body: any, @Req() req: Request, @Res() res: Response) {
+  async resolveReport(
+    @Param('id') id: string,
+    @Body() body: any,
+    @Req() req: Request,
+    @Res() res: Response,
+  ) {
     return proxyPost(this.http, `${ADMIN_SERVICE}/admin/reports/${id}/resolve`, body, req, res);
   }
 

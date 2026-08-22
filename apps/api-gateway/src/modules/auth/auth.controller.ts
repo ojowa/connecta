@@ -58,7 +58,11 @@ export class AuthController {
   @Delete('devices/:deviceId')
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Revoke a device session' })
-  async revokeDevice(@Param('deviceId') deviceId: string, @Req() req: Request, @Res() res: Response) {
+  async revokeDevice(
+    @Param('deviceId') deviceId: string,
+    @Req() req: Request,
+    @Res() res: Response,
+  ) {
     return proxyDelete(this.http, `${AUTH_SERVICE}/auth/devices/${deviceId}`, req, res);
   }
 
@@ -78,7 +82,11 @@ export class AuthController {
   @Delete('biometric/:biometricId')
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Remove biometric authentication' })
-  async removeBiometric(@Param('biometricId') biometricId: string, @Req() req: Request, @Res() res: Response) {
+  async removeBiometric(
+    @Param('biometricId') biometricId: string,
+    @Req() req: Request,
+    @Res() res: Response,
+  ) {
     return proxyDelete(this.http, `${AUTH_SERVICE}/auth/biometric/${biometricId}`, req, res);
   }
 

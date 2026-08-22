@@ -1,54 +1,122 @@
 import { Controller, Get, Post, Put, Body, Param, Query } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { AdminService } from './admin.service';
-import { AdminLoginDto, Verify2faDto, SuspendUserDto, BanUserDto, ResolveReportDto, UpdateSettingsDto, AnalyticsQueryDto, AdminBroadcastDto } from './dto';
+import {
+  AdminLoginDto,
+  Verify2faDto,
+  SuspendUserDto,
+  BanUserDto,
+  ResolveReportDto,
+  UpdateSettingsDto,
+  AnalyticsQueryDto,
+  AdminBroadcastDto,
+} from './dto';
 
-@ApiTags('Admin') @Controller('admin')
+@ApiTags('Admin')
+@Controller('admin')
 export class AdminController {
   constructor(private readonly adminService: AdminService) {}
 
-  @Post('login') @ApiOperation({ summary: 'Admin login' })
-  login(@Body() body: AdminLoginDto) { return this.adminService.login(body); }
+  @Post('login')
+  @ApiOperation({ summary: 'Admin login' })
+  login(@Body() body: AdminLoginDto) {
+    return this.adminService.login(body);
+  }
 
-  @Post('2fa/verify') @ApiOperation({ summary: 'Verify admin 2FA code' })
-  verify2fa(@Body() body: Verify2faDto) { return this.adminService.verify2fa(body); }
+  @Post('2fa/verify')
+  @ApiOperation({ summary: 'Verify admin 2FA code' })
+  verify2fa(@Body() body: Verify2faDto) {
+    return this.adminService.verify2fa(body);
+  }
 
-  @Get('dashboard') @ApiOperation({ summary: 'Dashboard' }) @ApiBearerAuth()
-  dashboard(@Query('period') period?: string) { return this.adminService.getDashboard(period); }
+  @Get('dashboard')
+  @ApiOperation({ summary: 'Dashboard' })
+  @ApiBearerAuth()
+  dashboard(@Query('period') period?: string) {
+    return this.adminService.getDashboard(period);
+  }
 
-  @Get('users') @ApiOperation({ summary: 'List users' }) @ApiBearerAuth()
-  getUsers(@Query() query: any) { return this.adminService.getUsers(query); }
+  @Get('users')
+  @ApiOperation({ summary: 'List users' })
+  @ApiBearerAuth()
+  getUsers(@Query() query: any) {
+    return this.adminService.getUsers(query);
+  }
 
-  @Get('users/:id') @ApiOperation({ summary: 'User detail' }) @ApiBearerAuth()
-  getUser(@Param('id') id: string) { return this.adminService.getUserDetail(id); }
+  @Get('users/:id')
+  @ApiOperation({ summary: 'User detail' })
+  @ApiBearerAuth()
+  getUser(@Param('id') id: string) {
+    return this.adminService.getUserDetail(id);
+  }
 
-  @Post('users/:id/suspend') @ApiOperation({ summary: 'Suspend user' }) @ApiBearerAuth()
-  suspend(@Param('id') id: string, @Body() body: SuspendUserDto) { return this.adminService.suspendUser(id, body); }
+  @Post('users/:id/suspend')
+  @ApiOperation({ summary: 'Suspend user' })
+  @ApiBearerAuth()
+  suspend(@Param('id') id: string, @Body() body: SuspendUserDto) {
+    return this.adminService.suspendUser(id, body);
+  }
 
-  @Post('users/:id/ban') @ApiOperation({ summary: 'Ban user' }) @ApiBearerAuth()
-  ban(@Param('id') id: string, @Body() body: BanUserDto) { return this.adminService.banUser(id, body); }
+  @Post('users/:id/ban')
+  @ApiOperation({ summary: 'Ban user' })
+  @ApiBearerAuth()
+  ban(@Param('id') id: string, @Body() body: BanUserDto) {
+    return this.adminService.banUser(id, body);
+  }
 
-  @Post('users/:id/unsuspend') @ApiOperation({ summary: 'Unsuspend user' }) @ApiBearerAuth()
-  unsuspend(@Param('id') id: string) { return this.adminService.unsuspendUser(id); }
+  @Post('users/:id/unsuspend')
+  @ApiOperation({ summary: 'Unsuspend user' })
+  @ApiBearerAuth()
+  unsuspend(@Param('id') id: string) {
+    return this.adminService.unsuspendUser(id);
+  }
 
-  @Get('reports') @ApiOperation({ summary: 'List reports' }) @ApiBearerAuth()
-  getReports(@Query() query: any) { return this.adminService.getReports(query); }
+  @Get('reports')
+  @ApiOperation({ summary: 'List reports' })
+  @ApiBearerAuth()
+  getReports(@Query() query: any) {
+    return this.adminService.getReports(query);
+  }
 
-  @Post('reports/:id/resolve') @ApiOperation({ summary: 'Resolve report' }) @ApiBearerAuth()
-  resolveReport(@Param('id') id: string, @Body() body: ResolveReportDto) { return this.adminService.resolveReport(id, body); }
+  @Post('reports/:id/resolve')
+  @ApiOperation({ summary: 'Resolve report' })
+  @ApiBearerAuth()
+  resolveReport(@Param('id') id: string, @Body() body: ResolveReportDto) {
+    return this.adminService.resolveReport(id, body);
+  }
 
-  @Get('audit-log') @ApiOperation({ summary: 'Audit log' }) @ApiBearerAuth()
-  getAuditLog(@Query() query: any) { return this.adminService.getAuditLog(query); }
+  @Get('audit-log')
+  @ApiOperation({ summary: 'Audit log' })
+  @ApiBearerAuth()
+  getAuditLog(@Query() query: any) {
+    return this.adminService.getAuditLog(query);
+  }
 
-  @Get('settings') @ApiOperation({ summary: 'Get settings' }) @ApiBearerAuth()
-  getSettings() { return this.adminService.getSettings(); }
+  @Get('settings')
+  @ApiOperation({ summary: 'Get settings' })
+  @ApiBearerAuth()
+  getSettings() {
+    return this.adminService.getSettings();
+  }
 
-  @Put('settings') @ApiOperation({ summary: 'Update settings' }) @ApiBearerAuth()
-  updateSettings(@Body() body: UpdateSettingsDto) { return this.adminService.updateSettings(body); }
+  @Put('settings')
+  @ApiOperation({ summary: 'Update settings' })
+  @ApiBearerAuth()
+  updateSettings(@Body() body: UpdateSettingsDto) {
+    return this.adminService.updateSettings(body);
+  }
 
-  @Get('analytics') @ApiOperation({ summary: 'Get platform analytics' }) @ApiBearerAuth()
-  getAnalytics(@Query() query: AnalyticsQueryDto) { return this.adminService.getAnalytics(query); }
+  @Get('analytics')
+  @ApiOperation({ summary: 'Get platform analytics' })
+  @ApiBearerAuth()
+  getAnalytics(@Query() query: AnalyticsQueryDto) {
+    return this.adminService.getAnalytics(query);
+  }
 
-  @Post('broadcast') @ApiOperation({ summary: 'Send broadcast notification' }) @ApiBearerAuth()
-  broadcast(@Body() body: AdminBroadcastDto) { return this.adminService.broadcast(body); }
+  @Post('broadcast')
+  @ApiOperation({ summary: 'Send broadcast notification' })
+  @ApiBearerAuth()
+  broadcast(@Body() body: AdminBroadcastDto) {
+    return this.adminService.broadcast(body);
+  }
 }

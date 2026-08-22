@@ -42,7 +42,9 @@ export class ChatGateway implements OnGatewayInit, OnGatewayConnection, OnGatewa
 
   async handleConnection(client: Socket) {
     try {
-      const token = client.handshake.auth?.token || client.handshake.headers?.authorization?.replace('Bearer ', '');
+      const token =
+        client.handshake.auth?.token ||
+        client.handshake.headers?.authorization?.replace('Bearer ', '');
       if (!token) {
         client.disconnect();
         return;
@@ -94,7 +96,14 @@ export class ChatGateway implements OnGatewayInit, OnGatewayConnection, OnGatewa
   @SubscribeMessage(CHAT_EVENTS.MESSAGE_SENT)
   async handleMessage(
     @ConnectedSocket() client: Socket,
-    @MessageBody() data: { conversationId: string; content: string; type?: string; mediaId?: string; replyToMessageId?: string },
+    @MessageBody()
+    data: {
+      conversationId: string;
+      content: string;
+      type?: string;
+      mediaId?: string;
+      replyToMessageId?: string;
+    },
   ) {
     const userId = client.data.userId;
     try {
@@ -105,7 +114,9 @@ export class ChatGateway implements OnGatewayInit, OnGatewayConnection, OnGatewa
         replyTo: data.replyToMessageId,
       });
 
-      this.server.to(`conversation:${data.conversationId}`).emit(CHAT_EVENTS.MESSAGE_RECEIVED, result.data);
+      this.server
+        .to(`conversation:${data.conversationId}`)
+        .emit(CHAT_EVENTS.MESSAGE_RECEIVED, result.data);
       this.server.to(`user:${userId}`).emit(CHAT_EVENTS.MESSAGE_SENT, result.data);
 
       return { event: CHAT_EVENTS.MESSAGE_SENT, data: result.data };

@@ -20,7 +20,12 @@ export class MatchingController {
 
   @Post('like/:userId')
   @ApiOperation({ summary: 'Like a user' })
-  async likeUser(@Param('userId') userId: string, @Body() body: any, @Req() req: Request, @Res() res: Response) {
+  async likeUser(
+    @Param('userId') userId: string,
+    @Body() body: any,
+    @Req() req: Request,
+    @Res() res: Response,
+  ) {
     return proxyPost(this.http, `${MATCHING_SERVICE}/matching/like/${userId}`, body, req, res);
   }
 
@@ -62,7 +67,11 @@ export class MatchingController {
 
   @Get('compatibility/:userId')
   @ApiOperation({ summary: 'Get compatibility score with a user' })
-  async getCompatibility(@Param('userId') userId: string, @Req() req: Request, @Res() res: Response) {
+  async getCompatibility(
+    @Param('userId') userId: string,
+    @Req() req: Request,
+    @Res() res: Response,
+  ) {
     return proxyGet(this.http, `${MATCHING_SERVICE}/matching/compatibility/${userId}`, req, res);
   }
 

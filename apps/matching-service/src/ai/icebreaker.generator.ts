@@ -85,7 +85,7 @@ export class IcebreakerGenerator {
 
     const generic = [
       "What's the most spontaneous thing you've ever done?",
-      "If you could have dinner with anyone, living or dead, who would it be?",
+      'If you could have dinner with anyone, living or dead, who would it be?',
       "What's something you've always wanted to try but haven't yet?",
     ];
 
@@ -98,17 +98,17 @@ export class IcebreakerGenerator {
       });
     }
 
-    return icebreakers
-      .sort((a, b) => b.confidence - a.confidence)
-      .slice(0, 5);
+    return icebreakers.sort((a, b) => b.confidence - a.confidence).slice(0, 5);
   }
 
   private getGoalIcebreaker(goal?: string): string | null {
     const map: Record<string, string> = {
-      long_term: "I'm also looking for something meaningful - what does a great relationship look like to you?",
-      marriage: "It's refreshing to meet someone serious about marriage - what values do you think are most important?",
-      casual: "Always good to be upfront - what does casual dating look like for you?",
-      short_term: "I appreciate the honesty - what are you hoping to find right now?",
+      long_term:
+        "I'm also looking for something meaningful - what does a great relationship look like to you?",
+      marriage:
+        "It's refreshing to meet someone serious about marriage - what values do you think are most important?",
+      casual: 'Always good to be upfront - what does casual dating look like for you?',
+      short_term: 'I appreciate the honesty - what are you hoping to find right now?',
       unsure: "It's okay to be unsure - what would make you feel ready to commit?",
     };
     return map[goal || ''] || null;
@@ -134,7 +134,7 @@ export class IcebreakerGenerator {
     }
 
     if (topics.length === 0) {
-      const words = bio.split(/\s+/).filter(w => w.length > 4);
+      const words = bio.split(/\s+/).filter((w) => w.length > 4);
       if (words.length >= 3) {
         topics.push(words.slice(0, 2).join(' '));
       }

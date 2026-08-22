@@ -3,7 +3,12 @@ import { EventPattern } from '@nestjs/microservices';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Notification, User } from '@app/common/entities';
-import { USER_EVENTS, MATCH_EVENTS, CHAT_EVENTS, PAYMENT_EVENTS } from '@app/common/constants/events';
+import {
+  USER_EVENTS,
+  MATCH_EVENTS,
+  CHAT_EVENTS,
+  PAYMENT_EVENTS,
+} from '@app/common/constants/events';
 
 @Injectable()
 export class NotificationEventsHandler {
@@ -63,7 +68,12 @@ export class NotificationEventsHandler {
   }
 
   @EventPattern(MATCH_EVENTS.MATCH_CREATED)
-  async handleMatchCreated(data: { matchId: string; user1Id: string; user2Id: string; conversationId: string }) {
+  async handleMatchCreated(data: {
+    matchId: string;
+    user1Id: string;
+    user2Id: string;
+    conversationId: string;
+  }) {
     this.logger.log(`Received match.created: ${data.matchId}`);
 
     const user1 = await this.userRepository.findOne({ where: { id: data.user1Id } });
@@ -120,7 +130,13 @@ export class NotificationEventsHandler {
   }
 
   @EventPattern(CHAT_EVENTS.MESSAGE_SENT)
-  async handleMessageSent(data: { messageId: string; conversationId: string; senderId: string; content: string; participantUserIds: string[] }) {
+  async handleMessageSent(data: {
+    messageId: string;
+    conversationId: string;
+    senderId: string;
+    content: string;
+    participantUserIds: string[];
+  }) {
     this.logger.log(`Received message.sent: ${data.messageId}`);
 
     const sender = await this.userRepository.findOne({ where: { id: data.senderId } });
@@ -141,12 +157,21 @@ export class NotificationEventsHandler {
   }
 
   @EventPattern(CHAT_EVENTS.MESSAGE_READ)
-  async handleMessageRead(data: { userId: string; conversationId: string; lastReadMessageId: string }) {
+  async handleMessageRead(data: {
+    userId: string;
+    conversationId: string;
+    lastReadMessageId: string;
+  }) {
     this.logger.log(`Received message.read from ${data.userId} in ${data.conversationId}`);
   }
 
   @EventPattern(PAYMENT_EVENTS.SUBSCRIPTION_ACTIVATED)
-  async handleSubscriptionActivated(data: { subscriptionId: string; userId: string; planId: string; planName: string }) {
+  async handleSubscriptionActivated(data: {
+    subscriptionId: string;
+    userId: string;
+    planId: string;
+    planName: string;
+  }) {
     this.logger.log(`Received subscription.activated for ${data.userId}`);
     await this.notificationRepository.save(
       this.notificationRepository.create({
@@ -162,7 +187,12 @@ export class NotificationEventsHandler {
   }
 
   @EventPattern(PAYMENT_EVENTS.PAYMENT_SUCCESSFUL)
-  async handlePaymentSuccessful(data: { transactionId: string; userId: string; amount: number; currency: string }) {
+  async handlePaymentSuccessful(data: {
+    transactionId: string;
+    userId: string;
+    amount: number;
+    currency: string;
+  }) {
     this.logger.log(`Received payment.successful for ${data.userId}`);
     await this.notificationRepository.save(
       this.notificationRepository.create({
@@ -178,7 +208,11 @@ export class NotificationEventsHandler {
   }
 
   @EventPattern(PAYMENT_EVENTS.SUBSCRIPTION_CANCELLED)
-  async handleSubscriptionCancelled(data: { subscriptionId: string; userId: string; planId: string }) {
+  async handleSubscriptionCancelled(data: {
+    subscriptionId: string;
+    userId: string;
+    planId: string;
+  }) {
     this.logger.log(`Received subscription.cancelled for ${data.userId}`);
     await this.notificationRepository.save(
       this.notificationRepository.create({

@@ -1,4 +1,11 @@
-import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, ManyToOne, JoinColumn } from 'typeorm';
+import {
+  Entity,
+  PrimaryGeneratedColumn,
+  Column,
+  CreateDateColumn,
+  ManyToOne,
+  JoinColumn,
+} from 'typeorm';
 import { User } from './user.entity';
 
 @Entity('otp_codes')
@@ -14,6 +21,7 @@ export class OtpCode {
   @Column() expiresAt: Date;
   @Column({ nullable: true }) verifiedAt: Date;
   @ManyToOne(() => User, { onDelete: 'CASCADE', nullable: true })
-  @JoinColumn({ name: 'userId' }) user: User;
+  @JoinColumn({ name: 'userId' })
+  user: User;
   @CreateDateColumn() createdAt: Date;
 }

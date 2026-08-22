@@ -1,7 +1,14 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { Profile, Photo, ProfileInterest, Interest, User, Notification } from '@app/common/entities';
+import {
+  Profile,
+  Photo,
+  ProfileInterest,
+  Interest,
+  User,
+  Notification,
+} from '@app/common/entities';
 import { UserStatus } from '@app/common/entities/user.entity';
 import { PROFILE_EVENTS } from '@app/common/constants/events';
 
@@ -51,7 +58,11 @@ export class ProfileEventsHandler {
     }
   }
 
-  async handleProfileUpdated(payload: { profileId: string; userId: string; changes: Partial<Profile> }) {
+  async handleProfileUpdated(payload: {
+    profileId: string;
+    userId: string;
+    changes: Partial<Profile>;
+  }) {
     this.logger.log(`Handling profile.updated for ${payload.userId}`);
 
     const profile = await this.profileRepository.findOne({
@@ -109,7 +120,12 @@ export class ProfileEventsHandler {
     this.logger.log(`Profile ${payload.profileId} now has ${interestCount} interests`);
   }
 
-  async handleLocationUpdated(payload: { profileId: string; userId: string; latitude: number; longitude: number }) {
+  async handleLocationUpdated(payload: {
+    profileId: string;
+    userId: string;
+    latitude: number;
+    longitude: number;
+  }) {
     this.logger.log(`Handling location.updated for ${payload.userId}`);
 
     await this.profileRepository.update(payload.profileId, {

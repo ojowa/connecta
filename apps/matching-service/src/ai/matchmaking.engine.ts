@@ -61,18 +61,21 @@ export class MatchmakingEngine {
 
     // C3: Parallelize compatibility scoring instead of sequential await loop
     const scoreResults = await Promise.all(
-      candidates.map(candidate =>
-        this.compatibilityEngine.score(userId, candidate.userId)
-          .then(compatibility => ({ candidate, compatibility }))
+      candidates.map((candidate) =>
+        this.compatibilityEngine
+          .score(userId, candidate.userId)
+          .then((compatibility) => ({ candidate, compatibility }))
           .catch((err: Error) => {
             this.logger.warn(`Failed to score ${candidate.userId}: ${err.message}`);
             return null;
-          })
-      )
+          }),
+      ),
     );
 
     const ranked: RankedCandidate[] = scoreResults
-      .filter((r): r is { candidate: CandidateProfile; compatibility: CompatibilityResult } => r !== null)
+      .filter(
+        (r): r is { candidate: CandidateProfile; compatibility: CompatibilityResult } => r !== null,
+      )
       .map(({ candidate, compatibility }) => ({
         ...candidate,
         compatibilityScore: compatibility.overallScore,
@@ -120,7 +123,10 @@ export class MatchmakingEngine {
     return feed;
   }
 
-  async getCompatibilityScore(userId: string, targetUserId: string): Promise<CompatibilityScoreResponse> {
+  async getCompatibilityScore(
+    userId: string,
+    targetUserId: string,
+  ): Promise<CompatibilityScoreResponse> {
     const compatibility = await this.compatibilityEngine.score(userId, targetUserId);
     const targetProfile = await this.profileRepo.findOne({ where: { userId: targetUserId } });
     const targetUser = await this.userRepo.findOne({ where: { id: targetUserId } });
@@ -142,7 +148,11 @@ export class MatchmakingEngine {
       relationshipGoal: targetProfile?.relationshipGoal || '',
     };
 
-    const icebreakers = await this.icebreakerGenerator.generate(userProfile, candidateProfile, compatibility);
+    const icebreakers = await this.icebreakerGenerator.generate(
+      userProfile,
+      candidateProfile,
+      compatibility,
+    );
 
     return { userId, targetUserId, compatibility, icebreakers };
   }

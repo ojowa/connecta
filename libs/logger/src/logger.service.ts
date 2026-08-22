@@ -57,7 +57,12 @@ export class AppLoggerService {
       userId,
       timestamp: new Date().toISOString(),
     };
-    this.writeLog(LogLevel.INFO, `HTTP ${method} ${url} ${statusCode} ${duration}ms`, 'HTTP', JSON.stringify(meta));
+    this.writeLog(
+      LogLevel.INFO,
+      `HTTP ${method} ${url} ${statusCode} ${duration}ms`,
+      'HTTP',
+      JSON.stringify(meta),
+    );
   }
 
   logError(error: Error, context?: string, additionalInfo?: Record<string, any>) {

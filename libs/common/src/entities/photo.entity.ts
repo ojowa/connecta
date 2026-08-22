@@ -1,4 +1,12 @@
-import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, ManyToOne, JoinColumn, Index } from 'typeorm';
+import {
+  Entity,
+  PrimaryGeneratedColumn,
+  Column,
+  CreateDateColumn,
+  ManyToOne,
+  JoinColumn,
+  Index,
+} from 'typeorm';
 import { Profile } from './profile.entity';
 
 @Entity('photos')
@@ -11,6 +19,7 @@ export class Photo {
   @Column({ default: 0 }) order: number;
   @Column({ default: false }) isPrimary: boolean;
   @ManyToOne(() => Profile, (profile) => profile.photos, { onDelete: 'CASCADE' })
-  @JoinColumn({ name: 'profileId' }) profile: Profile;
+  @JoinColumn({ name: 'profileId' })
+  profile: Profile;
   @CreateDateColumn() createdAt: Date;
 }

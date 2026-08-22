@@ -10,11 +10,7 @@ export interface RankedCandidate extends CandidateProfile {
 
 @Injectable()
 export class DiversityInjector {
-  inject(
-    candidates: RankedCandidate[],
-    diversityFactor = 0.3,
-    targetSize = 20,
-  ): RankedCandidate[] {
+  inject(candidates: RankedCandidate[], diversityFactor = 0.3, targetSize = 20): RankedCandidate[] {
     if (candidates.length <= targetSize) {
       return candidates.sort((a, b) => b.finalScore - a.finalScore);
     }
@@ -37,8 +33,7 @@ export class DiversityInjector {
       );
 
       const finalScore =
-        (1 - diversityFactor) * candidate.compatibilityScore +
-        diversityFactor * diversityScore;
+        (1 - diversityFactor) * candidate.compatibilityScore + diversityFactor * diversityScore;
 
       diverse.push({ ...candidate, finalScore: Number(finalScore.toFixed(3)) });
     }
