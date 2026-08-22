@@ -11,6 +11,17 @@
     "dist",
     "connecta-mobile",
     "apps/admin-web",
+    "apps/auth-service",
+    "apps/user-service",
+    "apps/profile-service",
+    "apps/matching-service",
+    "apps/chat-service",
+    "apps/call-signalling-service",
+    "apps/media-service",
+    "apps/payment-service",
+    "apps/notification-service",
+    "apps/search-service",
+    "apps/admin-service",
     "**/*spec.ts",
     "**/*e2e-spec.ts"
   ]
