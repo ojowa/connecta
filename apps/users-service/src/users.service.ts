@@ -122,4 +122,59 @@ export class UsersService {
     const profile = await this.profileRepo.createQueryBuilder('p').where('p.userId = :userId', { userId }).andWhere('p.updatedAt > :since', { since: sinceDate }).getOne();
     return { data: profile };
   }
+
+  async getPhotos(userId: string) {
+    const profile = await this.profileRepo.findOne({ where: { userId } });
+    if (!profile) return { photos: [] };
+    const photos = await this.photoRepo.find({ where: { profileId: profile.id }, order: { order: 'ASC' } });
+    return { photos };
+  }
+
+  async addPhoto(userId: string, data: any) {
+    let profile = await this.profileRepo.findOne({ where: { userId } });
+    if (!profile) {
+      const user = await this.userRepo.findOne({ where: { id: userId } });
+      if (!user) throw new NotFoundException('User not found');
+      const newProfile = this.profileRepo.create({ userId, firstName: user.fullName || 'User' });
+      profile = await this.profileRepo.save(newProfile);
+    }
+    const existingPhotos = await this.photoRepo.find({ where: { profileId: profile.id } });
+    const maxOrder = existingPhotos.length > 0 ? Math.max(...existingPhotos.map(p => p.order)) : 0;
+    const photo = this.photoRepo.create({
+      profileId: profile.id,
+      url: data.url,
+      thumbnailUrl: data.thumbnailUrl || null,
+      order: data.order !== undefined ? data.order : maxOrder + 1,
+      isPrimary: existingPhotos.length === 0,
+    });
+    return this.photoRepo.save(photo);
+  }
+
+  async deletePhoto(userId: string, photoId: string) {
+    const profile = await this.profileRepo.findOne({ where: { userId } });
+    if (!profile) throw new NotFoundException('Profile not found');
+    const photo = await this.photoRepo.findOne({ where: { id: photoId, profileId: profile.id } });
+    if (!photo) throw new NotFoundException('Photo not found');
+    await this.photoRepo.remove(photo);
+    return { deleted: true };
+  }
+
+  async reorderPhotos(userId: string, orders: { id: string; order: number }[]) {
+    const profile = await this.profileRepo.findOne({ where: { userId } });
+    if (!profile) throw new NotFoundException('Profile not found');
+    for (const item of orders) {
+      await this.photoRepo.update({ id: item.id, profileId: profile.id }, { order: item.order });
+    }
+    return { reordered: true };
+  }
+
+  async setPrimaryPhoto(userId: string, photoId: string) {
+    const profile = await this.profileRepo.findOne({ where: { userId } });
+    if (!profile) throw new NotFoundException('Profile not found');
+    const photo = await this.photoRepo.findOne({ where: { id: photoId, profileId: profile.id } });
+    if (!photo) throw new NotFoundException('Photo not found');
+    await this.photoRepo.update({ profileId: profile.id }, { isPrimary: false });
+    await this.photoRepo.update(photoId, { isPrimary: true, order: 0 });
+    return { primary: true };
+  }
 }

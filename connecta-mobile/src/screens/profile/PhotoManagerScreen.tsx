@@ -11,6 +11,7 @@ import {
 } from 'react-native';
 import { Button } from '../../components/common/Button';
 import { ImageProcessor } from '../../utils/imageProcessing';
+import { profileApi } from '../../services/api/profileApi';
 import { colors } from '../../theme/colors';
 import { typography } from '../../theme/typography';
 import { spacing } from '../../theme/spacing';
@@ -31,37 +32,76 @@ const PhotoManagerScreen: React.FC<PhotoManagerScreenProps> = ({ navigation }) =
     null,
     null,
   ]);
+  const [existingPhotos, setExistingPhotos] = useState<{ id: string; url: string; order: number }[]>([]);
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    loadPhotos();
+  }, []);
 
   useEffect(() => {
     navigation.setOptions({
       headerRight: () => (
-        <TouchableOpacity onPress={handleSave} style={styles.headerButton}>
-          <Text style={styles.headerButtonText}>Save</Text>
+        <TouchableOpacity onPress={handleSave} style={styles.headerButton} disabled={saving}>
+          <Text style={[styles.headerButtonText, saving && styles.disabledText]}>
+            {saving ? 'Saving...' : 'Save'}
+          </Text>
         </TouchableOpacity>
       ),
     });
-  }, [navigation, photos]);
+  }, [navigation, photos, saving]);
+
+  const loadPhotos = async () => {
+    try {
+      const resp = await profileApi.getPhotos();
+      const data = resp?.data || resp;
+      const photosList = data?.photos || [];
+      setExistingPhotos(photosList);
+      const newPhotos: (string | null)[] = [null, null, null, null, null, null];
+      photosList.forEach((p: any, i: number) => {
+        if (i < MAX_PHOTOS) newPhotos[i] = p.url;
+      });
+      setPhotos(newPhotos);
+    } catch {
+      // Profile might not exist yet, that's ok
+    }
+  };
 
   const handleSave = async () => {
-    const uris = photos.filter((p): p is string => p !== null && !p.startsWith('http'));
-    if (uris.length === 0) {
-      navigation.goBack();
-      return;
-    }
+    setSaving(true);
     try {
-      for (const uri of uris) {
-        await ImageProcessor.uploadImage({
-          uri,
+      // Upload new local photos and create Photo records
+      for (let i = 0; i < photos.length; i++) {
+        const photo = photos[i];
+        if (!photo) continue;
+        // Skip if it's an existing HTTP URL (already saved)
+        if (photo.startsWith('http')) continue;
+        // Upload to get a URL
+        const url = await ImageProcessor.uploadImage({
+          uri: photo,
           width: 1080,
           height: 1440,
           size: 0,
           mimeType: 'image/jpeg',
         });
+        // Create a Photo record linked to profile
+        await profileApi.uploadPhoto({ url, order: i });
       }
+
+      // Delete photos that were removed
+      const currentUrls = photos.filter((p): p is string => p !== null && p.startsWith('http'));
+      for (const existing of existingPhotos) {
+        if (!currentUrls.includes(existing.url)) {
+          await profileApi.deletePhoto(existing.id);
+        }
+      }
+
       Alert.alert('Saved', 'Your photos have been updated.');
       navigation.goBack();
     } catch {
       Alert.alert('Error', 'Failed to upload photos.');
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -218,17 +258,6 @@ const styles = StyleSheet.create({
     borderRadius: borderRadius.card,
     overflow: 'hidden',
   },
-  photoPlaceholder: {
-    flex: 1,
-    backgroundColor: colors.gray200,
-    borderRadius: borderRadius.card,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  photoPlaceholderText: {
-    ...typography.h2,
-    color: colors.gray400,
-  },
   photoImage: {
     flex: 1,
     borderRadius: borderRadius.card,
@@ -294,6 +323,9 @@ const styles = StyleSheet.create({
   headerButtonText: {
     ...typography.button,
     color: colors.primary,
+  },
+  disabledText: {
+    opacity: 0.5,
   },
 });
 

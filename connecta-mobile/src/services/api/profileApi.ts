@@ -7,13 +7,8 @@ export const profileApi = {
     return response.data;
   },
 
-  async uploadPhoto(formData: FormData, onProgress?: (p: number) => void) {
-    const response = await apiClient.post(ENDPOINTS.PROFILES.PHOTOS, formData, {
-      headers: { 'Content-Type': 'multipart/form-data' },
-      onUploadProgress: (e) => {
-        if (onProgress && e.total) onProgress(Math.round((e.loaded * 100) / e.total));
-      },
-    });
+  async uploadPhoto(data: { url: string; order: number }, onProgress?: (p: number) => void) {
+    const response = await apiClient.post(ENDPOINTS.PROFILES.PHOTOS, data);
     return response.data;
   },
 

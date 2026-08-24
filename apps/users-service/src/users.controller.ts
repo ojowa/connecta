@@ -56,6 +56,36 @@ export class UsersController {
     return this.usersService.exportData(userId);
   }
 
+  @Get('me/photos')
+  @ApiOperation({ summary: 'Get profile photos' })
+  getPhotos(@Headers('x-user-id') userId: string) {
+    return this.usersService.getPhotos(userId);
+  }
+
+  @Post('me/photos')
+  @ApiOperation({ summary: 'Add a profile photo' })
+  addPhoto(@Headers('x-user-id') userId: string, @Body() body: any) {
+    return this.usersService.addPhoto(userId, body);
+  }
+
+  @Delete('me/photos/:photoId')
+  @ApiOperation({ summary: 'Delete a profile photo' })
+  deletePhoto(@Headers('x-user-id') userId: string, @Param('photoId') photoId: string) {
+    return this.usersService.deletePhoto(userId, photoId);
+  }
+
+  @Put('me/photos/order')
+  @ApiOperation({ summary: 'Reorder photos' })
+  reorderPhotos(@Headers('x-user-id') userId: string, @Body() body: any) {
+    return this.usersService.reorderPhotos(userId, body.orders);
+  }
+
+  @Put('me/photos/:photoId/primary')
+  @ApiOperation({ summary: 'Set primary photo' })
+  setPrimaryPhoto(@Headers('x-user-id') userId: string, @Param('photoId') photoId: string) {
+    return this.usersService.setPrimaryPhoto(userId, photoId);
+  }
+
   @Get(':id')
   @ApiOperation({ summary: 'Get public profile' })
   getUser(@Param('id') id: string, @Headers('x-user-id') viewerId: string) {
