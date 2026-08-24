@@ -15,6 +15,7 @@ interface SwipeableCardProps {
   profile: Profile;
   onSwipeLeft: () => void;
   onSwipeRight: () => void;
+  style?: any;
 }
 
 const calculateAge = (dateOfBirth: string): number => {
@@ -26,7 +27,7 @@ const calculateAge = (dateOfBirth: string): number => {
   return age;
 };
 
-export const SwipeableCard: React.FC<SwipeableCardProps> = ({ profile, onSwipeLeft, onSwipeRight }) => {
+export const SwipeableCard: React.FC<SwipeableCardProps> = ({ profile, onSwipeLeft, onSwipeRight, style }) => {
   const { width: screenWidth } = useWindowDimensions();
   const translateX = useSharedValue(0);
   const translateY = useSharedValue(0);
@@ -62,7 +63,7 @@ export const SwipeableCard: React.FC<SwipeableCardProps> = ({ profile, onSwipeLe
 
   return (
     <GestureDetector gesture={panGesture}>
-      <Animated.View style={[styles.card, { width: screenWidth - 32, height: (screenWidth - 32) * 1.2 }, animatedStyle]}>
+      <Animated.View style={[styles.card, { width: screenWidth - 32, height: (screenWidth - 32) * 1.2 }, style, animatedStyle]}>
         {primaryPhoto && <Image source={{ uri: primaryPhoto.url }} style={styles.image} />}
         <View style={styles.info}>
           <View style={styles.topRow}>

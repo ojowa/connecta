@@ -38,16 +38,17 @@ export const DiscoverScreen: React.FC = () => {
   return (
     <SafeAreaView style={styles.safeArea}>
       <View style={styles.container}>
-      <View style={styles.cards}>
-        {profiles.map((item: any, index: number) => (
-          <SwipeableCard
-            key={item.user?.id || index}
-            profile={item.profile}
-            onSwipeLeft={() => passMutation.mutate(item.user.id)}
-            onSwipeRight={() => likeMutation.mutate(item.user.id)}
-          />
-        ))}
-      </View>
+        <View style={styles.cards}>
+          {profiles.slice(0, 2).map((item: any, index: number) => (
+            <SwipeableCard
+              key={item.user?.id || index}
+              profile={item.profile}
+              onSwipeLeft={() => passMutation.mutate(item.user.id)}
+              onSwipeRight={() => likeMutation.mutate(item.user.id)}
+              style={index === 1 ? styles.secondCard : undefined}
+            />
+          ))}
+        </View>
       </View>
     </SafeAreaView>
   );
@@ -56,7 +57,8 @@ export const DiscoverScreen: React.FC = () => {
 const styles = StyleSheet.create({
   safeArea: { flex: 1, backgroundColor: colors.background },
   container: { flex: 1, backgroundColor: colors.background, alignItems: 'center', justifyContent: 'center' },
-  cards: { alignItems: 'center' },
+  cards: { alignItems: 'center', width: '100%', height: '100%', position: 'relative' },
+  secondCard: { position: 'absolute', top: 16, opacity: 0.7, transform: [{ scale: 0.95 }], zIndex: 0 },
   empty: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: spacing.xl },
   emptyText: { ...typography.h3, marginBottom: spacing.xs },
   emptySubtext: { ...typography.body, color: colors.textSecondary },
