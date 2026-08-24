@@ -50,7 +50,7 @@ export const DiscoverScreen: React.FC = () => {
 
 const styles = StyleSheet.create({
   safeArea: { flex: 1, backgroundColor: colors.background },
-  container: { flex: 1, backgroundColor: colors.background, padding: spacing.md },
+  container: { flex: 1, backgroundColor: colors.background, padding: spacing.md, paddingBottom: 70 },
   empty: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: spacing.xl },
   emptyText: { ...typography.h3, marginBottom: spacing.xs },
   emptySubtext: { ...typography.body, color: colors.textSecondary },
