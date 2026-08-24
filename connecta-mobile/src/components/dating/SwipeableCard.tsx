@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, Image, StyleSheet, Dimensions } from 'react-native';
+import { View, Text, Image, StyleSheet, useWindowDimensions } from 'react-native';
 import Animated, { useAnimatedStyle, useSharedValue, withSpring } from 'react-native-reanimated';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import { colors } from '../../theme/colors';
@@ -17,9 +17,6 @@ interface SwipeableCardProps {
   onSwipeRight: () => void;
 }
 
-const SCREEN_WIDTH = Dimensions.get('window').width;
-const SWIPE_THRESHOLD = SCREEN_WIDTH * 0.3;
-
 const calculateAge = (dateOfBirth: string): number => {
   const birth = new Date(dateOfBirth);
   const today = new Date();
@@ -30,8 +27,10 @@ const calculateAge = (dateOfBirth: string): number => {
 };
 
 export const SwipeableCard: React.FC<SwipeableCardProps> = ({ profile, onSwipeLeft, onSwipeRight }) => {
+  const { width: screenWidth } = useWindowDimensions();
   const translateX = useSharedValue(0);
   const translateY = useSharedValue(0);
+  const SWIPE_THRESHOLD = screenWidth * 0.3;
 
   const panGesture = Gesture.Pan()
     .onUpdate((e) => {
@@ -41,11 +40,11 @@ export const SwipeableCard: React.FC<SwipeableCardProps> = ({ profile, onSwipeLe
     .onEnd((e) => {
       if (e.translationX > SWIPE_THRESHOLD) {
         impactMedium();
-        translateX.value = withSpring(SCREEN_WIDTH * 1.5);
+        translateX.value = withSpring(screenWidth * 1.5);
         onSwipeRight();
       } else if (e.translationX < -SWIPE_THRESHOLD) {
         impactMedium();
-        translateX.value = withSpring(-SCREEN_WIDTH * 1.5);
+        translateX.value = withSpring(-screenWidth * 1.5);
         onSwipeLeft();
       } else {
         translateX.value = withSpring(0);
@@ -54,7 +53,7 @@ export const SwipeableCard: React.FC<SwipeableCardProps> = ({ profile, onSwipeLe
     });
 
   const animatedStyle = useAnimatedStyle(() => ({
-    transform: [{ translateX: translateX.value }, { translateY: translateY.value }, { rotate: `${(translateX.value / SCREEN_WIDTH) * 15}deg` }],
+    transform: [{ translateX: translateX.value }, { translateY: translateY.value }, { rotate: `${(translateX.value / screenWidth) * 15}deg` }],
   }));
 
   const primaryPhoto = profile.photos.find(p => p.isPrimary) || profile.photos[0];
@@ -63,7 +62,7 @@ export const SwipeableCard: React.FC<SwipeableCardProps> = ({ profile, onSwipeLe
 
   return (
     <GestureDetector gesture={panGesture}>
-      <Animated.View style={[styles.card, animatedStyle]}>
+      <Animated.View style={[styles.card, { width: screenWidth - 32, height: (screenWidth - 32) * 1.2 }, animatedStyle]}>
         {primaryPhoto && <Image source={{ uri: primaryPhoto.url }} style={styles.image} />}
         <View style={styles.info}>
           <View style={styles.topRow}>
@@ -95,7 +94,7 @@ export const SwipeableCard: React.FC<SwipeableCardProps> = ({ profile, onSwipeLe
 };
 
 const styles = StyleSheet.create({
-  card: { width: SCREEN_WIDTH - 32, height: SCREEN_WIDTH * 1.2, borderRadius: borderRadius.card, overflow: 'hidden', backgroundColor: colors.white, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.1, shadowRadius: 8, elevation: 5 },
+  card: { borderRadius: borderRadius.card, overflow: 'hidden', backgroundColor: colors.white, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.1, shadowRadius: 8, elevation: 5 },
   image: { width: '100%', height: '100%', resizeMode: 'cover' },
   info: { position: 'absolute', bottom: 0, left: 0, right: 0, padding: spacing.md, backgroundColor: colors.overlayHeavy },
   topRow: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: spacing.xs },

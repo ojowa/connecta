@@ -1,5 +1,6 @@
 import React, { useState, useCallback } from 'react';
 import { View, Text, StyleSheet, RefreshControl } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useQueryClient } from '@tanstack/react-query';
 import { useMatchFeed, useLike, usePass } from '../../hooks/useMatch';
 import { SwipeableCard } from '../../components/dating/SwipeableCard';
@@ -25,15 +26,18 @@ export const DiscoverScreen: React.FC = () => {
 
   if (profiles.length === 0) {
     return (
-      <View style={styles.empty} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />}>
-        <Text style={styles.emptyText}>No more profiles to show</Text>
-        <Text style={styles.emptySubtext}>Pull to refresh or check back later</Text>
-      </View>
+      <SafeAreaView style={styles.safeArea}>
+        <View style={styles.empty} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />}>
+          <Text style={styles.emptyText}>No more profiles to show</Text>
+          <Text style={styles.emptySubtext}>Pull to refresh or check back later</Text>
+        </View>
+      </SafeAreaView>
     );
   }
 
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={styles.safeArea}>
+      <View style={styles.container}>
       <View style={styles.cards}>
         {profiles.map((item: any, index: number) => (
           <SwipeableCard
@@ -44,11 +48,13 @@ export const DiscoverScreen: React.FC = () => {
           />
         ))}
       </View>
-    </View>
+      </View>
+    </SafeAreaView>
   );
 };
 
 const styles = StyleSheet.create({
+  safeArea: { flex: 1, backgroundColor: colors.background },
   container: { flex: 1, backgroundColor: colors.background, alignItems: 'center', justifyContent: 'center' },
   cards: { alignItems: 'center' },
   empty: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: spacing.xl },

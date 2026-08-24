@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, StyleSheet, StatusBar } from 'react-native';
+import { View, StyleSheet, StatusBar, useWindowDimensions } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { Button, Text } from '../../components/common';
@@ -9,7 +9,10 @@ import { spacing } from '../../theme/spacing';
 import { borderRadius } from '../../theme/borderRadius';
 
 const WelcomeScreen: React.FC = () => {
+  const { width: screenWidth } = useWindowDimensions();
   const navigation = useNavigation<any>();
+  const logoSize = Math.min(120, screenWidth * 0.3);
+  const heartSize = Math.min(28, logoSize * 0.23);
 
   return (
     <SafeAreaView style={styles.container}>
@@ -17,13 +20,13 @@ const WelcomeScreen: React.FC = () => {
       <View style={styles.content}>
         <View style={styles.heroArea}>
           <View style={styles.logoContainer}>
-            <View style={styles.logoCircle}>
+            <View style={[styles.logoCircle, { width: logoSize, height: logoSize, borderRadius: logoSize / 2 }]}>
               <View style={styles.heart}>
-                <View style={[styles.heartHalf, styles.heartLeft]} />
-                <View style={[styles.heartHalf, styles.heartRight]} />
+                <View style={[styles.heartHalf, { width: heartSize, height: heartSize, borderRadius: heartSize / 2 }, styles.heartLeft]} />
+                <View style={[styles.heartHalf, { width: heartSize, height: heartSize, borderRadius: heartSize / 2 }, styles.heartRight]} />
               </View>
             </View>
-            <Text variant="h1" style={styles.logoText}>
+            <Text variant="h1" style={[styles.logoText, { fontSize: Math.min(36, screenWidth * 0.09) }]}>
               Connecta
             </Text>
           </View>
@@ -83,9 +86,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   logoCircle: {
-    width: 120,
-    height: 120,
-    borderRadius: 60,
     backgroundColor: colors.primary,
     justifyContent: 'center',
     alignItems: 'center',
@@ -96,9 +96,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   heartHalf: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
     backgroundColor: colors.white,
   },
   heartLeft: {
@@ -109,7 +106,6 @@ const styles = StyleSheet.create({
   },
   logoText: {
     color: colors.primary,
-    fontSize: 36,
     fontWeight: '700',
   },
   textArea: {

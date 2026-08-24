@@ -90,7 +90,7 @@ const styles = StyleSheet.create({
   text: { ...typography.body },
   ownText: { color: colors.white },
   otherText: { color: colors.textPrimary },
-  image: { width: 200, height: 150, borderRadius: borderRadius.sm },
+  image: { width: '100%', height: undefined, aspectRatio: 4/3, borderRadius: borderRadius.sm },
   voiceContainer: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
   voiceIcon: { fontSize: 20 },
   videoContainer: { position: 'relative' },

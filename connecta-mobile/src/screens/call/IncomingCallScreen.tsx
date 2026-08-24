@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ImageBackground } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ImageBackground, useWindowDimensions } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import WebRTCManager from '../../webrtc/WebRTCManager';
 import { colors } from '../../theme/colors';
@@ -20,6 +20,9 @@ interface IncomingCallScreenProps {
 
 export const IncomingCallScreen: React.FC<IncomingCallScreenProps> = ({ navigation, route }) => {
   const { callerName = '', callerAvatar, callType = 'voice' } = route?.params || {};
+  const { width: screenWidth } = useWindowDimensions();
+  const avatarSize = Math.min(120, screenWidth * 0.3);
+  const buttonSize = Math.min(70, screenWidth * 0.18);
 
   const handleDecline = () => {
     WebRTCManager.getInstance().endCall();
@@ -48,12 +51,12 @@ export const IncomingCallScreen: React.FC<IncomingCallScreenProps> = ({ navigati
         <View style={styles.overlay} />
         <View style={styles.content}>
           <View style={styles.avatarContainer}>
-            <View style={styles.avatar}>
+            <View style={[styles.avatar, { width: avatarSize, height: avatarSize, borderRadius: avatarSize / 2 }]}>
               {callerAvatar ? (
                 <ImageBackground
                   source={{ uri: callerAvatar }}
-                  style={styles.avatarImage}
-                  imageStyle={styles.avatarImageInner}
+                  style={[styles.avatarImage, { width: avatarSize, height: avatarSize }]}
+                  imageStyle={[styles.avatarImageInner, { borderRadius: avatarSize / 2 }]}
                 />
               ) : (
                 <Text style={styles.avatarInitial}>{callerName.charAt(0).toUpperCase()}</Text>
@@ -66,14 +69,14 @@ export const IncomingCallScreen: React.FC<IncomingCallScreenProps> = ({ navigati
 
           <View style={styles.actions}>
             <TouchableOpacity style={styles.declineButton} onPress={handleDecline} activeOpacity={0.8}>
-              <View style={[styles.actionIcon, { backgroundColor: colors.error }]}>
+              <View style={[styles.actionIcon, { backgroundColor: colors.error, width: buttonSize, height: buttonSize, borderRadius: buttonSize / 2 }]}>
                 <Text style={styles.actionIconText}>✕</Text>
               </View>
               <Text style={styles.actionLabel}>Decline</Text>
             </TouchableOpacity>
 
             <TouchableOpacity style={styles.acceptButton} onPress={handleAccept} activeOpacity={0.8}>
-              <View style={[styles.actionIcon, { backgroundColor: colors.success }]}>
+              <View style={[styles.actionIcon, { backgroundColor: colors.success, width: buttonSize, height: buttonSize, borderRadius: buttonSize / 2 }]}>
                 <Text style={styles.actionIconText}>📞</Text>
               </View>
               <Text style={styles.actionLabel}>Accept</Text>
@@ -106,20 +109,14 @@ const styles = StyleSheet.create({
     marginBottom: spacing.xl,
   },
   avatar: {
-    width: 120,
-    height: 120,
-    borderRadius: 60,
     backgroundColor: colors.gray600,
     justifyContent: 'center',
     alignItems: 'center',
     overflow: 'hidden',
   },
   avatarImage: {
-    width: 120,
-    height: 120,
   },
   avatarImageInner: {
-    borderRadius: 60,
   },
   avatarInitial: {
     ...typography.h1,
@@ -149,9 +146,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   actionIcon: {
-    width: 70,
-    height: 70,
-    borderRadius: 35,
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: spacing.sm,

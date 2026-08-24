@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, Alert } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { Input } from '../../components/common/Input';
 import { Button } from '../../components/common/Button';
 import { apiClient } from '../../services/api/apiClient';
@@ -21,10 +22,12 @@ export default function EditPhoneScreen({ navigation }: any) {
     finally { setLoading(false); }
   };
   return (
-    <View style={styles.container}>
-      <Input label="Phone Number" placeholder="+234..." value={phone} onChangeText={setPhone} keyboardType="phone-pad" />
-      <Button title="Save" onPress={handleSave} loading={loading} style={styles.btn} />
-    </View>
+    <SafeAreaView style={styles.safeArea}>
+      <View style={styles.container}>
+        <Input label="Phone Number" placeholder="+234..." value={phone} onChangeText={setPhone} keyboardType="phone-pad" />
+        <Button title="Save" onPress={handleSave} loading={loading} style={styles.btn} />
+      </View>
+    </SafeAreaView>
   );
 }
-const styles = StyleSheet.create({ container: { flex: 1, padding: spacing.xl, backgroundColor: colors.white }, btn: { marginTop: spacing.lg } });
+const styles = StyleSheet.create({ safeArea: { flex: 1, backgroundColor: colors.white }, container: { flex: 1, padding: spacing.xl, backgroundColor: colors.white }, btn: { marginTop: spacing.lg } });

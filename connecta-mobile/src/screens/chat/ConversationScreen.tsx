@@ -1,5 +1,5 @@
 import React, { useRef, useCallback, useState, useLayoutEffect } from 'react';
-import { View, StyleSheet, FlatList, KeyboardAvoidingView, Platform, Text, TouchableOpacity } from 'react-native';
+import { View, StyleSheet, FlatList, KeyboardAvoidingView, Platform, Text, TouchableOpacity, useWindowDimensions } from 'react-native';
 import { useMessages, useSendMessage, useDeleteMessage, useReactToMessage } from '../../hooks/useChat';
 import { ChatBubble } from '../../components/chat/ChatBubble';
 import { ChatInput } from '../../components/chat/ChatInput';
@@ -15,6 +15,8 @@ import { apiClient } from '../../services/api/apiClient';
 
 export const ConversationScreen: React.FC<{ route: any; navigation: any }> = ({ route, navigation }) => {
   const { conversationId, otherUserId = '', otherName = 'Chat', otherAvatar } = route.params || {};
+  const { height: screenHeight } = useWindowDimensions();
+  const keyboardOffset = Math.round(screenHeight * 0.1);
   const { data, isLoading } = useMessages(conversationId);
   const sendMessage = useSendMessage();
   const deleteMessage = useDeleteMessage(conversationId);
@@ -82,7 +84,7 @@ export const ConversationScreen: React.FC<{ route: any; navigation: any }> = ({ 
   }, [reactToMessage]);
 
   return (
-    <KeyboardAvoidingView style={styles.container} behavior={Platform.OS === 'ios' ? 'padding' : undefined} keyboardVerticalOffset={90}>
+    <KeyboardAvoidingView style={styles.container} behavior={Platform.OS === 'ios' ? 'padding' : undefined} keyboardVerticalOffset={keyboardOffset}>
       {isLoading ? <LoadingSpinner /> : (
         <FlatList
           ref={flatListRef}

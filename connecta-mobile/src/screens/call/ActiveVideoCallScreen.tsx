@@ -1,5 +1,5 @@
 import React, { useEffect, useCallback, useState } from 'react';
-import { View, Text, StyleSheet, Alert } from 'react-native';
+import { View, Text, StyleSheet, Alert, useWindowDimensions } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { RTCView } from 'react-native-webrtc';
 import { useWebRTC } from '../../hooks/useWebRTC';
@@ -23,7 +23,11 @@ interface ActiveVideoCallScreenProps {
 
 export const ActiveVideoCallScreen: React.FC<ActiveVideoCallScreenProps> = ({ navigation, route }) => {
   const { callerId = '', callerName = '' } = route?.params || {};
+  const { width: screenWidth, height: screenHeight } = useWindowDimensions();
   const [callError, setCallError] = useState<string | null>(null);
+  const pipWidth = Math.min(120, screenWidth * 0.3);
+  const pipHeight = pipWidth * 1.33;
+  const pipBottom = Math.max(120, screenHeight * 0.15);
   const {
     formattedDuration, isMuted, connectionState, localStream, remoteStream,
     startCall, endCall, toggleMute, toggleVideo, switchCamera,
@@ -66,11 +70,11 @@ export const ActiveVideoCallScreen: React.FC<ActiveVideoCallScreenProps> = ({ na
         )}
       </View>
 
-      <View style={styles.localVideoContainer}>
+      <View style={[styles.localVideoContainer, { bottom: pipBottom }]}>
         {localStream ? (
-          <RTCView streamURL={localStream.toURL()} style={styles.localVideo} objectFit="cover" zOrder={1} />
+          <RTCView streamURL={localStream.toURL()} style={[styles.localVideo, { width: pipWidth, height: pipHeight }]} objectFit="cover" zOrder={1} />
         ) : (
-          <View style={styles.localVideo}>
+          <View style={[styles.localVideo, { width: pipWidth, height: pipHeight }]}>
             <Text style={styles.localVideoText}>You</Text>
           </View>
         )}
@@ -95,8 +99,8 @@ const styles = StyleSheet.create({
   remoteVideoContainer: { flex: 1, padding: spacing.sm },
   remoteVideo: { flex: 1, backgroundColor: colors.gray800, borderRadius: borderRadius.card, justifyContent: 'center', alignItems: 'center' },
   remoteVideoText: { ...typography.body, color: colors.whiteOverlaySofter },
-  localVideoContainer: { position: 'absolute', bottom: 120, right: spacing.lg, zIndex: 10 },
-  localVideo: { width: 120, height: 160, backgroundColor: colors.gray700, borderRadius: borderRadius.button, justifyContent: 'center', alignItems: 'center', borderWidth: 2, borderColor: colors.whiteOverlayMedium },
+  localVideoContainer: { position: 'absolute', right: spacing.lg, zIndex: 10 },
+  localVideo: { backgroundColor: colors.gray700, borderRadius: borderRadius.button, justifyContent: 'center', alignItems: 'center', borderWidth: 2, borderColor: colors.whiteOverlayMedium },
   localVideoText: { ...typography.small, color: colors.whiteOverlaySofter },
 });
 

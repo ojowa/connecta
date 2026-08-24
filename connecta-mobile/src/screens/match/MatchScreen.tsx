@@ -6,6 +6,7 @@ import {
   Animated,
   TouchableOpacity,
   SafeAreaView,
+  useWindowDimensions,
 } from 'react-native';
 import { colors } from '../../theme/colors';
 import { typography } from '../../theme/typography';
@@ -28,6 +29,8 @@ interface MatchScreenProps {
 
 const MatchScreen: React.FC<MatchScreenProps> = ({ navigation, route }) => {
   const { matchedUser, conversationId } = route?.params || {};
+  const { width: screenWidth } = useWindowDimensions();
+  const avatarSize = Math.min(100, screenWidth * 0.25);
   const scaleAnim = useRef(new Animated.Value(0)).current;
   const fadeInAnim = useRef(new Animated.Value(0)).current;
 
@@ -75,12 +78,12 @@ const MatchScreen: React.FC<MatchScreenProps> = ({ navigation, route }) => {
         </Animated.Text>
 
         <View style={styles.avatarsContainer}>
-          <View style={[styles.avatar, styles.avatarLeft]}>
+          <View style={[styles.avatar, { width: avatarSize, height: avatarSize, borderRadius: avatarSize / 2 }, styles.avatarLeft]}>
             <Text style={styles.avatarPlaceholder}>
               {matchedUser?.fullName?.charAt(0) || '?'}
             </Text>
           </View>
-          <View style={[styles.avatar, styles.avatarRight]}>
+          <View style={[styles.avatar, { width: avatarSize, height: avatarSize, borderRadius: avatarSize / 2 }, styles.avatarRight]}>
             <Text style={styles.avatarPlaceholder}>You</Text>
           </View>
         </View>
@@ -127,7 +130,6 @@ const styles = StyleSheet.create({
   },
   matchTitle: {
     ...typography.h1,
-    fontSize: 36,
     color: colors.white,
     marginBottom: spacing.xxl,
     textAlign: 'center',
@@ -136,12 +138,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     marginBottom: spacing.xl,
-    height: 120,
   },
   avatar: {
-    width: 100,
-    height: 100,
-    borderRadius: 50,
     backgroundColor: colors.gray300,
     alignItems: 'center',
     justifyContent: 'center',

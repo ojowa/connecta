@@ -9,7 +9,7 @@ import {
   TouchableOpacity,
   RefreshControl,
   Alert,
-  Dimensions,
+  useWindowDimensions,
   Modal,
   TextInput,
 } from 'react-native';
@@ -38,7 +38,6 @@ interface Moment {
 }
 
 const STORY_DURATION_MS = 24 * 60 * 60 * 1000;
-const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
 const useMoments = () =>
   useQuery<Moment[]>({
@@ -273,6 +272,7 @@ const CreateMomentModal: React.FC<{
 };
 
 const MomentsScreen: React.FC = () => {
+  const { width: SCREEN_WIDTH } = useWindowDimensions();
   const user = useAppStore((s) => s.user);
   const queryClient = useQueryClient();
   const { data: moments = [], isLoading, refetch } = useMoments();
@@ -513,7 +513,7 @@ const styles = StyleSheet.create({
     borderColor: colors.border,
   },
   momentCardExpired: { opacity: 0.6 },
-  momentImage: { width: '100%', height: 300 },
+  momentImage: { width: '100%', height: undefined, aspectRatio: 16/9 },
   momentImageExpired: { opacity: 0.4 },
   momentOverlay: { padding: spacing.md },
   momentHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: spacing.sm },
@@ -574,7 +574,7 @@ const styles = StyleSheet.create({
   mediaButtonIcon: { fontSize: 32, marginBottom: spacing.sm },
   mediaButtonText: { ...typography.caption, color: colors.textSecondary },
   previewContainer: { position: 'relative', borderRadius: borderRadius.lg, overflow: 'hidden', marginBottom: spacing.md },
-  previewImage: { width: '100%', height: 250, borderRadius: borderRadius.lg },
+  previewImage: { width: '100%', height: undefined, aspectRatio: 16/9, borderRadius: borderRadius.lg },
   removeMedia: {
     position: 'absolute',
     top: spacing.sm,

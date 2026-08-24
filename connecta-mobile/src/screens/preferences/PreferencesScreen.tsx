@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, Alert } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { Button } from '../../components/common/Button';
 import { apiClient } from '../../services/api/apiClient';
 import { colors } from '../../theme/colors';
@@ -29,7 +30,8 @@ export default function PreferencesScreen({ navigation }: any) {
   };
 
   return (
-    <ScrollView style={styles.container}>
+    <SafeAreaView style={styles.safeArea}>
+      <ScrollView style={styles.container}>
       <View style={styles.content}>
         <Text style={styles.sectionTitle}>Show Me</Text>
         <View style={styles.row}>
@@ -64,11 +66,13 @@ export default function PreferencesScreen({ navigation }: any) {
 
         <Button title="Save" onPress={handleSave} loading={loading} style={styles.saveBtn} />
       </View>
-    </ScrollView>
+        </ScrollView>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
+  safeArea: { flex: 1, backgroundColor: colors.white },
   container: { flex: 1, backgroundColor: colors.white },
   content: { padding: spacing.xl },
   sectionTitle: { ...typography.h3, marginTop: spacing.xl, marginBottom: spacing.md },

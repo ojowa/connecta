@@ -1,5 +1,6 @@
 import React, { useState, useCallback } from 'react';
 import { View, Text, StyleSheet, RefreshControl } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useConversations } from '../../hooks/useChat';
 import { ChatList } from '../../components/chat/ChatList';
 import { LoadingSpinner } from '../../components/common/LoadingSpinner';
@@ -22,7 +23,8 @@ export const ChatsScreen: React.FC = ({ navigation }: any) => {
   const conversations = data?.conversations || [];
 
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={styles.safeArea}>
+      <View style={styles.container}>
       <Text style={styles.title}>Messages</Text>
       {conversations.length === 0 ? (
         <View style={styles.empty} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />}>
@@ -42,11 +44,13 @@ export const ChatsScreen: React.FC = ({ navigation }: any) => {
           }} />
         </View>
       )}
-    </View>
+      </View>
+    </SafeAreaView>
   );
 };
 
 const styles = StyleSheet.create({
+  safeArea: { flex: 1, backgroundColor: colors.white },
   container: { flex: 1, backgroundColor: colors.white },
   title: { ...typography.h2, padding: spacing.md },
   empty: { flex: 1, justifyContent: 'center', alignItems: 'center' },

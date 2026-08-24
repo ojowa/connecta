@@ -3,7 +3,7 @@ import {
   View,
   StyleSheet,
   ScrollView,
-  Dimensions,
+  useWindowDimensions,
   NativeSyntheticEvent,
   NativeScrollEvent,
 } from 'react-native';
@@ -12,8 +12,6 @@ import { Button, Text } from '../../components/common';
 import { colors } from '../../theme/colors';
 import { spacing } from '../../theme/spacing';
 import { borderRadius } from '../../theme/borderRadius';
-
-const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
 interface OnboardingStep {
   id: number;
@@ -44,20 +42,21 @@ const steps: OnboardingStep[] = [
 ];
 
 const OnboardingFlow: React.FC = () => {
+  const { width: screenWidth } = useWindowDimensions();
   const navigation = useNavigation<any>();
   const scrollViewRef = useRef<ScrollView>(null);
   const [currentPage, setCurrentPage] = useState(0);
 
   const handleScroll = (event: NativeSyntheticEvent<NativeScrollEvent>) => {
     const contentOffsetX = event.nativeEvent.contentOffset.x;
-    const page = Math.round(contentOffsetX / SCREEN_WIDTH);
+    const page = Math.round(contentOffsetX / screenWidth);
     setCurrentPage(page);
   };
 
   const handleNext = () => {
     if (currentPage < steps.length - 1) {
       scrollViewRef.current?.scrollTo({
-        x: (currentPage + 1) * SCREEN_WIDTH,
+        x: (currentPage + 1) * screenWidth,
         animated: true,
       });
     } else {
@@ -76,13 +75,13 @@ const OnboardingFlow: React.FC = () => {
         scrollEventThrottle={16}
       >
         {steps.map((step) => (
-          <View key={step.id} style={styles.page}>
+          <View key={step.id} style={[styles.page, { width: screenWidth }]}>
             <View style={styles.iconContainer}>
-              <View style={[styles.circle, { backgroundColor: step.color }]}>
+              <View style={[styles.circle, { backgroundColor: step.color, width: Math.min(160, screenWidth * 0.4), height: Math.min(160, screenWidth * 0.4), borderRadius: Math.min(80, screenWidth * 0.2) }]}>
                 <View style={styles.circleInner}>
-                  <View style={[styles.dot, { backgroundColor: colors.white }]} />
-                  <View style={[styles.dot, { backgroundColor: colors.white }]} />
-                  <View style={[styles.dot, { backgroundColor: colors.white }]} />
+                  <View style={[styles.dot, { backgroundColor: colors.white, width: Math.min(12, screenWidth * 0.03), height: Math.min(12, screenWidth * 0.03), borderRadius: Math.min(6, screenWidth * 0.015) }]} />
+                  <View style={[styles.dot, { backgroundColor: colors.white, width: Math.min(12, screenWidth * 0.03), height: Math.min(12, screenWidth * 0.03), borderRadius: Math.min(6, screenWidth * 0.015) }]} />
+                  <View style={[styles.dot, { backgroundColor: colors.white, width: Math.min(12, screenWidth * 0.03), height: Math.min(12, screenWidth * 0.03), borderRadius: Math.min(6, screenWidth * 0.015) }]} />
                 </View>
               </View>
             </View>
@@ -128,7 +127,6 @@ const styles = StyleSheet.create({
     backgroundColor: colors.background,
   },
   page: {
-    width: SCREEN_WIDTH,
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
@@ -149,9 +147,7 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
   },
   dot: {
-    width: 12,
-    height: 12,
-    borderRadius: 6,
+    backgroundColor: colors.white,
   },
   textContainer: {
     alignItems: 'center',

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, TextInput, StyleSheet, TouchableOpacity, Alert, ScrollView } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { apiClient } from '../../services/api/apiClient';
 import { useAppStore } from '../../store';
 import { colors } from '../../theme/colors';
@@ -59,7 +60,8 @@ export default function PassportScreen({ navigation }: any) {
   };
 
   return (
-    <ScrollView style={styles.container}>
+    <SafeAreaView style={styles.safeArea}>
+      <ScrollView style={styles.container}>
       <View style={styles.content}>
         <View style={styles.premiumBadge}>
           <Text style={styles.premiumText}>PREMIUM</Text>
@@ -109,11 +111,13 @@ export default function PassportScreen({ navigation }: any) {
           <Text style={styles.saveButtonText}>{loading ? 'Saving...' : 'Save Passport'}</Text>
         </TouchableOpacity>
       </View>
-    </ScrollView>
+        </ScrollView>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
+  safeArea: { flex: 1, backgroundColor: colors.white },
   container: { flex: 1, backgroundColor: colors.white },
   content: { padding: spacing.xl },
   premiumBadge: {

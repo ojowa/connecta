@@ -49,6 +49,6 @@ const styles = StyleSheet.create({
   title: { ...typography.h1, textAlign: 'center', marginBottom: spacing.xs },
   subtitle: { ...typography.body, color: colors.textSecondary, textAlign: 'center', marginBottom: spacing.xl },
   otpContainer: { flexDirection: 'row', justifyContent: 'center', gap: spacing.sm, marginBottom: spacing.lg },
-  otpInput: { width: 48, height: 56, borderWidth: 1, borderColor: colors.border, borderRadius: borderRadius.md, textAlign: 'center', ...typography.h2 },
+  otpInput: { flex: 1, maxWidth: 56, height: 56, borderWidth: 1, borderColor: colors.border, borderRadius: borderRadius.md, textAlign: 'center', ...typography.h2 },
   error: { ...typography.caption, color: colors.error, textAlign: 'center', marginBottom: spacing.md },
 });

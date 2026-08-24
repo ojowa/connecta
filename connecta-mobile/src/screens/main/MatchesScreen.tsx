@@ -1,5 +1,6 @@
 import React, { useState, useCallback } from 'react';
 import { View, Text, StyleSheet, FlatList, RefreshControl, TouchableOpacity } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { useMatches } from '../../hooks/useMatch';
 import { MatchCard } from '../../components/dating/MatchCard';
@@ -25,7 +26,8 @@ export const MatchesScreen: React.FC = () => {
   const matches = data?.matches || [];
 
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={styles.safeArea}>
+      <View style={styles.container}>
       <Text style={styles.title}>Matches</Text>
       <TouchableOpacity style={styles.likesButton} onPress={() => navigation.navigate('LikesYou')}>
         <Text style={styles.likesButtonText}>See Who Likes You</Text>
@@ -46,11 +48,13 @@ export const MatchesScreen: React.FC = () => {
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />}
         />
       )}
-    </View>
+      </View>
+    </SafeAreaView>
   );
 };
 
 const styles = StyleSheet.create({
+  safeArea: { flex: 1, backgroundColor: colors.white },
   container: { flex: 1, backgroundColor: colors.white },
   title: { ...typography.h2, padding: spacing.md },
   likesButton: {
