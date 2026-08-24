@@ -20,7 +20,7 @@ export const MatchesScreen: React.FC = () => {
   }, [refetch]);
 
   if (isLoading) return <LoadingSpinner />;
-  const matches = data?.data?.data || [];
+  const matches = data?.matches || [];
 
   return (
     <View style={styles.container}>

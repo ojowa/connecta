@@ -40,8 +40,8 @@ export class MatchingController {
 
   @Get('matches')
   @ApiOperation({ summary: 'Get matches' })
-  getMatches(@Headers('x-user-id') userId: string, @Query('page') page?: number, @Query('limit') limit?: number) {
-    return this.matchingService.getMatches(userId, page, limit);
+  getMatches(@Headers('x-user-id') userId: string, @Query('page') page?: string, @Query('limit') limit?: string) {
+    return this.matchingService.getMatches(userId, page ? parseInt(page, 10) : 1, limit ? parseInt(limit, 10) : 20);
   }
 
   @Delete('matches/:matchId')
@@ -52,8 +52,8 @@ export class MatchingController {
 
   @Get('liked-you')
   @ApiOperation({ summary: 'Get users who liked you' })
-  getLikedYou(@Headers('x-user-id') userId: string, @Query('page') page?: number, @Query('limit') limit?: number) {
-    return this.matchingService.getLikedYou(userId, page, limit);
+  getLikedYou(@Headers('x-user-id') userId: string, @Query('page') page?: string, @Query('limit') limit?: string) {
+    return this.matchingService.getLikedYou(userId, page ? parseInt(page, 10) : 1, limit ? parseInt(limit, 10) : 20);
   }
 
   @Get('compatibility/:userId')

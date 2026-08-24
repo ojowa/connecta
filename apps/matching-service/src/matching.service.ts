@@ -179,7 +179,39 @@ export class MatchingService {
       skip: (page - 1) * limit,
       take: limit,
     });
-    return { matches, meta: { page, limit, total, hasMore: total > page * limit } };
+
+    const otherUserIds = matches.map((m) => m.user1Id === userId ? m.user2Id : m.user1Id);
+    const otherUsers = otherUserIds.length > 0 ? await this.userRepo.find({ where: { id: In(otherUserIds) } }) : [];
+    const userMap = new Map(otherUsers.map((u) => [u.id, u]));
+
+    const otherProfiles = otherUserIds.length > 0 ? await this.profileRepo.find({ where: { userId: In(otherUserIds) } }) : [];
+    const profileMap = new Map(otherProfiles.map((p) => [p.userId, p]));
+    const profileIds = otherProfiles.map((p) => p.id);
+    const photos = profileIds.length > 0 ? await this.photoRepo.find({ where: { profileId: In(profileIds) }, order: { order: 'ASC' } }) : [];
+    const photoMap = new Map<string, Photo[]>();
+    for (const photo of photos) {
+      const list = photoMap.get(photo.profileId) || [];
+      list.push(photo);
+      photoMap.set(photo.profileId, list);
+    }
+
+    return {
+      matches: matches.map((m) => {
+        const otherId = m.user1Id === userId ? m.user2Id : m.user1Id;
+        const otherUser = userMap.get(otherId);
+        const profile = profileMap.get(otherId);
+        const profilePhotos = profile ? (photoMap.get(profile.id) || []) : [];
+        return {
+          ...m,
+          otherUser: otherUser ? {
+            id: otherUser.id,
+            fullName: otherUser.fullName,
+            photos: profilePhotos.map((p) => ({ id: p.id, url: p.url, isPrimary: p.isPrimary, order: p.order })),
+          } : null,
+        };
+      }),
+      meta: { page, limit, total, hasMore: total > page * limit },
+    };
   }
 
   async unmatch(userId: string, matchId: string) {
@@ -197,7 +229,37 @@ export class MatchingService {
       skip: (page - 1) * limit,
       take: limit,
     });
-    return { likes, meta: { page, limit, total, hasMore: total > page * limit } };
+
+    const likerIds = likes.map((l) => l.userId);
+    const likers = likerIds.length > 0 ? await this.userRepo.find({ where: { id: In(likerIds) } }) : [];
+    const userMap = new Map(likers.map((u) => [u.id, u]));
+    const profiles = likerIds.length > 0 ? await this.profileRepo.find({ where: { userId: In(likerIds) } }) : [];
+    const profileMap = new Map(profiles.map((p) => [p.userId, p]));
+    const profileIds = profiles.map((p) => p.id);
+    const photos = profileIds.length > 0 ? await this.photoRepo.find({ where: { profileId: In(profileIds) }, order: { order: 'ASC' } }) : [];
+    const photoMap = new Map<string, Photo[]>();
+    for (const photo of photos) {
+      const list = photoMap.get(photo.profileId) || [];
+      list.push(photo);
+      photoMap.set(photo.profileId, list);
+    }
+
+    return {
+      likes: likes.map((l) => {
+        const user = userMap.get(l.userId);
+        const profile = profileMap.get(l.userId);
+        const profilePhotos = profile ? (photoMap.get(profile.id) || []) : [];
+        return {
+          ...l,
+          user: user ? {
+            id: user.id,
+            fullName: user.fullName,
+            photos: profilePhotos.map((p) => ({ id: p.id, url: p.url, isPrimary: p.isPrimary, order: p.order })),
+          } : null,
+        };
+      }),
+      meta: { page, limit, total, hasMore: total > page * limit },
+    };
   }
 
   async getCompatibility(userId: string, targetUserId: string) {
