@@ -88,7 +88,7 @@ export const ConversationScreen: React.FC<{ route: any; navigation: any }> = ({ 
       {isLoading ? <LoadingSpinner /> : (
         <FlatList
           ref={flatListRef}
-          data={[...messages].reverse()}
+          data={messages}
           keyExtractor={(item: Message) => item.id}
           renderItem={({ item }) => (
             <ChatBubble
