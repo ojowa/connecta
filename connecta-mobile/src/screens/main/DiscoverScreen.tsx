@@ -21,7 +21,7 @@ export const DiscoverScreen: React.FC = () => {
   }, [refetch]);
 
   if (isLoading) return <LoadingSpinner />;
-  const profiles = data?.data?.data || [];
+  const profiles = data?.candidates || [];
 
   if (profiles.length === 0) {
     return (

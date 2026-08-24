@@ -10,8 +10,8 @@ export class MatchingController {
 
   @Get('feed')
   @ApiOperation({ summary: 'Get discovery feed' })
-  getFeed(@Headers('x-user-id') userId: string, @Query('page') page?: number, @Query('limit') limit?: number) {
-    return this.matchingService.getFeed(userId, page, limit);
+  getFeed(@Headers('x-user-id') userId: string, @Query('page') page?: string, @Query('limit') limit?: string) {
+    return this.matchingService.getFeed(userId, page ? parseInt(page, 10) : 1, limit ? parseInt(limit, 10) : 20);
   }
 
   @Post('like/:userId')

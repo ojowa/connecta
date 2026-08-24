@@ -6,17 +6,22 @@ export interface Profile {
   firstName: string;
   lastName?: string;
   bio?: string;
+  dateOfBirth?: string;
+  gender?: string;
   jobTitle?: string;
   company?: string;
   school?: string;
   city?: string;
   country?: string;
   relationshipGoal?: string;
+  verified?: boolean;
+  completionPercentage?: number;
   photos: Photo[];
   interests: Interest[];
   latitude?: number;
   longitude?: number;
   createdAt: string;
+  updatedAt?: string;
 }
 
 export interface Photo {
@@ -46,7 +51,7 @@ export interface Match {
 export interface MatchFeedItem {
   user: User;
   profile: Profile;
-  compatibilityScore: number;
+  compatibilityScore?: number;
   distance?: number;
 }
 

@@ -81,7 +81,7 @@ export const SwipeableCard: React.FC<SwipeableCardProps> = ({ profile, onSwipeLe
           {profile.interests && profile.interests.length > 0 && (
             <View style={styles.interestsRow}>
               {profile.interests.slice(0, 4).map((interest, i) => (
-                <InterestTag key={i} label={interest} />
+                <InterestTag key={i} label={interest.name} />
               ))}
               {profile.interests.length > 4 && (
                 <Text style={styles.moreInterests}>+{profile.interests.length - 4}</Text>
