@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, Text, Image, StyleSheet, useWindowDimensions } from 'react-native';
-import Animated, { useAnimatedStyle, useSharedValue, withSpring } from 'react-native-reanimated';
+import Animated, { useAnimatedStyle, useSharedValue, withSpring, runOnJS } from 'react-native-reanimated';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import { colors } from '../../theme/colors';
 import { typography } from '../../theme/typography';
@@ -39,13 +39,13 @@ export const SwipeableCard: React.FC<SwipeableCardProps> = ({ profile, onSwipeLe
     })
     .onEnd((e) => {
       if (e.translationX > SWIPE_THRESHOLD) {
-        impactMedium();
+        runOnJS(impactMedium)();
         translateX.value = withSpring(screenWidth * 1.5);
-        onSwipeRight();
+        runOnJS(onSwipeRight)();
       } else if (e.translationX < -SWIPE_THRESHOLD) {
-        impactMedium();
+        runOnJS(impactMedium)();
         translateX.value = withSpring(-screenWidth * 1.5);
-        onSwipeLeft();
+        runOnJS(onSwipeLeft)();
       } else {
         translateX.value = withSpring(0);
         translateY.value = withSpring(0);
