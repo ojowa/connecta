@@ -46,6 +46,7 @@ const CARD_WIDTH_ARGS = '(100% - 16*3) / 2';
 const LikesYouScreen: React.FC = () => {
   const queryClient = useQueryClient();
   const [page, setPage] = useState(1);
+  const [likedUserIds, setLikedUserIds] = useState<Set<string>>(new Set());
 
   const { data, isLoading, refetch, isFetching } = useQuery<LikesYouResponse>({
     queryKey: ['likedYou', page],
@@ -54,7 +55,8 @@ const LikesYouScreen: React.FC = () => {
 
   const likeBackMutation = useMutation({
     mutationFn: (userId: string) => matchApi.like(userId),
-    onSuccess: () => {
+    onSuccess: (_data, userId) => {
+      setLikedUserIds((prev) => new Set(prev).add(userId));
       queryClient.invalidateQueries({ queryKey: ['likedYou'] });
       queryClient.invalidateQueries({ queryKey: ['matches'] });
     },
@@ -85,7 +87,7 @@ const LikesYouScreen: React.FC = () => {
   const renderCard = useCallback(
     ({ item }: { item: LikeYouItem }) => {
       const photoUrl = getPrimaryPhoto(item.user.photos);
-      const likedBack = likeBackMutation.isPending && likeBackMutation.variables === item.user.id;
+      const likedBack = likedUserIds.has(item.user.id);
 
       return (
         <View style={styles.card}>
@@ -136,7 +138,7 @@ const LikesYouScreen: React.FC = () => {
         </View>
       );
     },
-    [likeBackMutation]
+    [likedUserIds]
   );
 
   if (isLoading) return <LoadingSpinner message="Loading likes..." />;
