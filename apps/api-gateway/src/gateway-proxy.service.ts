@@ -64,11 +64,21 @@ export class GatewayProxyService {
           timeout: 15000,
         }),
       );
-      return response.data;
+      return {
+        success: true,
+        data: response.data,
+        timestamp: new Date().toISOString(),
+        requestId: (req as any).requestId || '',
+      };
     } catch (error: any) {
       this.logger.error(`Proxy error for ${service.name}: ${error.message}`);
       if (error.response) {
-        return error.response.data;
+        return {
+          success: false,
+          data: error.response.data,
+          timestamp: new Date().toISOString(),
+          requestId: (req as any).requestId || '',
+        };
       }
       throw new ServiceUnavailableException(`Service ${service.name} is unavailable`);
     }
