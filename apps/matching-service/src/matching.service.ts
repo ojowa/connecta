@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Repository, In } from 'typeorm';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { User, Profile, Like, Pass, Match, DailyLike, Photo, UserPreference, Block, Interest, ProfileInterest } from '@app/common/entities';
 
@@ -24,14 +24,48 @@ export class MatchingService {
   async getFeed(userId: string, page = 1, limit = 20) {
     const user = await this.userRepo.findOne({ where: { id: userId } });
     if (!user) throw new NotFoundException('User not found');
+
     const likedIds = (await this.likeRepo.find({ where: { userId } })).map((l) => l.likedUserId);
     const passedIds = (await this.passRepo.find({ where: { userId } })).map((p) => p.passedUserId);
     const blockedByMe = (await this.blockRepo.find({ where: { blockerId: userId } })).map((b) => b.blockedId);
     const blockedMe = (await this.blockRepo.find({ where: { blockedId: userId } })).map((b) => b.blockerId);
     const excludeIds = [userId, ...likedIds, ...passedIds, ...blockedByMe, ...blockedMe];
-    const qb = this.userRepo.createQueryBuilder('u').leftJoinAndSelect('u.profile', 'p').leftJoinAndSelect('u.photos', 'ph').where('u.id NOT IN (:...excludeIds)', { excludeIds }).andWhere('u.status = :status', { status: 'active' });
-    const users = await qb.skip((page - 1) * limit).take(limit).getMany();
-    return { candidates: users.map((u) => ({ id: u.id, fullName: u.fullName, dateOfBirth: u.dateOfBirth, gender: u.gender, profile: (u as any).profile || null, photos: (u as any).photos || [] })), meta: { page, limit, hasMore: users.length === limit } };
+
+    const users = await this.userRepo
+      .createQueryBuilder('u')
+      .where('u.id NOT IN (:...excludeIds)', { excludeIds })
+      .andWhere('u.status = :status', { status: 'active' })
+      .skip((page - 1) * limit)
+      .take(limit)
+      .getMany();
+
+    const userIds = users.map((u) => u.id);
+    const profiles = await this.profileRepo.find({ where: { userId: In(userIds) } });
+    const profileIds = profiles.map((p) => p.id);
+    const photos = profileIds.length > 0 ? await this.photoRepo.find({ where: { profileId: In(profileIds) }, order: { order: 'ASC' } }) : [];
+
+    const profileMap = new Map(profiles.map((p) => [p.userId, p]));
+    const photoMap = new Map<string, Photo[]>();
+    for (const photo of photos) {
+      const list = photoMap.get(photo.profileId) || [];
+      list.push(photo);
+      photoMap.set(photo.profileId, list);
+    }
+
+    return {
+      candidates: users.map((u) => {
+        const profile = profileMap.get(u.id);
+        return {
+          id: u.id,
+          fullName: u.fullName,
+          dateOfBirth: u.dateOfBirth,
+          gender: u.gender,
+          profile: profile || null,
+          photos: profile ? (photoMap.get(profile.id) || []) : [],
+        };
+      }),
+      meta: { page, limit, hasMore: users.length === limit },
+    };
   }
 
   async like(likerId: string, likedId: string) {

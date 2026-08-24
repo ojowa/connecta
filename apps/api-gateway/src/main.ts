@@ -7,6 +7,7 @@ import { AppModule } from './app.module';
 import { GatewayExceptionFilter } from './filters/gateway-exception.filter';
 import { RequestIdMiddleware } from './middleware/request-id.middleware';
 import { DeviceInfoMiddleware } from './middleware/device-info.middleware';
+import { AuthMiddleware } from './middleware/auth.middleware';
 import { RequestLoggingInterceptor } from './interceptors/request-logging.interceptor';
 import { TimeoutInterceptor } from './interceptors/timeout.interceptor';
 import { ResponseTransformInterceptor } from './interceptors/response-transform.interceptor';
@@ -40,6 +41,8 @@ async function bootstrap() {
   app.use(requestId.use.bind(requestId));
   const deviceInfo = new DeviceInfoMiddleware();
   app.use(deviceInfo.use.bind(deviceInfo));
+  const authMiddleware = new AuthMiddleware();
+  app.use(authMiddleware.use.bind(authMiddleware));
 
   app.enableCors({
     origin: process.env.CORS_ORIGIN || '*',

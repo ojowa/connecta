@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Delete, Body, Param, Req } from '@nestjs/common';
+import { Controller, Get, Post, Delete, Body, Param, Req, Headers } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { Request } from 'express';
 import { AuthService } from './auth.service';
@@ -41,30 +41,28 @@ export class AuthController {
   @Post('logout')
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Logout and revoke tokens' })
-  async logout(@Body('_userId') userId: string, @Body() body: any) {
+  async logout(@Headers('x-user-id') userId: string, @Body() body: any) {
     return this.authService.logout({ userId, ...body });
   }
 
   @Get('devices')
   @ApiBearerAuth()
   @ApiOperation({ summary: 'List registered devices' })
-  getDevices(@Req() req: Request) {
-    const userId = (req.body as any)?._userId || (req.headers as any)['x-user-id'];
+  getDevices(@Headers('x-user-id') userId: string) {
     return this.authService.getDevices(userId);
   }
 
   @Delete('devices/:deviceId')
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Revoke a device session' })
-  revokeDevice(@Req() req: Request, @Param('deviceId') deviceId: string) {
-    const userId = (req.body as any)?._userId || (req.headers as any)['x-user-id'];
+  revokeDevice(@Headers('x-user-id') userId: string, @Param('deviceId') deviceId: string) {
     return this.authService.revokeDevice(userId, deviceId);
   }
 
   @Post('biometric/register')
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Register biometric authentication' })
-  registerBiometric(@Body('_userId') userId: string, @Body() body: any) {
+  registerBiometric(@Headers('x-user-id') userId: string, @Body() body: any) {
     return this.authService.registerBiometric(userId, body);
   }
 
@@ -77,7 +75,7 @@ export class AuthController {
   @Delete('biometric/:biometricId')
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Remove biometric authentication' })
-  removeBiometric(@Body('_userId') userId: string, @Param('biometricId') biometricId: string) {
+  removeBiometric(@Headers('x-user-id') userId: string, @Param('biometricId') biometricId: string) {
     return this.authService.removeBiometric(userId, biometricId);
   }
 
@@ -96,14 +94,14 @@ export class AuthController {
   @Get('2fa/settings')
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Get 2FA settings' })
-  get2FASettings(@Body('_userId') userId: string) {
+  get2FASettings(@Headers('x-user-id') userId: string) {
     return this.authService.get2FASettings(userId);
   }
 
   @Post('2fa/toggle')
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Enable or disable 2FA' })
-  toggle2FA(@Body('_userId') userId: string, @Body() body: any) {
+  toggle2FA(@Headers('x-user-id') userId: string, @Body() body: any) {
     return this.authService.toggle2FA(userId, body);
   }
 }

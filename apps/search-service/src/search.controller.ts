@@ -1,4 +1,4 @@
-import { Controller, Get, Query, Body } from '@nestjs/common';
+import { Controller, Get, Query, Headers } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { SearchService } from './search.service';
 
@@ -10,13 +10,13 @@ export class SearchController {
 
   @Get('users')
   @ApiOperation({ summary: 'Search users' })
-  search(@Body('_userId') userId: string, @Query('q') query: string, @Query('page') page?: number, @Query('limit') limit?: number) {
+  search(@Headers('x-user-id') userId: string, @Query('q') query: string, @Query('page') page?: number, @Query('limit') limit?: number) {
     return this.searchService.searchUsers(userId, query, page, limit);
   }
 
   @Get('autocomplete')
   @ApiOperation({ summary: 'Autocomplete' })
-  autocomplete(@Body('_userId') userId: string, @Query('q') query: string) {
+  autocomplete(@Headers('x-user-id') userId: string, @Query('q') query: string) {
     return this.searchService.autocomplete(userId, query);
   }
 }

@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Delete, Body, Param } from '@nestjs/common';
+import { Controller, Get, Post, Delete, Body, Param, Headers } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { MediaService } from './media.service';
 
@@ -10,13 +10,13 @@ export class MediaController {
 
   @Post('upload')
   @ApiOperation({ summary: 'Upload file' })
-  upload(@Body('_userId') userId: string, @Body() body: any) {
+  upload(@Headers('x-user-id') userId: string, @Body() body: any) {
     return this.mediaService.upload(userId, body);
   }
 
   @Post('presigned-url')
   @ApiOperation({ summary: 'Get presigned URL' })
-  presigned(@Body('_userId') userId: string, @Body() body: any) {
+  presigned(@Headers('x-user-id') userId: string, @Body() body: any) {
     return this.mediaService.getPresignedUrl(userId, body);
   }
 
