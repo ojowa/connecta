@@ -63,7 +63,7 @@ export const SwipeableCard: React.FC<SwipeableCardProps> = ({ profile, onSwipeLe
 
   return (
     <GestureDetector gesture={panGesture}>
-      <Animated.View style={[styles.card, { width: screenWidth - 32, height: (screenWidth - 32) * 1.2 }, style, animatedStyle]}>
+      <Animated.View style={[styles.card, style, animatedStyle]}>
         {primaryPhoto && <Image source={{ uri: primaryPhoto.url }} style={styles.image} />}
         <View style={styles.info}>
           <View style={styles.topRow}>
@@ -95,7 +95,7 @@ export const SwipeableCard: React.FC<SwipeableCardProps> = ({ profile, onSwipeLe
 };
 
 const styles = StyleSheet.create({
-  card: { borderRadius: borderRadius.card, overflow: 'hidden', backgroundColor: colors.white, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.1, shadowRadius: 8, elevation: 5 },
+  card: { flex: 1, borderRadius: borderRadius.card, overflow: 'hidden', backgroundColor: colors.white, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.1, shadowRadius: 8, elevation: 5 },
   image: { width: '100%', height: '100%', resizeMode: 'cover' },
   info: { position: 'absolute', bottom: 0, left: 0, right: 0, padding: spacing.md, backgroundColor: colors.overlayHeavy },
   topRow: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: spacing.xs },
