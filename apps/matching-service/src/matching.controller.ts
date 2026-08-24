@@ -38,6 +38,48 @@ export class MatchingController {
     return this.matchingService.undo(userId);
   }
 
+  @Post('rewind')
+  @ApiOperation({ summary: 'Rewind last 5 actions' })
+  rewind(@Headers('x-user-id') userId: string) {
+    return this.matchingService.rewind(userId);
+  }
+
+  @Post('boost')
+  @ApiOperation({ summary: 'Activate boost' })
+  activateBoost(@Headers('x-user-id') userId: string) {
+    return this.matchingService.activateBoost(userId);
+  }
+
+  @Get('boost')
+  @ApiOperation({ summary: 'Get boost status' })
+  getBoostStatus(@Headers('x-user-id') userId: string) {
+    return this.matchingService.getBoostStatus(userId);
+  }
+
+  @Post('incognito/toggle')
+  @ApiOperation({ summary: 'Toggle incognito mode' })
+  toggleIncognito(@Headers('x-user-id') userId: string) {
+    return this.matchingService.toggleIncognito(userId);
+  }
+
+  @Post('passport')
+  @ApiOperation({ summary: 'Update passport location' })
+  updatePassport(@Headers('x-user-id') userId: string, @Body() body: { latitude: number; longitude: number; enabled: boolean }) {
+    return this.matchingService.updatePassport(userId, body.latitude, body.longitude, body.enabled);
+  }
+
+  @Post('photos/:photoId/like')
+  @ApiOperation({ summary: 'Like a photo' })
+  likePhoto(@Headers('x-user-id') userId: string, @Param('photoId') photoId: string, @Body() body: { profileId: string }) {
+    return this.matchingService.likePhoto(userId, photoId, body.profileId);
+  }
+
+  @Get('photos/stats')
+  @ApiOperation({ summary: 'Get photo like stats' })
+  getPhotoStats(@Headers('x-user-id') userId: string) {
+    return this.matchingService.getPhotoStats(userId);
+  }
+
   @Get('matches')
   @ApiOperation({ summary: 'Get matches' })
   getMatches(@Headers('x-user-id') userId: string, @Query('page') page?: string, @Query('limit') limit?: string) {
@@ -66,5 +108,35 @@ export class MatchingController {
   @ApiOperation({ summary: 'Sync matching data' })
   getSync(@Headers('x-user-id') userId: string, @Query('since') since?: string) {
     return this.matchingService.getSync(userId, since ? parseInt(since, 10) : 0);
+  }
+
+  @Post('moments')
+  @ApiOperation({ summary: 'Create a moment' })
+  createMoment(@Headers('x-user-id') userId: string, @Body() body: { mediaUrl: string; caption?: string; mediaType?: string }) {
+    return this.matchingService.createMoment(userId, body.mediaUrl, body.caption, body.mediaType);
+  }
+
+  @Get('moments/mine')
+  @ApiOperation({ summary: 'Get own moments' })
+  getMyMoments(@Headers('x-user-id') userId: string) {
+    return this.matchingService.getMyMoments(userId);
+  }
+
+  @Get('moments')
+  @ApiOperation({ summary: 'Get moments feed from matches' })
+  getMoments(@Headers('x-user-id') userId: string) {
+    return this.matchingService.getMoments(userId);
+  }
+
+  @Post('moments/:id/view')
+  @ApiOperation({ summary: 'Mark a moment as viewed' })
+  viewMoment(@Headers('x-user-id') userId: string, @Param('id') momentId: string) {
+    return this.matchingService.viewMoment(userId, momentId);
+  }
+
+  @Delete('moments/:id')
+  @ApiOperation({ summary: 'Delete own moment' })
+  deleteMoment(@Headers('x-user-id') userId: string, @Param('id') momentId: string) {
+    return this.matchingService.deleteMoment(userId, momentId);
   }
 }

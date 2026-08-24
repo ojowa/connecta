@@ -1,8 +1,8 @@
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, In } from 'typeorm';
+import { Repository, In, MoreThan } from 'typeorm';
 import { EventEmitter2 } from '@nestjs/event-emitter';
-import { User, Profile, Like, Pass, Match, DailyLike, Photo, UserPreference, Block, Interest, ProfileInterest } from '@app/common/entities';
+import { User, Profile, Like, Pass, Match, DailyLike, Photo, UserPreference, Block, Interest, ProfileInterest, Boost, PhotoLike, Moment, MomentView } from '@app/common/entities';
 
 @Injectable()
 export class MatchingService {
@@ -18,6 +18,10 @@ export class MatchingService {
     @InjectRepository(Block) private blockRepo: Repository<Block>,
     @InjectRepository(Interest) private interestRepo: Repository<Interest>,
     @InjectRepository(ProfileInterest) private profileInterestRepo: Repository<ProfileInterest>,
+    @InjectRepository(Boost) private boostRepo: Repository<Boost>,
+    @InjectRepository(PhotoLike) private photoLikeRepo: Repository<PhotoLike>,
+    @InjectRepository(Moment) private momentRepo: Repository<Moment>,
+    @InjectRepository(MomentView) private momentViewRepo: Repository<MomentView>,
     private readonly eventEmitter: EventEmitter2,
   ) {}
 
@@ -43,16 +47,42 @@ export class MatchingService {
       .where('u.id NOT IN (:...excludeIds)', { excludeIds })
       .andWhere('u.status = :status', { status: 'active' })
       .andWhere('u.dateOfBirth <= :maxDob', { maxDob: maxDobStr })
-      .andWhere('u.dateOfBirth >= :minDob', { minDob: minDobStr });
+      .andWhere('u.dateOfBirth >= :minDob', { minDob: minDobStr })
+      .andWhere('u.incognitoMode = :incognito', { incognito: false });
 
     if (pref?.showMe && pref.showMe !== 'everyone') {
       qb = qb.andWhere('u.gender = :gender', { gender: pref.showMe });
     }
 
+    if (pref?.passportEnabled && pref.passportLatitude != null && pref.passportLongitude != null) {
+      qb = qb.orderBy(
+        `ST_Distance(
+          ST_SetSRID(ST_MakePoint(u.longitude, u.latitude), 4326)::geography,
+          ST_SetSRID(ST_MakePoint(:passportLng, :passportLat), 4326)::geography
+        )`,
+        'ASC',
+      );
+      qb.setParameters({ passportLng: pref.passportLongitude, passportLat: pref.passportLatitude });
+    }
+
+    const activeBoost = await this.boostRepo.findOne({
+      where: { userId, isActive: true, expiresAt: MoreThan(new Date()) },
+    });
+
     const users = await qb.skip((page - 1) * limit).take(limit).getMany();
 
     const userIds = users.map((u) => u.id);
-    const profiles = userIds.length > 0 ? await this.profileRepo.find({ where: { userId: In(userIds) } }) : [];
+    const boostedUserIds = activeBoost
+      ? (await this.boostRepo.find({ where: { isActive: true, expiresAt: MoreThan(new Date()) }, select: ['userId'] })).map((b) => b.userId)
+      : [];
+
+    const sortedUserIds = [...userIds].sort((a, b) => {
+      const aBoosted = boostedUserIds.includes(a) ? 1 : 0;
+      const bBoosted = boostedUserIds.includes(b) ? 1 : 0;
+      return bBoosted - aBoosted;
+    });
+
+    const profiles = sortedUserIds.length > 0 ? await this.profileRepo.find({ where: { userId: In(sortedUserIds) } }) : [];
     const profileIds = profiles.map((p) => p.id);
     const photos = profileIds.length > 0 ? await this.photoRepo.find({ where: { profileId: In(profileIds) }, order: { order: 'ASC' } }) : [];
     const profileInterests = profileIds.length > 0 ? await this.profileInterestRepo.find({ where: { profileId: In(profileIds) } }) : [];
@@ -77,7 +107,8 @@ export class MatchingService {
     }
 
     return {
-      candidates: users.map((u) => {
+      candidates: sortedUserIds.map((uid) => {
+        const u = users.find((usr) => usr.id === uid)!;
         const profile = profileMap.get(u.id);
         const profilePhotos = profile ? (photoMap.get(profile.id) || []) : [];
         const profileInterests = profile ? (interestMap.get(profile.id) || []) : [];
@@ -170,6 +201,139 @@ export class MatchingService {
     }
 
     throw new NotFoundException('No action to undo');
+  }
+
+  async rewind(userId: string) {
+    const lastLikes = await this.likeRepo.find({ where: { userId }, order: { createdAt: 'DESC' }, take: 5 });
+    const lastPasses = await this.passRepo.find({ where: { userId }, order: { createdAt: 'DESC' }, take: 5 });
+
+    if (lastLikes.length === 0 && lastPasses.length === 0) throw new NotFoundException('No actions to rewind');
+
+    const allActions = [
+      ...lastLikes.map((l) => ({ type: 'like' as const, date: l.createdAt, isSuperLike: l.isSuperLike })),
+      ...lastPasses.map((p) => ({ type: 'pass' as const, date: p.createdAt })),
+    ].sort((a, b) => b.date.getTime() - a.date.getTime());
+
+    const actionsToUndo = allActions.slice(0, 5);
+    let likesRemoved = 0;
+    let passesRemoved = 0;
+
+    for (const action of actionsToUndo) {
+      if (action.type === 'like') {
+        const like = lastLikes.find((l) => l.createdAt.getTime() === action.date.getTime());
+        if (like) {
+          await this.likeRepo.remove(like);
+          const dateStr = like.createdAt.toISOString().split('T')[0];
+          if (like.isSuperLike) {
+            await this.dailyLikeRepo.decrement({ userId, date: dateStr } as any, 'superLikesGiven', 1);
+          } else {
+            await this.dailyLikeRepo.decrement({ userId, date: dateStr } as any, 'likesGiven', 1);
+          }
+          likesRemoved++;
+        }
+      } else {
+        const pass = lastPasses.find((p) => p.createdAt.getTime() === action.date.getTime());
+        if (pass) {
+          await this.passRepo.remove(pass);
+          passesRemoved++;
+        }
+      }
+    }
+
+    return { rewound: true, likesRemoved, passesRemoved, total: likesRemoved + passesRemoved };
+  }
+
+  async activateBoost(userId: string) {
+    const existingActive = await this.boostRepo.findOne({
+      where: { userId, isActive: true, expiresAt: MoreThan(new Date()) },
+    });
+    if (existingActive) throw new BadRequestException('Boost is already active');
+
+    const expiresAt = new Date();
+    expiresAt.setMinutes(expiresAt.getMinutes() + 30);
+
+    const boost = this.boostRepo.create({
+      userId,
+      durationMinutes: 30,
+      expiresAt,
+      isActive: true,
+    });
+    await this.boostRepo.save(boost);
+
+    this.eventEmitter.emit('boost.activated', { userId, boostId: boost.id });
+    return { activated: true, expiresAt, boostId: boost.id };
+  }
+
+  async getBoostStatus(userId: string) {
+    const activeBoost = await this.boostRepo.findOne({
+      where: { userId, isActive: true, expiresAt: MoreThan(new Date()) },
+    });
+
+    const totalBoosts = await this.boostRepo.count({ where: { userId } });
+
+    return {
+      activeBoost: activeBoost ? {
+        id: activeBoost.id,
+        expiresAt: activeBoost.expiresAt,
+        viewsGained: activeBoost.viewsGained,
+        likesGained: activeBoost.likesGained,
+      } : null,
+      totalBoosts,
+    };
+  }
+
+  async toggleIncognito(userId: string) {
+    const user = await this.userRepo.findOne({ where: { id: userId } });
+    if (!user) throw new NotFoundException('User not found');
+
+    user.incognitoMode = !user.incognitoMode;
+    await this.userRepo.save(user);
+
+    return { incognitoMode: user.incognitoMode };
+  }
+
+  async updatePassport(userId: string, latitude: number, longitude: number, enabled: boolean) {
+    let pref = await this.prefRepo.findOne({ where: { userId } });
+    if (!pref) {
+      pref = this.prefRepo.create({ userId });
+    }
+
+    pref.passportLatitude = latitude;
+    pref.passportLongitude = longitude;
+    pref.passportEnabled = enabled;
+    await this.prefRepo.save(pref);
+
+    return {
+      passportEnabled: pref.passportEnabled,
+      passportLatitude: pref.passportLatitude,
+      passportLongitude: pref.passportLongitude,
+    };
+  }
+
+  async likePhoto(userId: string, photoId: string, profileId: string) {
+    const existing = await this.photoLikeRepo.findOne({ where: { userId, photoId } });
+    if (existing) throw new BadRequestException('Already liked this photo');
+
+    const photoLike = this.photoLikeRepo.create({ userId, photoId, profileId });
+    await this.photoLikeRepo.save(photoLike);
+
+    return { liked: true, photoId };
+  }
+
+  async getPhotoStats(userId: string) {
+    const photoLikes = await this.photoLikeRepo.find({ where: { userId } });
+
+    const photoCounts = new Map<string, number>();
+    for (const pl of photoLikes) {
+      photoCounts.set(pl.photoId, (photoCounts.get(pl.photoId) || 0) + 1);
+    }
+
+    const totalLikes = photoLikes.length;
+
+    return {
+      totalLikes,
+      photos: Array.from(photoCounts.entries()).map(([photoId, count]) => ({ photoId, count })),
+    };
   }
 
   async getMatches(userId: string, page = 1, limit = 20) {
@@ -301,5 +465,73 @@ export class MatchingService {
 
   async getSync(userId: string, since: number) {
     return { likes: [], passes: [], matches: [] };
+  }
+
+  async createMoment(userId: string, mediaUrl: string, caption?: string, mediaType?: string) {
+    const expiresAt = new Date();
+    expiresAt.setHours(expiresAt.getHours() + 24);
+    const moment = this.momentRepo.create({ userId, mediaUrl, caption, mediaType, expiresAt });
+    return this.momentRepo.save(moment);
+  }
+
+  async getMoments(userId: string) {
+    const matches = await this.matchRepo.find({
+      where: [{ user1Id: userId, isActive: true }, { user2Id: userId, isActive: true }],
+    });
+    const matchUserIds = matches.map((m) => (m.user1Id === userId ? m.user2Id : m.user1Id));
+    if (matchUserIds.length === 0) return [];
+
+    const moments = await this.momentRepo.find({
+      where: { userId: In(matchUserIds), expiresAt: MoreThan(new Date()) },
+      order: { createdAt: 'DESC' },
+    });
+
+    const momentIds = moments.map((m) => m.id);
+
+    const views =
+      momentIds.length > 0
+        ? await this.momentViewRepo.find({ where: { momentId: In(momentIds), viewerId: userId } })
+        : [];
+    const viewedSet = new Set(views.map((v) => v.momentId));
+
+    const userIds = [...new Set(moments.map((m) => m.userId))];
+    const users = userIds.length > 0 ? await this.userRepo.find({ where: { id: In(userIds) } }) : [];
+    const userMap = new Map(users.map((u) => [u.id, u]));
+
+    return moments.map((m) => ({
+      ...m,
+      viewed: viewedSet.has(m.id),
+      user: userMap.get(m.userId) || null,
+    }));
+  }
+
+  async viewMoment(userId: string, momentId: string) {
+    const moment = await this.momentRepo.findOne({ where: { id: momentId } });
+    if (!moment) throw new NotFoundException('Moment not found');
+    if (new Date(moment.expiresAt) <= new Date()) throw new BadRequestException('Moment has expired');
+
+    const existing = await this.momentViewRepo.findOne({ where: { momentId, viewerId: userId } });
+    if (!existing) {
+      const view = this.momentViewRepo.create({ momentId, viewerId: userId });
+      await this.momentViewRepo.save(view);
+      await this.momentRepo.increment({ id: momentId }, 'viewCount', 1);
+    }
+    return { viewed: true };
+  }
+
+  async deleteMoment(userId: string, momentId: string) {
+    const moment = await this.momentRepo.findOne({ where: { id: momentId } });
+    if (!moment) throw new NotFoundException('Moment not found');
+    if (moment.userId !== userId) throw new BadRequestException('Not your moment');
+    await this.momentRepo.remove(moment);
+    return { deleted: true };
+  }
+
+  async getMyMoments(userId: string) {
+    const moments = await this.momentRepo.find({ where: { userId }, order: { createdAt: 'DESC' } });
+    return moments.map((m) => ({
+      ...m,
+      expired: new Date(m.expiresAt) <= new Date(),
+    }));
   }
 }

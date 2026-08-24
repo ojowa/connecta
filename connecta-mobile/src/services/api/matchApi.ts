@@ -48,4 +48,39 @@ export const matchApi = {
     const response = await apiClient.get(ENDPOINTS.MATCHING.COMPATIBILITY(userId));
     return response.data;
   },
+
+  async rewind() {
+    const response = await apiClient.post(ENDPOINTS.MATCHING.REWIND);
+    return response.data;
+  },
+
+  async activateBoost() {
+    const response = await apiClient.post(ENDPOINTS.MATCHING.BOOST);
+    return response.data;
+  },
+
+  async getBoostStatus() {
+    const response = await apiClient.get(ENDPOINTS.MATCHING.BOOST);
+    return response.data;
+  },
+
+  async toggleIncognito() {
+    const response = await apiClient.post(ENDPOINTS.MATCHING.INCOGNITO);
+    return response.data;
+  },
+
+  async updatePassport(latitude: number, longitude: number, enabled: boolean) {
+    const response = await apiClient.post(ENDPOINTS.MATCHING.PASSPORT, { latitude, longitude, enabled });
+    return response.data;
+  },
+
+  async likePhoto(photoId: string, profileId: string) {
+    const response = await apiClient.post(ENDPOINTS.MATCHING.PHOTO_LIKE(photoId), { profileId });
+    return response.data;
+  },
+
+  async getPhotoStats() {
+    const response = await apiClient.get(ENDPOINTS.MATCHING.PHOTO_STATS);
+    return response.data;
+  },
 };

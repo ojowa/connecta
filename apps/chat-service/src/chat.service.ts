@@ -81,7 +81,13 @@ export class ChatService {
   async sendMessage(userId: string, conversationId: string, data: any) {
     const participation = await this.partRepo.findOne({ where: { conversationId, userId } });
     if (!participation) throw new BadRequestException('Not a participant');
-    const message = this.msgRepo.create({ conversationId, senderId: userId, content: data.content, type: data.type || 'text' });
+    const message = this.msgRepo.create({
+      conversationId,
+      senderId: userId,
+      content: data.content,
+      type: data.type || 'text',
+      mediaUrl: ['voice', 'video', 'gif'].includes(data.type) ? data.mediaUrl || data.content : undefined,
+    });
     const saved = await this.msgRepo.save(message);
     await this.partRepo.update({ conversationId, userId: { not: userId } as any }, { unreadCount: () => '"unreadCount" + 1' });
     this.eventEmitter.emit('chat.message_sent', { conversationId, message: saved });
@@ -114,6 +120,22 @@ export class ChatService {
   async sendTyping(userId: string, conversationId: string) {
     this.eventEmitter.emit('chat.typing', { conversationId, userId });
     return { typing: true };
+  }
+
+  async getTypingUsers(conversationId: string) {
+    return { typingUserIds: [] };
+  }
+
+  async markMessageAsRead(userId: string, conversationId: string, messageId: string) {
+    const message = await this.msgRepo.findOne({ where: { id: messageId, conversationId } });
+    if (!message) throw new NotFoundException('Message not found');
+    const existing = await this.readRepo.findOne({ where: { messageId, userId } });
+    if (!existing) {
+      const receipt = this.readRepo.create({ messageId, userId });
+      await this.readRepo.save(receipt);
+    }
+    await this.msgRepo.update({ id: messageId }, { status: 'read' });
+    return { read: true };
   }
 
   async searchMessages(userId: string, query: string, conversationId?: string) {

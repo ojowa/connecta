@@ -31,6 +31,12 @@ import { Media } from './media.entity';
 import { PreKeyBundle } from './pre-key-bundle.entity';
 import { BiometricCredential } from './biometric-credential.entity';
 import { DeviceToken } from './device-token.entity';
+import { Boost } from './boost.entity';
+import { Moment } from './moment.entity';
+import { MomentView } from './moment-view.entity';
+import { ProfilePrompt } from './profile-prompt.entity';
+import { UserPrompt } from './user-prompt.entity';
+import { PhotoLike } from './photo-like.entity';
 
 export { User, UserRole, UserStatus } from './user.entity';
 export { Session } from './session.entity';
@@ -65,6 +71,12 @@ export { Media } from './media.entity';
 export { PreKeyBundle } from './pre-key-bundle.entity';
 export { BiometricCredential } from './biometric-credential.entity';
 export { DeviceToken } from './device-token.entity';
+export { Boost } from './boost.entity';
+export { Moment } from './moment.entity';
+export { MomentView } from './moment-view.entity';
+export { ProfilePrompt } from './profile-prompt.entity';
+export { UserPrompt } from './user-prompt.entity';
+export { PhotoLike } from './photo-like.entity';
 
 export const allEntities = [
   User,
@@ -100,4 +112,10 @@ export const allEntities = [
   PreKeyBundle,
   BiometricCredential,
   DeviceToken,
+  Boost,
+  Moment,
+  MomentView,
+  ProfilePrompt,
+  UserPrompt,
+  PhotoLike,
 ];

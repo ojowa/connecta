@@ -47,6 +47,26 @@ export const ProfileScreen: React.FC = ({ navigation }: any) => {
             <Text style={styles.menuLabel}>Discovery Preferences</Text>
             <Text style={styles.menuChevron}>›</Text>
           </TouchableOpacity>
+          <TouchableOpacity style={styles.menuItem} onPress={() => navigation.navigate('ProfilePrompts')}>
+            <Text style={styles.menuIcon}>💬</Text>
+            <Text style={styles.menuLabel}>Profile Prompts</Text>
+            <Text style={styles.menuChevron}>›</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.menuItem} onPress={() => navigation.navigate('Moments')}>
+            <Text style={styles.menuIcon}>📸</Text>
+            <Text style={styles.menuLabel}>Moments</Text>
+            <Text style={styles.menuChevron}>›</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.menuItem} onPress={() => navigation.navigate('LikesYou')}>
+            <Text style={styles.menuIcon}>❤️</Text>
+            <Text style={styles.menuLabel}>Likes You</Text>
+            <Text style={styles.menuChevron}>›</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.menuItem} onPress={() => navigation.navigate('Boost')}>
+            <Text style={styles.menuIcon}>⚡</Text>
+            <Text style={styles.menuLabel}>Boost Profile</Text>
+            <Text style={styles.menuChevron}>›</Text>
+          </TouchableOpacity>
           <TouchableOpacity style={styles.menuItem} onPress={() => navigation.navigate('Settings')}>
             <Text style={styles.menuIcon}>🔧</Text>
             <Text style={styles.menuLabel}>Settings</Text>

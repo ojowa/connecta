@@ -50,6 +50,18 @@ export class ChatController {
     return this.chatService.sendTyping(userId, conversationId);
   }
 
+  @Get('conversations/:id/typing')
+  @ApiOperation({ summary: 'Get typing users' })
+  getTypingUsers(@Param('id') conversationId: string) {
+    return this.chatService.getTypingUsers(conversationId);
+  }
+
+  @Post('conversations/:id/messages/:messageId/read')
+  @ApiOperation({ summary: 'Mark message as read' })
+  markMessageAsRead(@Headers('x-user-id') userId: string, @Param('id') conversationId: string, @Param('messageId') messageId: string) {
+    return this.chatService.markMessageAsRead(userId, conversationId, messageId);
+  }
+
   @Get('messages/search')
   @ApiOperation({ summary: 'Search messages' })
   searchMessages(@Headers('x-user-id') userId: string, @Query('q') query: string, @Query('conversationId') conversationId?: string) {

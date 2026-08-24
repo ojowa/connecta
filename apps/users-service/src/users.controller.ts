@@ -62,6 +62,24 @@ export class UsersController {
     return this.usersService.getPhotos(userId);
   }
 
+  @Get('me/prompts')
+  @ApiOperation({ summary: 'Get user prompts' })
+  getPrompts(@Headers('x-user-id') userId: string) {
+    return this.usersService.getPrompts(userId);
+  }
+
+  @Put('me/prompts')
+  @ApiOperation({ summary: 'Save user prompts' })
+  savePrompts(@Headers('x-user-id') userId: string, @Body() body: any) {
+    return this.usersService.savePrompts(userId, body.prompts);
+  }
+
+  @Get('prompts')
+  @ApiOperation({ summary: 'Get available prompts' })
+  getAvailablePrompts() {
+    return this.usersService.getAvailablePrompts();
+  }
+
   @Post('me/photos')
   @ApiOperation({ summary: 'Add a profile photo' })
   addPhoto(@Headers('x-user-id') userId: string, @Body() body: any) {

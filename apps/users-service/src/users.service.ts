@@ -1,7 +1,7 @@
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { User, Profile, UserPreference, Block, Report, Photo } from '@app/common/entities';
+import { User, Profile, UserPreference, Block, Report, Photo, UserPrompt, ProfilePrompt } from '@app/common/entities';
 
 @Injectable()
 export class UsersService {
@@ -12,6 +12,8 @@ export class UsersService {
     @InjectRepository(Block) private blockRepo: Repository<Block>,
     @InjectRepository(Report) private reportRepo: Repository<Report>,
     @InjectRepository(Photo) private photoRepo: Repository<Photo>,
+    @InjectRepository(UserPrompt) private userPromptRepo: Repository<UserPrompt>,
+    @InjectRepository(ProfilePrompt) private profilePromptRepo: Repository<ProfilePrompt>,
   ) {}
 
   async getMe(userId: string) {
@@ -21,6 +23,27 @@ export class UsersService {
     const photos = profile ? await this.photoRepo.find({ where: { profileId: profile.id }, order: { order: 'ASC' } }) : [];
     const { passwordHash, ...userData } = user;
     return { ...userData, profile: profile || null, photos };
+  }
+
+  async calculateCompletionPercentage(userId: string): Promise<number> {
+    const profile = await this.profileRepo.findOne({ where: { userId } });
+    if (!profile) return 0;
+    const photos = await this.photoRepo.find({ where: { profileId: profile.id } });
+    const prompts = await this.userPromptRepo.find({ where: { userId } });
+    let score = 0;
+    if (photos.length > 0) score += 25;
+    if (profile.bio) score += 20;
+    if (profile.jobTitle) score += 10;
+    if (profile.school) score += 10;
+    if (profile.prompts && profile.prompts.length > 0) score += 15;
+    else if (prompts.length > 0) score += 15;
+    if (profile.relationshipGoal) score += 5;
+    if (score > 0) {
+      score += 15;
+    }
+    profile.completionPercentage = score;
+    await this.profileRepo.save(profile);
+    return score;
   }
 
   async updateMe(userId: string, data: any) {
@@ -39,6 +62,7 @@ export class UsersService {
       else { Object.assign(profile, profileUpdates); }
       await this.profileRepo.save(profile);
     }
+    await this.calculateCompletionPercentage(userId);
     return { updatedFields: [...Object.keys(updates), ...Object.keys(profileUpdates)] };
   }
 
@@ -147,7 +171,9 @@ export class UsersService {
       order: data.order !== undefined ? data.order : maxOrder + 1,
       isPrimary: existingPhotos.length === 0,
     });
-    return this.photoRepo.save(photo);
+    await this.photoRepo.save(photo);
+    await this.calculateCompletionPercentage(userId);
+    return photo;
   }
 
   async deletePhoto(userId: string, photoId: string) {
@@ -156,6 +182,7 @@ export class UsersService {
     const photo = await this.photoRepo.findOne({ where: { id: photoId, profileId: profile.id } });
     if (!photo) throw new NotFoundException('Photo not found');
     await this.photoRepo.remove(photo);
+    await this.calculateCompletionPercentage(userId);
     return { deleted: true };
   }
 
@@ -176,5 +203,31 @@ export class UsersService {
     await this.photoRepo.update({ profileId: profile.id }, { isPrimary: false });
     await this.photoRepo.update(photoId, { isPrimary: true, order: 0 });
     return { primary: true };
+  }
+
+  async getPrompts(userId: string) {
+    const prompts = await this.userPromptRepo.find({ where: { userId }, order: { sortOrder: 'ASC' } });
+    return { prompts };
+  }
+
+  async savePrompts(userId: string, prompts: Array<{ question: string; answer: string }>) {
+    await this.userPromptRepo.delete({ userId });
+    const saved: UserPrompt[] = [];
+    for (let i = 0; i < prompts.length; i++) {
+      const entity = this.userPromptRepo.create({ userId, question: prompts[i].question, answer: prompts[i].answer, sortOrder: i });
+      saved.push(await this.userPromptRepo.save(entity));
+    }
+    let profile = await this.profileRepo.findOne({ where: { userId } });
+    if (profile) {
+      profile.prompts = prompts;
+      await this.profileRepo.save(profile);
+    }
+    await this.calculateCompletionPercentage(userId);
+    return { prompts: saved };
+  }
+
+  async getAvailablePrompts() {
+    const prompts = await this.profilePromptRepo.find({ where: { isActive: true }, order: { sortOrder: 'ASC' } });
+    return { prompts };
   }
 }

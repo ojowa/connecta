@@ -34,6 +34,11 @@ export const chatApi = {
     return response.data;
   },
 
+  async markMessageAsRead(conversationId: string, messageId: string) {
+    const response = await apiClient.post(ENDPOINTS.CHAT.READ_RECEIPT(conversationId, messageId));
+    return response.data;
+  },
+
   async sendTyping(conversationId: string) {
     const response = await apiClient.post(ENDPOINTS.CHAT.TYPING(conversationId));
     return response.data;

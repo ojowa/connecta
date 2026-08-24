@@ -10,11 +10,14 @@ import { apiClient } from '../../services/api/apiClient';
 interface ChatInputProps {
   onSend: (text: string) => void;
   onSendImage?: (uri: string) => void;
+  onSendVoice?: (uri: string) => void;
+  onSendGif?: (url: string) => void;
   onTyping?: () => void;
 }
 
-export const ChatInput: React.FC<ChatInputProps> = ({ onSend, onSendImage, onTyping }) => {
+export const ChatInput: React.FC<ChatInputProps> = ({ onSend, onSendImage, onSendVoice, onSendGif, onTyping }) => {
   const [text, setText] = useState('');
+  const [isRecording, setIsRecording] = useState(false);
 
   const handleSend = () => {
     if (text.trim()) {
@@ -26,7 +29,7 @@ export const ChatInput: React.FC<ChatInputProps> = ({ onSend, onSendImage, onTyp
   const handleAttach = async () => {
     Alert.alert('Attach', 'Choose an option', [
       {
-        text: 'Camera',
+        text: '📷 Camera',
         onPress: async () => {
           const { status } = await ImagePicker.requestCameraPermissionsAsync();
           if (status !== 'granted') return;
@@ -35,12 +38,26 @@ export const ChatInput: React.FC<ChatInputProps> = ({ onSend, onSendImage, onTyp
         },
       },
       {
-        text: 'Gallery',
+        text: '🖼️ Gallery',
         onPress: async () => {
           const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
           if (status !== 'granted') return;
           const result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'], quality: 0.8 });
           if (!result.canceled && result.assets[0]) onSendImage?.(result.assets[0].uri);
+        },
+      },
+      {
+        text: '🎤 Voice Message',
+        onPress: () => {
+          // Placeholder — in production, use expo-av to record
+          Alert.alert('Voice', 'Voice recording coming soon');
+        },
+      },
+      {
+        text: '😎 GIF',
+        onPress: () => {
+          // Placeholder — in production, open GIF picker
+          Alert.alert('GIF', 'GIF picker coming soon');
         },
       },
       { text: 'Cancel', style: 'cancel' },

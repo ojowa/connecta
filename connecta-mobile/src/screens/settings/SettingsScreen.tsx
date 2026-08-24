@@ -190,6 +190,8 @@ const SettingsScreen: React.FC = () => {
 
         <SectionHeader title="Privacy" />
         <View style={styles.section}>
+          <SettingsRow label="Incognito Mode" onPress={() => navigation.navigate('Incognito')} />
+          <SettingsRow label="Passport" onPress={() => navigation.navigate('Passport')} />
           <SettingsRow label="Block List" onPress={() => navigation.navigate('BlockList')} />
           <SettingsRow
             label={exporting ? 'Requesting...' : 'Download Data'}

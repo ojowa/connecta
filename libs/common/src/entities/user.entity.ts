@@ -42,6 +42,7 @@ export class User {
   @Column({ nullable: true }) lastActiveAt: Date;
   @Column({ default: 0 }) loginAttempts: number;
   @Column({ nullable: true }) lockUntil: Date;
+  @Column({ default: false }) incognitoMode: boolean;
   @CreateDateColumn() createdAt: Date;
   @UpdateDateColumn() updatedAt: Date;
 }

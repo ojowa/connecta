@@ -37,14 +37,36 @@ export const ChatBubble: React.FC<ChatBubbleProps> = ({ message, isOwn, onReply,
     Alert.alert('Message', '', actions);
   };
 
+  const renderContent = () => {
+    if (message.type === 'image' && message.content.startsWith('http')) {
+      return <Image source={{ uri: message.content }} style={styles.image} resizeMode="cover" />;
+    }
+    if (message.type === 'gif' && message.content.startsWith('http')) {
+      return <Image source={{ uri: message.content }} style={styles.image} resizeMode="cover" />;
+    }
+    if (message.type === 'voice') {
+      return (
+        <View style={styles.voiceContainer}>
+          <Text style={[styles.voiceIcon, isOwn ? styles.ownText : styles.otherText]}>🎤</Text>
+          <Text style={[styles.text, isOwn ? styles.ownText : styles.otherText]}>Voice message</Text>
+        </View>
+      );
+    }
+    if (message.type === 'video' && message.content.startsWith('http')) {
+      return (
+        <View style={styles.videoContainer}>
+          <Image source={{ uri: message.content }} style={styles.image} resizeMode="cover" />
+          <Text style={styles.playIcon}>▶️</Text>
+        </View>
+      );
+    }
+    return <Text style={[styles.text, isOwn ? styles.ownText : styles.otherText]}>{message.content}</Text>;
+  };
+
   return (
     <TouchableOpacity onLongPress={handleLongPress} activeOpacity={0.8}>
       <View style={[styles.container, isOwn ? styles.own : styles.other]}>
-        {message.type === 'image' && message.content.startsWith('http') ? (
-          <Image source={{ uri: message.content }} style={styles.image} resizeMode="cover" />
-        ) : (
-          <Text style={[styles.text, isOwn ? styles.ownText : styles.otherText]}>{message.content}</Text>
-        )}
+        {renderContent()}
         {message.reactions && message.reactions.length > 0 && (
           <View style={styles.reactions}>
             {message.reactions.map((r, i) => (
@@ -69,6 +91,10 @@ const styles = StyleSheet.create({
   ownText: { color: colors.white },
   otherText: { color: colors.textPrimary },
   image: { width: 200, height: 150, borderRadius: borderRadius.sm },
+  voiceContainer: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
+  voiceIcon: { fontSize: 20 },
+  videoContainer: { position: 'relative' },
+  playIcon: { position: 'absolute', alignSelf: 'center', top: '40%', fontSize: 32 },
   reactions: { flexDirection: 'row', gap: 2, marginTop: spacing.xs },
   reaction: { fontSize: 16 },
   footer: { flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-end', gap: spacing.xs, marginTop: 4 },
