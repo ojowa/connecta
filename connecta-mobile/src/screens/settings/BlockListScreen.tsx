@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { View, Text, StyleSheet, FlatList, Alert, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -8,20 +8,20 @@ import { Button } from '../../components/common/Button';
 import { colors } from '../../theme/colors';
 import { typography } from '../../theme/typography';
 import { spacing } from '../../theme/spacing';
-import { borderRadius } from '../../theme/borderRadius';
 
 interface BlockedUser {
   id: string;
-  fullName: string;
-  avatar?: string;
-  blockedAt: string;
+  blockerId: string;
+  blockedId: string;
+  reason?: string;
+  createdAt: string;
 }
 
 export default function BlockListScreen() {
   const queryClient = useQueryClient();
   const { data: blockedUsers = [], isLoading } = useQuery({
     queryKey: ['blockList'],
-    queryFn: () => apiClient.get('/users/me/blocks').then((r) => r.data?.users || r.data || []),
+    queryFn: () => apiClient.get('/users/me/blocks').then((r) => r.data?.blockedUsers || []),
   });
 
   const unblockMutation = useMutation({
@@ -34,9 +34,9 @@ export default function BlockListScreen() {
   });
 
   const handleUnblock = (user: BlockedUser) => {
-    Alert.alert('Unblock', `Unblock ${user.fullName}?`, [
+    Alert.alert('Unblock', 'Unblock this user?', [
       { text: 'Cancel', style: 'cancel' },
-      { text: 'Unblock', onPress: () => unblockMutation.mutate(user.id) },
+      { text: 'Unblock', onPress: () => unblockMutation.mutate(user.blockedId) },
     ]);
   };
 
@@ -61,8 +61,8 @@ export default function BlockListScreen() {
           keyExtractor={(item) => item.id}
           renderItem={({ item }) => (
             <View style={styles.userRow}>
-              <Avatar uri={item.avatar} size={44} />
-              <Text style={styles.userName} numberOfLines={1}>{item.fullName}</Text>
+              <Avatar uri={undefined} size={44} />
+              <Text style={styles.userName} numberOfLines={1}>User {item.blockedId.slice(0, 8)}</Text>
               <Button title="Unblock" variant="ghost" onPress={() => handleUnblock(item)} style={styles.unblockButton} />
             </View>
           )}

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -13,9 +13,10 @@ import {
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { apiClient } from '../../services/api/apiClient';
 import { useAppStore } from '../../store';
+import { useAuth } from '../../hooks/useAuth';
 import { colors } from '../../theme/colors';
 import { typography } from '../../theme/typography';
 import { spacing } from '../../theme/spacing';
@@ -52,38 +53,60 @@ const SectionHeader: React.FC<{ title: string }> = ({ title }) => (
 const SettingsScreen: React.FC = () => {
   const navigation = useNavigation<NativeStackNavigationProp<any>>();
   const queryClient = useQueryClient();
-  const logout = useAppStore((s) => s.logout);
+  const { logout: authLogout } = useAuth();
+  const [exporting, setExporting] = useState(false);
+
+  const { data: prefs } = useQuery({
+    queryKey: ['notificationPrefs'],
+    queryFn: () => apiClient.get('/notifications/preferences').then((r) => r.data),
+  });
+
   const [matchNotifications, setMatchNotifications] = useState(true);
   const [messageNotifications, setMessageNotifications] = useState(true);
   const [callNotifications, setCallNotifications] = useState(false);
-  const [exporting, setExporting] = useState(false);
+
+  useEffect(() => {
+    if (prefs) {
+      setMatchNotifications(prefs.matchNotify ?? true);
+      setMessageNotifications(prefs.messageNotify ?? true);
+      setCallNotifications(prefs.callNotify ?? true);
+    }
+  }, [prefs]);
 
   const updatePrefsMutation = useMutation({
-    mutationFn: (prefs: any) => apiClient.put('/notifications/preferences', prefs),
+    mutationFn: (p: any) => apiClient.put('/notifications/preferences', p),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['notificationPrefs'] }),
   });
 
   const handleLogout = () => {
     Alert.alert('Logout', 'Are you sure you want to logout?', [
       { text: 'Cancel', style: 'cancel' },
-      { text: 'Logout', style: 'destructive', onPress: () => { logout(); } },
+      { text: 'Logout', style: 'destructive', onPress: () => authLogout() },
     ]);
   };
 
   const handleDeleteAccount = () => {
-    Alert.alert('Delete Account', 'This action cannot be undone. All your data will be permanently deleted.', [
-      { text: 'Cancel', style: 'cancel' },
-      {
-        text: 'Delete', style: 'destructive', onPress: async () => {
-          try {
-            await apiClient.delete('/users/me');
-            logout();
-          } catch {
-            Alert.alert('Error', 'Failed to delete account. Please try again.');
-          }
+    Alert.prompt(
+      'Delete Account',
+      'Enter your password to confirm deletion. This action cannot be undone.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: async (password) => {
+            if (!password) return;
+            try {
+              await apiClient.delete('/users/me', { data: { password } });
+              authLogout();
+            } catch {
+              Alert.alert('Error', 'Failed to delete account. Check your password.');
+            }
+          },
         },
-      },
-    ]);
+      ],
+      'secure-text'
+    );
   };
 
   const handleDownloadData = async () => {
@@ -134,7 +157,7 @@ const SettingsScreen: React.FC = () => {
             rightElement={
               <Switch
                 value={matchNotifications}
-                onValueChange={(v) => { setMatchNotifications(v); updatePrefsMutation.mutate({ matchNotifications: v }); }}
+                onValueChange={(v) => { setMatchNotifications(v); updatePrefsMutation.mutate({ matchNotify: v }); }}
                 trackColor={{ false: colors.gray300, true: colors.primary }}
                 thumbColor={colors.white}
               />
@@ -145,7 +168,7 @@ const SettingsScreen: React.FC = () => {
             rightElement={
               <Switch
                 value={messageNotifications}
-                onValueChange={(v) => { setMessageNotifications(v); updatePrefsMutation.mutate({ messageNotifications: v }); }}
+                onValueChange={(v) => { setMessageNotifications(v); updatePrefsMutation.mutate({ messageNotify: v }); }}
                 trackColor={{ false: colors.gray300, true: colors.primary }}
                 thumbColor={colors.white}
               />
@@ -156,7 +179,7 @@ const SettingsScreen: React.FC = () => {
             rightElement={
               <Switch
                 value={callNotifications}
-                onValueChange={(v) => { setCallNotifications(v); updatePrefsMutation.mutate({ callNotifications: v }); }}
+                onValueChange={(v) => { setCallNotifications(v); updatePrefsMutation.mutate({ callNotify: v }); }}
                 trackColor={{ false: colors.gray300, true: colors.primary }}
                 thumbColor={colors.white}
               />

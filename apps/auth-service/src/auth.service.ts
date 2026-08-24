@@ -133,6 +133,21 @@ export class AuthService {
     return { passwordReset: true, sessionsRevoked: 3, message: 'Password updated. All sessions have been revoked.' };
   }
 
+  async changePassword(userId: string, data: any) {
+    const { currentPassword, newPassword } = data;
+    if (!currentPassword || !newPassword) throw new BadRequestException('Missing required fields');
+    if (newPassword.length < 8) throw new BadRequestException('Password must be at least 8 characters');
+    const user = await this.userRepo.findOne({ where: { id: userId } });
+    if (!user) throw new NotFoundException('User not found');
+    const valid = await bcrypt.compare(currentPassword, user.passwordHash);
+    if (!valid) throw new BadRequestException('Current password is incorrect');
+    const passwordHash = await bcrypt.hash(newPassword, 12);
+    await this.userRepo.update(userId, { passwordHash });
+    await this.sessionRepo.update({ userId, isActive: true }, { isActive: false });
+    this.eventEmitter.emit('user.password_changed', { userId });
+    return { passwordChanged: true, message: 'Password updated. Other sessions have been revoked.' };
+  }
+
   async getDevices(userId: string) {
     const sessions = await this.sessionRepo.find({ where: { userId, isActive: true }, order: { createdAt: 'DESC' } });
     return { devices: sessions.map((s) => ({ deviceId: s.deviceId, deviceType: s.deviceType, deviceName: s.deviceName, ipAddress: s.ipAddress, lastActiveAt: s.createdAt, createdAt: s.createdAt })) };

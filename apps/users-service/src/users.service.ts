@@ -26,7 +26,7 @@ export class UsersService {
   async updateMe(userId: string, data: any) {
     const user = await this.userRepo.findOne({ where: { id: userId } });
     if (!user) throw new NotFoundException('User not found');
-    const allowed = ['fullName', 'dateOfBirth', 'gender'];
+    const allowed = ['fullName', 'dateOfBirth', 'gender', 'phone', 'email'];
     const updates: any = {};
     for (const key of allowed) { if (data[key] !== undefined) updates[key] = data[key]; }
     if (Object.keys(updates).length > 0) await this.userRepo.update(userId, updates);
@@ -80,7 +80,7 @@ export class UsersService {
   }
 
   async getBlockedUsers(userId: string, page = 1, limit = 20) {
-    const [blocked, total] = await this.blockRepo.findAndCount({ where: { blockerId: userId }, order: { createdAt: 'DESC' }, skip: (page - 1) * limit, take: limit });
+    const [blocked, total] = await this.blockRepo.findAndCount({ where: { blockerId: userId }, order: { id: 'DESC' }, skip: (page - 1) * limit, take: limit });
     return { blockedUsers: blocked, meta: { page, limit, total, hasMore: total > page * limit } };
   }
 

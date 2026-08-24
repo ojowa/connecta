@@ -22,7 +22,14 @@ apiClient.interceptors.request.use(
 );
 
 apiClient.interceptors.response.use(
-  (response) => response,
+  (response) => {
+    // Auto-unwrap gateway response wrapper: { success, data, timestamp, requestId }
+    const body = response.data;
+    if (body && typeof body === 'object' && 'success' in body && 'data' in body) {
+      response.data = body.data;
+    }
+    return response;
+  },
   async (error: AxiosError) => {
     const originalRequest = error.config as InternalAxiosRequestConfig & { _retry?: boolean };
 
@@ -35,7 +42,9 @@ apiClient.interceptors.response.use(
           `${baseURL}/auth/refresh`,
           { refreshToken }
         );
-        const { accessToken, refreshToken: newRefresh } = response.data.data;
+        const refreshBody = response.data;
+        const tokens = refreshBody?.data || refreshBody;
+        const { accessToken, refreshToken: newRefresh } = tokens;
         useAppStore.getState().setTokens(accessToken, newRefresh);
         originalRequest.headers.Authorization = `Bearer ${accessToken}`;
         return apiClient(originalRequest);

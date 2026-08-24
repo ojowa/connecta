@@ -7,22 +7,20 @@ import { Button } from '../../components/common/Button';
 import { colors } from '../../theme/colors';
 import { typography } from '../../theme/typography';
 import { spacing } from '../../theme/spacing';
-import { borderRadius } from '../../theme/borderRadius';
-import Constants from 'expo-constants';
 
 interface Device {
-  id: string;
-  name: string;
-  platform: string;
-  lastActive: string;
-  isCurrent: boolean;
+  deviceId: string;
+  deviceType: string;
+  deviceName: string;
+  lastActiveAt: string;
+  createdAt: string;
 }
 
 export default function DevicesScreen() {
   const queryClient = useQueryClient();
   const { data: devices = [], isLoading } = useQuery({
     queryKey: ['devices'],
-    queryFn: () => apiClient.get('/auth/devices').then((r) => r.data?.devices || r.data || []),
+    queryFn: () => apiClient.get('/auth/devices').then((r) => r.data?.devices || []),
   });
 
   const removeMutation = useMutation({
@@ -35,9 +33,9 @@ export default function DevicesScreen() {
   });
 
   const handleRemove = (device: Device) => {
-    Alert.alert('Remove Device', `Remove "${device.name}"?`, [
+    Alert.alert('Remove Device', `Remove "${device.deviceName || device.deviceType}"?`, [
       { text: 'Cancel', style: 'cancel' },
-      { text: 'Remove', style: 'destructive', onPress: () => removeMutation.mutate(device.id) },
+      { text: 'Remove', style: 'destructive', onPress: () => removeMutation.mutate(device.deviceId) },
     ]);
   };
 
@@ -53,17 +51,14 @@ export default function DevicesScreen() {
     <SafeAreaView style={styles.safeArea} edges={['bottom']}>
       <FlatList
         data={devices}
-        keyExtractor={(item) => item.id}
+        keyExtractor={(item) => item.deviceId}
         renderItem={({ item }) => (
           <View style={styles.deviceRow}>
             <View style={styles.deviceInfo}>
-              <Text style={styles.deviceName}>{item.name}</Text>
-              <Text style={styles.deviceMeta}>{item.platform} | Last active: {new Date(item.lastActive).toLocaleDateString()}</Text>
-              {item.isCurrent && <Text style={styles.currentBadge}>This device</Text>}
+              <Text style={styles.deviceName}>{item.deviceName || item.deviceType || 'Unknown device'}</Text>
+              <Text style={styles.deviceMeta}>Last active: {new Date(item.lastActiveAt || item.createdAt).toLocaleDateString()}</Text>
             </View>
-            {!item.isCurrent && (
-              <Button title="Remove" variant="ghost" onPress={() => handleRemove(item)} style={styles.removeButton} />
-            )}
+            <Button title="Remove" variant="ghost" onPress={() => handleRemove(item)} style={styles.removeButton} />
           </View>
         )}
         contentContainerStyle={styles.list}
@@ -85,7 +80,6 @@ const styles = StyleSheet.create({
   deviceInfo: { flex: 1 },
   deviceName: { ...typography.body, fontWeight: '600', color: colors.textPrimary },
   deviceMeta: { ...typography.caption, color: colors.textSecondary, marginTop: spacing.xs },
-  currentBadge: { ...typography.small, color: colors.success, fontWeight: '600', marginTop: spacing.xs },
   removeButton: { paddingHorizontal: spacing.sm },
   emptyText: { ...typography.body, color: colors.textSecondary },
 });

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { View, Text, StyleSheet, Switch, Alert, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -6,7 +6,6 @@ import { apiClient } from '../../services/api/apiClient';
 import { colors } from '../../theme/colors';
 import { typography } from '../../theme/typography';
 import { spacing } from '../../theme/spacing';
-import { borderRadius } from '../../theme/borderRadius';
 
 export default function TwoFactorAuthScreen() {
   const queryClient = useQueryClient();
@@ -16,7 +15,7 @@ export default function TwoFactorAuthScreen() {
   });
 
   const toggleMutation = useMutation({
-    mutationFn: (enabled: boolean) => apiClient.post('/auth/2fa/toggle', { enabled }),
+    mutationFn: (enabled: boolean) => apiClient.post('/auth/2fa/toggle', { enabled, method: 'sms' }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['twoFactorSettings'] });
       Alert.alert('Updated', 'Two-factor authentication settings saved.');
@@ -41,7 +40,7 @@ export default function TwoFactorAuthScreen() {
             <Text style={styles.rowDescription}>Receive a code via text message when signing in</Text>
           </View>
           <Switch
-            value={settings?.smsEnabled ?? false}
+            value={settings?.enabled ?? false}
             onValueChange={(v) => toggleMutation.mutate(v)}
             trackColor={{ false: colors.gray300, true: colors.primary }}
             thumbColor={colors.white}
@@ -53,7 +52,7 @@ export default function TwoFactorAuthScreen() {
             <Text style={styles.rowDescription}>Use an authenticator app like Google Authenticator</Text>
           </View>
           <Switch
-            value={settings?.authenticatorEnabled ?? false}
+            value={false}
             onValueChange={() => Alert.alert('Coming Soon', 'Authenticator app setup will be available soon.')}
             trackColor={{ false: colors.gray300, true: colors.primary }}
             thumbColor={colors.white}

@@ -91,6 +91,13 @@ export class AuthController {
     return this.authService.resetPassword(body);
   }
 
+  @Post('password/change')
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Change password (requires current password)' })
+  changePassword(@Headers('x-user-id') userId: string, @Body() body: any) {
+    return this.authService.changePassword(userId, body);
+  }
+
   @Get('2fa/settings')
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Get 2FA settings' })

@@ -9,23 +9,39 @@ import { spacing } from '../../theme/spacing';
 export default function ChangePasswordScreen({ navigation }: any) {
   const [current, setCurrent] = useState('');
   const [newPass, setNewPass] = useState('');
+  const [confirmPass, setConfirmPass] = useState('');
   const [loading, setLoading] = useState(false);
+
   const handleSave = async () => {
     if (!current || !newPass) return;
+    if (newPass.length < 8) {
+      Alert.alert('Error', 'Password must be at least 8 characters');
+      return;
+    }
+    if (newPass !== confirmPass) {
+      Alert.alert('Error', 'Passwords do not match');
+      return;
+    }
     setLoading(true);
     try {
-      await apiClient.post('/auth/password/reset', { token: current, newPassword: newPass });
+      await apiClient.post('/auth/password/change', { currentPassword: current, newPassword: newPass });
       Alert.alert('Success', 'Password changed');
       navigation.goBack();
-    } catch { Alert.alert('Error', 'Failed to change password'); }
-    finally { setLoading(false); }
+    } catch {
+      Alert.alert('Error', 'Failed to change password. Check your current password.');
+    } finally {
+      setLoading(false);
+    }
   };
+
   return (
     <View style={styles.container}>
       <Input label="Current Password" value={current} onChangeText={setCurrent} secureTextEntry />
       <Input label="New Password" value={newPass} onChangeText={setNewPass} secureTextEntry />
+      <Input label="Confirm New Password" value={confirmPass} onChangeText={setConfirmPass} secureTextEntry />
       <Button title="Change Password" onPress={handleSave} loading={loading} style={styles.btn} />
     </View>
   );
 }
+
 const styles = StyleSheet.create({ container: { flex: 1, padding: spacing.xl, backgroundColor: colors.white }, btn: { marginTop: spacing.lg } });

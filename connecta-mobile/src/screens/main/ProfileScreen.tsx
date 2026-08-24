@@ -13,12 +13,14 @@ import { borderRadius } from '../../theme/borderRadius';
 
 export const ProfileScreen: React.FC = ({ navigation }: any) => {
   const { user, logout } = useAuth();
-  const { data: profile } = useQuery({
+  const { data: profileData } = useQuery({
     queryKey: ['profile'],
     queryFn: () => apiClient.get('/users/me/profile').then((r) => r.data),
   });
 
-  const primaryPhoto = profile?.photos?.find((p: any) => p.isPrimary) || profile?.photos?.[0];
+  const profile = profileData?.profile;
+  const photos = profileData?.photos || [];
+  const primaryPhoto = photos.find((p: any) => p.isPrimary) || photos[0];
 
   return (
     <SafeAreaView style={styles.safeArea} edges={['top']}>
