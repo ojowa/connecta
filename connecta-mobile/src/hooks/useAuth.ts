@@ -13,11 +13,20 @@ export function useAuth() {
     setError(null);
     try {
       const response = await authApi.login(identifier, password);
-      if (response.success) {
-        setUser(response.data.user);
-        setTokens(response.data.tokens.accessToken, response.data.tokens.refreshToken);
+      const data = response as any;
+      // After apiClient unwraps gateway wrapper, response is { user, tokens } directly
+      if (data?.user && data?.tokens) {
+        setUser(data.user);
+        setTokens(data.tokens.accessToken, data.tokens.refreshToken);
         setAuthenticated(true);
-        return response.data;
+        return data;
+      }
+      // Fallback: check success field if not unwrapped
+      if (data?.success && data?.data) {
+        setUser(data.data.user);
+        setTokens(data.data.tokens.accessToken, data.data.tokens.refreshToken);
+        setAuthenticated(true);
+        return data.data;
       }
     } catch (err: any) {
       setError(err.response?.data?.error?.message || err.response?.data?.message || err.message || 'Login failed');
@@ -32,11 +41,18 @@ export function useAuth() {
     setError(null);
     try {
       const response = await authApi.register(data);
-      if (response.success) {
-        setUser(response.data.user);
-        setTokens(response.data.tokens.accessToken, response.data.tokens.refreshToken);
+      const d = response as any;
+      if (d?.user && d?.tokens) {
+        setUser(d.user);
+        setTokens(d.tokens.accessToken, d.tokens.refreshToken);
         setAuthenticated(true);
-        return response.data;
+        return d;
+      }
+      if (d?.success && d?.data) {
+        setUser(d.data.user);
+        setTokens(d.data.tokens.accessToken, d.data.tokens.refreshToken);
+        setAuthenticated(true);
+        return d.data;
       }
     } catch (err: any) {
       setError(err.response?.data?.error?.message || err.response?.data?.message || err.message || 'Registration failed');
