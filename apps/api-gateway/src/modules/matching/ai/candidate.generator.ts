@@ -82,7 +82,7 @@ export class CandidateGenerator {
       .createQueryBuilder('p')
       .where('p."userId" != :userId', { userId })
       .andWhere('p."isActive" = true')
-      .andWhere('p."userId" IN (SELECT u.id FROM users u WHERE u.status = :status)', {
+      .andWhere(`p."userId" IN (SELECT u.id::text FROM users u WHERE u.status = :status)`, {
         status: 'active',
       })
       .andWhere(prefs.showVerifiedOnly ? 'p."verified" = true' : '1=1')

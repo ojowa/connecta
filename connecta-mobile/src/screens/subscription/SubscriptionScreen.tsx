@@ -110,7 +110,7 @@ const SubscriptionScreen: React.FC = () => {
 
   const { data: plansData, isLoading } = useQuery({
     queryKey: ['plans'],
-    queryFn: () => apiClient.get('/payments/plans').then((r) => r.data.plans),
+    queryFn: () => apiClient.get('/payments/plans').then((r) => r.data?.data?.plans || r.data?.plans || []),
   });
 
   const subscribeMutation = useMutation({

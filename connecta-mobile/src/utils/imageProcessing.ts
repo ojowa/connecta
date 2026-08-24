@@ -6,6 +6,8 @@ import { ProcessedImage } from '../types/media';
 
 export class ImageProcessor {
   static async pickImage(): Promise<ProcessedImage | null> {
+    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (status !== 'granted') return null;
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ['images'],
       allowsEditing: true,

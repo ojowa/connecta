@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, TouchableOpacity, KeyboardAvoidingView, Platfor
 import { Input } from '../../components/common/Input';
 import { Button } from '../../components/common/Button';
 import { useAuth } from '../../hooks/useAuth';
+import { apiClient } from '../../services/api/apiClient';
 import { colors } from '../../theme/colors';
 import { typography } from '../../theme/typography';
 import { spacing } from '../../theme/spacing';
@@ -12,11 +13,18 @@ interface LoginScreenProps { navigation: any; }
 export const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
   const [identifier, setIdentifier] = useState('');
   const [password, setPassword] = useState('');
-  const { login, loading, error } = useAuth();
+  const { login, loading, error: authError } = useAuth();
+  const [serverError, setServerError] = useState<string | null>(null);
 
   const handleLogin = async () => {
     if (!identifier || !password) return;
-    try { await login(identifier, password); } catch (error) { console.warn('Login failed:', error); }
+    setServerError(null);
+    try { await login(identifier, password); } catch (err: any) {
+      const msg = err?.code === 'ECONNABORTED' || err?.code === 'ERR_NETWORK'
+        ? `Cannot reach server at ${apiClient.defaults.baseURL}. Check your WiFi.`
+        : err?.response?.data?.message || err?.message || 'Login failed';
+      setServerError(msg);
+    }
   };
 
   return (
@@ -26,7 +34,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
         <Text style={styles.subtitle}>Sign in to continue</Text>
         <Input label="Email or Phone" placeholder="Enter your email or phone" value={identifier} onChangeText={setIdentifier} keyboardType="email-address" autoCapitalize="none" />
         <Input label="Password" placeholder="Enter your password" value={password} onChangeText={setPassword} secureTextEntry />
-        {error && <Text style={styles.error}>{error}</Text>}
+        {(authError || serverError) && <Text style={styles.error}>{authError || serverError}</Text>}
         <Button title="Sign In" onPress={handleLogin} loading={loading} style={styles.button} />
         <TouchableOpacity onPress={() => navigation.navigate('ForgotPassword')}>
           <Text style={styles.forgot}>Forgot Password?</Text>

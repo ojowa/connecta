@@ -1,6 +1,7 @@
 import { useAppStore } from '../store';
 import { authApi } from '../services/api/authApi';
 import { useState } from 'react';
+import { Alert } from 'react-native';
 
 export function useAuth() {
   const { user, token, isAuthenticated, setUser, setTokens, setAuthenticated, logout: storeLogout } = useAppStore();
@@ -19,7 +20,7 @@ export function useAuth() {
         return response.data;
       }
     } catch (err: any) {
-      setError(err.response?.data?.message || 'Login failed');
+      setError(err.response?.data?.error?.message || err.response?.data?.message || err.message || 'Login failed');
       throw err;
     } finally {
       setLoading(false);
@@ -38,7 +39,7 @@ export function useAuth() {
         return response.data;
       }
     } catch (err: any) {
-      setError(err.response?.data?.message || 'Registration failed');
+      setError(err.response?.data?.error?.message || err.response?.data?.message || err.message || 'Registration failed');
       throw err;
     } finally {
       setLoading(false);
@@ -47,7 +48,7 @@ export function useAuth() {
 
   const logout = async () => {
     if (user) {
-      try { await authApi.logout(user.id); } catch (error) { console.warn('Logout failed:', error); }
+      try { await authApi.logout(user.id); } catch { /* local logout still proceeds */ }
     }
     storeLogout();
   };

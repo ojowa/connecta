@@ -5,6 +5,7 @@ import { authApi } from '../../services/api/authApi';
 import { colors } from '../../theme/colors';
 import { typography } from '../../theme/typography';
 import { spacing } from '../../theme/spacing';
+import { borderRadius } from '../../theme/borderRadius';
 
 interface OTPScreenProps { route: any; navigation: any; }
 
@@ -48,6 +49,6 @@ const styles = StyleSheet.create({
   title: { ...typography.h1, textAlign: 'center', marginBottom: spacing.xs },
   subtitle: { ...typography.body, color: colors.textSecondary, textAlign: 'center', marginBottom: spacing.xl },
   otpContainer: { flexDirection: 'row', justifyContent: 'center', gap: spacing.sm, marginBottom: spacing.lg },
-  otpInput: { width: 48, height: 56, borderWidth: 1, borderColor: colors.border, borderRadius: 8, textAlign: 'center', ...typography.h2 },
+  otpInput: { width: 48, height: 56, borderWidth: 1, borderColor: colors.border, borderRadius: borderRadius.md, textAlign: 'center', ...typography.h2 },
   error: { ...typography.caption, color: colors.error, textAlign: 'center', marginBottom: spacing.md },
 });

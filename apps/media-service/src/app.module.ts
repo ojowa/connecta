@@ -1,26 +1,26 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { NatsModule } from '@app/common';
+import { Media, User, Profile } from '@app/common/entities';
 import { MediaController } from './media.controller';
 import { MediaService } from './media.service';
-import { Media, User } from '@app/common/entities';
+
+const entities = [Media, User, Profile];
 
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
-    NatsModule,
     TypeOrmModule.forRoot({
       type: 'postgres',
       host: process.env.DB_HOST || 'localhost',
       port: parseInt(process.env.DB_PORT || '5432', 10),
-      username: process.env.DB_USERNAME || 'postgres',
-      password: process.env.DB_PASSWORD || '',
+      username: process.env.DB_USERNAME || 'connecta_user',
+      password: process.env.DB_PASSWORD || 'connecta_password',
       database: process.env.DB_NAME || 'connecta_db',
-      autoLoadEntities: true,
-      synchronize: false,
+      entities,
+      synchronize: process.env.NODE_ENV !== 'production',
     }),
-    TypeOrmModule.forFeature([Media, User]),
+    TypeOrmModule.forFeature(entities),
   ],
   controllers: [MediaController],
   providers: [MediaService],

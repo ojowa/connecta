@@ -4,6 +4,8 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { RootNavigator } from '../navigation/RootNavigator';
 import { ErrorBoundary } from '../components/common/ErrorBoundary';
+import { ToastProvider } from '../components/common/Toast';
+import { OfflineBanner } from '../components/common/OfflineBanner';
 import { useNetworkStatus } from '../hooks/useNetworkStatus';
 import { useNotifications } from '../hooks/useNotifications';
 import { useSocket } from '../hooks/useSocket';
@@ -22,10 +24,18 @@ const AppInner: React.FC = () => {
   useSocket();
   const isAuthenticated = useAppStore((s) => s.isAuthenticated);
   React.useEffect(() => {
-    if (isAuthenticated) SyncEngine.getInstance().initialize();
-    else SyncEngine.getInstance().destroy();
+    if (isAuthenticated) {
+      SyncEngine.getInstance().initialize().catch(() => {});
+    } else {
+      SyncEngine.getInstance().destroy();
+    }
   }, [isAuthenticated]);
-  return <RootNavigator />;
+  return (
+    <>
+      <OfflineBanner />
+      <RootNavigator />
+    </>
+  );
 };
 
 export default function App() {
@@ -34,7 +44,9 @@ export default function App() {
       <GestureHandlerRootView style={{ flex: 1 }}>
         <SafeAreaProvider>
           <QueryClientProvider client={queryClient}>
-            <AppInner />
+            <ToastProvider>
+              <AppInner />
+            </ToastProvider>
           </QueryClientProvider>
         </SafeAreaProvider>
       </GestureHandlerRootView>

@@ -30,11 +30,14 @@ export function useSendMessage() {
   });
 }
 
-export function useDeleteMessage() {
+export function useDeleteMessage(conversationId: string) {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (messageId: string) => chatApi.deleteMessage(messageId),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['messages'] }),
+    mutationFn: (messageId: string) => chatApi.deleteMessage(conversationId, messageId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['messages', conversationId] });
+      queryClient.invalidateQueries({ queryKey: ['conversations'] });
+    },
   });
 }
 

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import { View, Text, StyleSheet, Alert } from 'react-native';
 import { Input } from '../../components/common/Input';
 import { Button } from '../../components/common/Button';
 import { authApi } from '../../services/api/authApi';
@@ -17,8 +17,14 @@ export const ForgotPasswordScreen: React.FC<ForgotPasswordProps> = ({ navigation
   const handleSubmit = async () => {
     if (!email) return;
     setLoading(true);
-    try { await authApi.forgotPassword(email); setSent(true); } catch (error) { console.warn('Password reset failed:', error); }
-    finally { setLoading(false); }
+    try {
+      await authApi.forgotPassword(email);
+      setSent(true);
+    } catch (error: any) {
+      Alert.alert('Error', error.response?.data?.message || 'Failed to send reset link. Please try again.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   if (sent) {

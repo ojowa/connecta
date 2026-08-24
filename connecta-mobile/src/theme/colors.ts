@@ -23,4 +23,12 @@ export const colors = {
   white: '#FFFFFF',
   black: '#000000',
   overlay: 'rgba(0,0,0,0.5)',
+  overlayLight: 'rgba(0,0,0,0.3)',
+  overlayHeavy: 'rgba(0,0,0,0.6)',
+  whiteOverlay: 'rgba(255,255,255,0.15)',
+  whiteOverlayMedium: 'rgba(255,255,255,0.2)',
+  whiteOverlayHeavy: 'rgba(255,255,255,0.3)',
+  whiteOverlaySoft: 'rgba(255,255,255,0.7)',
+  whiteOverlaySofter: 'rgba(255,255,255,0.4)',
+  primaryOverlay: '#FFF5F5',
 };

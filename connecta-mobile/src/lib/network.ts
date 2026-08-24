@@ -31,7 +31,7 @@ export async function resolveApiUrl(): Promise<string> {
   } else {
     cachedApiUrl = LOCAL_API;
   }
-  return cachedApiUrl;
+  return cachedApiUrl!;
 }
 
 export async function resolveWsUrl(): Promise<string> {
@@ -44,7 +44,7 @@ export async function resolveWsUrl(): Promise<string> {
   } else {
     cachedWsUrl = LOCAL_WS;
   }
-  return cachedWsUrl;
+  return cachedWsUrl!;
 }
 
 export function resetUrlCache() {

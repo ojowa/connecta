@@ -18,6 +18,16 @@ import IncomingCallScreen from '../screens/call/IncomingCallScreen';
 import ActiveVoiceCallScreen from '../screens/call/ActiveVoiceCallScreen';
 import ActiveVideoCallScreen from '../screens/call/ActiveVideoCallScreen';
 import MatchScreen from '../screens/match/MatchScreen';
+import PreferencesScreen from '../screens/preferences/PreferencesScreen';
+import EditPhoneScreen from '../screens/settings/EditPhoneScreen';
+import EditEmailScreen from '../screens/settings/EditEmailScreen';
+import ChangePasswordScreen from '../screens/settings/ChangePasswordScreen';
+import TwoFactorAuthScreen from '../screens/settings/TwoFactorAuthScreen';
+import DevicesScreen from '../screens/settings/DevicesScreen';
+import QuietHoursScreen from '../screens/settings/QuietHoursScreen';
+import BlockListScreen from '../screens/settings/BlockListScreen';
+import ReportProblemScreen from '../screens/settings/ReportProblemScreen';
+import { BiometricSetupScreen } from '../screens/auth/BiometricSetupScreen';
 
 const Stack = createNativeStackNavigator();
 
@@ -38,6 +48,16 @@ export const RootNavigator: React.FC = () => {
             <Stack.Screen name="PhotoManager" component={PhotoManagerScreen} options={{ headerShown: true, title: 'Manage Photos' }} />
             {/* Settings & Notifications */}
             <Stack.Screen name="Settings" component={SettingsScreen} options={{ headerShown: true, title: 'Settings' }} />
+            <Stack.Screen name="Preferences" component={PreferencesScreen} options={{ headerShown: true, title: 'Preferences' }} />
+            <Stack.Screen name="EditPhone" component={EditPhoneScreen} options={{ headerShown: true, title: 'Edit Phone' }} />
+            <Stack.Screen name="EditEmail" component={EditEmailScreen} options={{ headerShown: true, title: 'Edit Email' }} />
+            <Stack.Screen name="ChangePassword" component={ChangePasswordScreen} options={{ headerShown: true, title: 'Change Password' }} />
+            <Stack.Screen name="BiometricSetup" component={BiometricSetupScreen} options={{ headerShown: true, title: 'Biometric Login' }} />
+            <Stack.Screen name="TwoFactorAuth" component={TwoFactorAuthScreen} options={{ headerShown: true, title: 'Two-Factor Auth' }} />
+            <Stack.Screen name="Devices" component={DevicesScreen} options={{ headerShown: true, title: 'Devices' }} />
+            <Stack.Screen name="QuietHours" component={QuietHoursScreen} options={{ headerShown: true, title: 'Quiet Hours' }} />
+            <Stack.Screen name="BlockList" component={BlockListScreen} options={{ headerShown: true, title: 'Block List' }} />
+            <Stack.Screen name="ReportProblem" component={ReportProblemScreen} options={{ headerShown: true, title: 'Report a Problem' }} />
             <Stack.Screen name="Notifications" component={NotificationsScreen} options={{ headerShown: true, title: 'Notifications' }} />
             {/* Subscription */}
             <Stack.Screen name="Subscription" component={SubscriptionScreen} options={{ headerShown: true, title: 'Subscription' }} />

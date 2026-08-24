@@ -1,16 +1,24 @@
 import React from 'react';
-import { Text, StyleSheet, ViewStyle } from 'react-native';
+import { View, Text, StyleSheet } from 'react-native';
 import { colors } from '../../theme/colors';
 import { typography } from '../../theme/typography';
-import { borderRadius } from '../../theme/borderRadius';
 import { spacing } from '../../theme/spacing';
+import { borderRadius } from '../../theme/borderRadius';
 
-interface InterestTagProps { name: string; style?: ViewStyle; }
+interface InterestTagProps {
+  label: string;
+  size?: 'small' | 'medium';
+}
 
-export const InterestTag: React.FC<InterestTagProps> = ({ name, style }) => (
-  <Text style={[styles.tag, style]}>{name}</Text>
+export const InterestTag: React.FC<InterestTagProps> = ({ label, size = 'small' }) => (
+  <View style={[styles.tag, size === 'medium' && styles.tagMedium]} accessible accessibilityLabel={`Interest: ${label}`}>
+    <Text style={[styles.text, size === 'medium' && styles.textMedium]}>{label}</Text>
+  </View>
 );
 
 const styles = StyleSheet.create({
-  tag: { ...typography.small, backgroundColor: colors.gray100, color: colors.textPrimary, paddingHorizontal: spacing.sm, paddingVertical: spacing.xs, borderRadius: borderRadius.full, overflow: 'hidden' },
+  tag: { backgroundColor: colors.primary + '15', borderRadius: borderRadius.sm, paddingHorizontal: spacing.sm, paddingVertical: 3 },
+  tagMedium: { paddingHorizontal: spacing.md, paddingVertical: spacing.xs },
+  text: { ...typography.small, color: colors.primary },
+  textMedium: { ...typography.caption, color: colors.primary },
 });

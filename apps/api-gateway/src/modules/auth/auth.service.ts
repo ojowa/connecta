@@ -436,4 +436,26 @@ export class AuthService {
     const { passwordHash, ...result } = user;
     return result;
   }
+
+  async get2FASettings(userId: string) {
+    const user = await this.userRepo.findOne({ where: { id: userId } });
+    if (!user) throw new NotFoundException('User not found');
+    return {
+      enabled: (user as any).twoFactorEnabled || false,
+      method: (user as any).twoFactorMethod || 'sms',
+      phone: user.phone ? user.phone.replace(/(.{3})(.*)(.{2})/, '$1***$3') : null,
+      email: user.email ? user.email.replace(/(.{2})(.*)(@.*)/, '$1***$3') : null,
+    };
+  }
+
+  async toggle2FA(userId: string, data: any) {
+    const { enabled, method } = data;
+    const user = await this.userRepo.findOne({ where: { id: userId } });
+    if (!user) throw new NotFoundException('User not found');
+    await this.userRepo.update(userId, {
+      twoFactorEnabled: enabled,
+      twoFactorMethod: method || 'sms',
+    } as any);
+    return { twoFactorEnabled: enabled, method: method || 'sms' };
+  }
 }

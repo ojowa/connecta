@@ -11,6 +11,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Button } from '../../components/common/Button';
+import { apiClient } from '../../services/api/apiClient';
 import { colors } from '../../theme/colors';
 import { typography } from '../../theme/typography';
 import { spacing } from '../../theme/spacing';
@@ -42,11 +43,7 @@ const ReportScreen: React.FC<ReportScreenProps> = ({ route, navigation }) => {
     if (!selectedType) return;
     setLoading(true);
     try {
-      await fetch(`/api/reports`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userId, reportType: selectedType, description }),
-      });
+      await apiClient.post(`/users/${userId}/report`, { reportType: selectedType, description });
       Alert.alert('Thank you for your report', '', [
         { text: 'OK', onPress: () => navigation.goBack() },
       ]);
@@ -145,7 +142,7 @@ const styles = StyleSheet.create({
   },
   optionSelected: {
     borderColor: colors.primary,
-    backgroundColor: '#FFF5F5',
+    backgroundColor: colors.primaryOverlay,
   },
   radio: {
     width: 20,

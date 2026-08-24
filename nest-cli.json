@@ -13,6 +13,78 @@
       "root": "apps/api-gateway",
       "entryFile": "main",
       "sourceRoot": "apps/api-gateway/src"
+    },
+    "auth-service": {
+      "type": "application",
+      "root": "apps/auth-service",
+      "entryFile": "main",
+      "sourceRoot": "apps/auth-service/src"
+    },
+    "users-service": {
+      "type": "application",
+      "root": "apps/users-service",
+      "entryFile": "main",
+      "sourceRoot": "apps/users-service/src"
+    },
+    "matching-service": {
+      "type": "application",
+      "root": "apps/matching-service",
+      "entryFile": "main",
+      "sourceRoot": "apps/matching-service/src"
+    },
+    "chat-service": {
+      "type": "application",
+      "root": "apps/chat-service",
+      "entryFile": "main",
+      "sourceRoot": "apps/chat-service/src"
+    },
+    "calls-service": {
+      "type": "application",
+      "root": "apps/calls-service",
+      "entryFile": "main",
+      "sourceRoot": "apps/calls-service/src"
+    },
+    "media-service": {
+      "type": "application",
+      "root": "apps/media-service",
+      "entryFile": "main",
+      "sourceRoot": "apps/media-service/src"
+    },
+    "payments-service": {
+      "type": "application",
+      "root": "apps/payments-service",
+      "entryFile": "main",
+      "sourceRoot": "apps/payments-service/src"
+    },
+    "notifications-service": {
+      "type": "application",
+      "root": "apps/notifications-service",
+      "entryFile": "main",
+      "sourceRoot": "apps/notifications-service/src"
+    },
+    "search-service": {
+      "type": "application",
+      "root": "apps/search-service",
+      "entryFile": "main",
+      "sourceRoot": "apps/search-service/src"
+    },
+    "content-service": {
+      "type": "application",
+      "root": "apps/content-service",
+      "entryFile": "main",
+      "sourceRoot": "apps/content-service/src"
+    },
+    "support-service": {
+      "type": "application",
+      "root": "apps/support-service",
+      "entryFile": "main",
+      "sourceRoot": "apps/support-service/src"
+    },
+    "admin-service": {
+      "type": "application",
+      "root": "apps/admin-service",
+      "entryFile": "main",
+      "sourceRoot": "apps/admin-service/src"
     }
   }
 }

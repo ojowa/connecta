@@ -15,15 +15,22 @@ Notifications.setNotificationHandler({
   }),
 });
 
+type NotificationNavigationCallback = (screen: string, params?: Record<string, any>) => void;
+
 export class NotificationManager {
   private static instance: NotificationManager;
   private expoPushToken: string | null = null;
   private notificationSubscription: Notifications.EventSubscription | null = null;
   private responseSubscription: Notifications.EventSubscription | null = null;
+  private navigationCallback: NotificationNavigationCallback | null = null;
 
   static getInstance(): NotificationManager {
     if (!NotificationManager.instance) NotificationManager.instance = new NotificationManager();
     return NotificationManager.instance;
+  }
+
+  setNavigationCallback(callback: NotificationNavigationCallback): void {
+    this.navigationCallback = callback;
   }
 
   async initialize(): Promise<void> {
@@ -41,8 +48,8 @@ export class NotificationManager {
       if (Platform.OS === 'android') await this.setupAndroidChannels();
       this.notificationSubscription = Notifications.addNotificationReceivedListener(this.handleNotificationReceived);
       this.responseSubscription = Notifications.addNotificationResponseReceivedListener(this.handleNotificationResponse);
-    } catch (error) {
-      console.warn('Push notifications not available:', error.message);
+    } catch (error: any) {
+      // Silent failure — push notifications are non-critical
     }
   }
 
@@ -60,7 +67,9 @@ export class NotificationManager {
         platform: Platform.OS,
         deviceId: Constants.installationId,
       });
-    } catch (error) { console.warn('Failed to register token:', error); }
+    } catch {
+      // Token registration failure is non-critical
+    }
   }
 
   private async setupAndroidChannels(): Promise<void> {
@@ -85,7 +94,30 @@ export class NotificationManager {
   };
 
   private handleNotificationResponse = (response: Notifications.NotificationResponse): void => {
-    // Navigation handled by deep linking
+    const data = response.notification.request.content.data;
+    if (!this.navigationCallback || !data) return;
+
+    switch (data.type) {
+      case 'message':
+        this.navigationCallback('Chat', { conversationId: data.conversationId });
+        break;
+      case 'match':
+        this.navigationCallback('Matches');
+        break;
+      case 'call':
+        this.navigationCallback('IncomingCall', {
+          callerId: data.callerId,
+          callerName: data.callerName,
+          callType: data.callType || 'voice',
+        });
+        break;
+      case 'like':
+        this.navigationCallback('Likes');
+        break;
+      default:
+        this.navigationCallback('Main');
+        break;
+    }
   };
 
   async setBadgeCount(count: number): Promise<void> {

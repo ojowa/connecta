@@ -52,10 +52,14 @@ async function request<T>(endpoint: string, options: ApiOptions = {}): Promise<T
 
   if (!res.ok) {
     const body = await res.json().catch(() => ({}));
-    throw new Error(body.message || `API error ${res.status}`);
+    throw new Error(body.error?.message || body.message || `API error ${res.status}`);
   }
 
-  return res.json();
+  const json = await res.json();
+  if (json && typeof json === "object" && "data" in json && json.success !== undefined) {
+    return json.data as T;
+  }
+  return json as T;
 }
 
 export const api = {

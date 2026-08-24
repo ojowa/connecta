@@ -1,5 +1,6 @@
-import React from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import React, { useState, useCallback } from 'react';
+import { View, Text, StyleSheet, RefreshControl } from 'react-native';
+import { useQueryClient } from '@tanstack/react-query';
 import { useMatchFeed, useLike, usePass } from '../../hooks/useMatch';
 import { SwipeableCard } from '../../components/dating/SwipeableCard';
 import { LoadingSpinner } from '../../components/common/LoadingSpinner';
@@ -8,18 +9,25 @@ import { typography } from '../../theme/typography';
 import { spacing } from '../../theme/spacing';
 
 export const DiscoverScreen: React.FC = () => {
-  const { data, isLoading } = useMatchFeed();
+  const { data, isLoading, refetch } = useMatchFeed();
   const likeMutation = useLike();
   const passMutation = usePass();
+  const [refreshing, setRefreshing] = useState(false);
+
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true);
+    await refetch();
+    setRefreshing(false);
+  }, [refetch]);
 
   if (isLoading) return <LoadingSpinner />;
   const profiles = data?.data?.data || [];
 
   if (profiles.length === 0) {
     return (
-      <View style={styles.empty}>
+      <View style={styles.empty} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />}>
         <Text style={styles.emptyText}>No more profiles to show</Text>
-        <Text style={styles.emptySubtext}>Check back later for new matches</Text>
+        <Text style={styles.emptySubtext}>Pull to refresh or check back later</Text>
       </View>
     );
   }

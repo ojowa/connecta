@@ -49,6 +49,7 @@ export class SyncEngine {
   }
 
   async initialize(): Promise<void> {
+    await getDatabase();
     NetworkManager.init();
     this.localVectorClock = await this.loadVectorClock();
     this.setupListeners();
@@ -169,7 +170,7 @@ export class SyncEngine {
         break;
       }
       case 'UPDATE:profile':
-        await apiClient.put('/users/me', data);
+        await apiClient.patch('/users/me', data);
         break;
       case 'UPDATE:preference':
         await apiClient.put('/users/me/preferences', data);
@@ -217,9 +218,13 @@ export class SyncEngine {
         apiClient.get(`/users/sync?since=${lastSync}`).catch(() => ({ data: { data: null } })),
       ]);
 
-      const messages = messagesRes.data?.data || messagesRes.data || [];
-      const matches = matchesRes.data?.data || matchesRes.data || [];
-      const profile = profileRes.data?.data || profileRes.data || null;
+      const msgData = messagesRes.data?.data ?? messagesRes.data;
+      const matchData = matchesRes.data?.data ?? matchesRes.data;
+      const profileData = profileRes.data?.data ?? profileRes.data;
+
+      const messages = Array.isArray(msgData) ? msgData : [];
+      const matches = Array.isArray(matchData) ? matchData : [];
+      const profile = profileData && typeof profileData === 'object' ? profileData : null;
 
       for (const msg of messages) {
         await this.saveIncomingMessage(msg);

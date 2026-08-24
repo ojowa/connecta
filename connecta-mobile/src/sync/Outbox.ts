@@ -95,7 +95,7 @@ export class Outbox {
 
   static async getPending(limit = 50): Promise<any[]> {
     const db = await getDatabase();
-    return db.getAllAsync(
+    const results = db.getAllAsync(
       `SELECT * FROM local_sync_outbox
        WHERE status = 'pending' AND retry_count < ?
        ORDER BY
@@ -113,6 +113,7 @@ export class Outbox {
        LIMIT ?`,
       [MAX_RETRY_COUNT, limit],
     );
+    return [...await results];
   }
 
   static async markSynced(id: number): Promise<void> {

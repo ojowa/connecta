@@ -18,8 +18,11 @@ export async function requestMediaLibraryPermission(): Promise<boolean> {
 }
 
 export async function requestLocationPermission(): Promise<boolean> {
-  // Location permission requires expo-location package
-  // Install with: npx expo install expo-location
-  console.warn('expo-location is not installed. Run: npx expo install expo-location');
-  return false;
+  try {
+    const Location = require('expo-location');
+    const { status } = await Location.requestForegroundPermissionsAsync();
+    return status === 'granted';
+  } catch {
+    return false;
+  }
 }

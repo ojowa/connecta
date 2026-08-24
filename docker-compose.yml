@@ -1,32 +1,285 @@
 version: '3.8'
 
 services:
-  nats:
-    image: nats:2-alpine
-    container_name: connecta-nats
-    ports:
-      - '4222:4222'
-      - '8222:8222'
-    command: ['-a', '0.0.0.0', '--http_port', '8222']
-    restart: unless-stopped
-    healthcheck:
-      test: ['CMD', 'wget', '--spider', '-q', 'http://localhost:8222/healthz']
-      interval: 10s
-      timeout: 5s
-      retries: 3
-
   postgres:
     image: postgres:16-alpine
     container_name: connecta-postgres
-    environment:
-      POSTGRES_DB: connecta_db
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: Aarinola
+    restart: unless-stopped
     ports:
       - '5432:5432'
+    environment:
+      POSTGRES_DB: connecta_db
+      POSTGRES_USER: connecta_user
+      POSTGRES_PASSWORD: connecta_password
     volumes:
-      - pgdata:/var/lib/postgresql/data
+      - postgres_data:/var/lib/postgresql/data
+
+  redis:
+    image: redis:7-alpine
+    container_name: connecta-redis
     restart: unless-stopped
+    ports:
+      - '6379:6379'
+
+  api-gateway:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: connecta-api-gateway
+    restart: unless-stopped
+    ports:
+      - '3000:3000'
+    environment:
+      - NODE_ENV=production
+      - PORT=3000
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_USERNAME=connecta_user
+      - DB_PASSWORD=connecta_password
+      - DB_NAME=connecta_db
+      - JWT_SECRET=${JWT_SECRET:-your-secret-key}
+      - JWT_REFRESH_SECRET=${JWT_REFRESH_SECRET:-your-refresh-secret}
+      - AUTH_SERVICE_URL=http://auth-service:3001
+      - USERS_SERVICE_URL=http://users-service:3002
+      - MATCHING_SERVICE_URL=http://matching-service:3003
+      - CHAT_SERVICE_URL=http://chat-service:3004
+      - CALLS_SERVICE_URL=http://calls-service:3005
+      - MEDIA_SERVICE_URL=http://media-service:3006
+      - PAYMENTS_SERVICE_URL=http://payments-service:3007
+      - NOTIFICATIONS_SERVICE_URL=http://notifications-service:3008
+      - SEARCH_SERVICE_URL=http://search-service:3009
+      - CONTENT_SERVICE_URL=http://content-service:3010
+      - SUPPORT_SERVICE_URL=http://support-service:3011
+      - ADMIN_SERVICE_URL=http://admin-service:3012
+    depends_on:
+      - postgres
+      - redis
+
+  auth-service:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        - SERVICE_NAME=auth-service
+    container_name: connecta-auth-service
+    restart: unless-stopped
+    ports:
+      - '3001:3001'
+    environment:
+      - NODE_ENV=production
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_USERNAME=connecta_user
+      - DB_PASSWORD=connecta_password
+      - DB_NAME=connecta_db
+      - JWT_SECRET=${JWT_SECRET:-your-secret-key}
+      - JWT_REFRESH_SECRET=${JWT_REFRESH_SECRET:-your-refresh-secret}
+    depends_on:
+      - postgres
+
+  users-service:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        - SERVICE_NAME=users-service
+    container_name: connecta-users-service
+    restart: unless-stopped
+    ports:
+      - '3002:3002'
+    environment:
+      - NODE_ENV=production
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_USERNAME=connecta_user
+      - DB_PASSWORD=connecta_password
+      - DB_NAME=connecta_db
+    depends_on:
+      - postgres
+
+  matching-service:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        - SERVICE_NAME=matching-service
+    container_name: connecta-matching-service
+    restart: unless-stopped
+    ports:
+      - '3003:3003'
+    environment:
+      - NODE_ENV=production
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_USERNAME=connecta_user
+      - DB_PASSWORD=connecta_password
+      - DB_NAME=connecta_db
+    depends_on:
+      - postgres
+
+  chat-service:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        - SERVICE_NAME=chat-service
+    container_name: connecta-chat-service
+    restart: unless-stopped
+    ports:
+      - '3004:3004'
+    environment:
+      - NODE_ENV=production
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_USERNAME=connecta_user
+      - DB_PASSWORD=connecta_password
+      - DB_NAME=connecta_db
+    depends_on:
+      - postgres
+
+  calls-service:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        - SERVICE_NAME=calls-service
+    container_name: connecta-calls-service
+    restart: unless-stopped
+    ports:
+      - '3005:3005'
+    environment:
+      - NODE_ENV=production
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_USERNAME=connecta_user
+      - DB_PASSWORD=connecta_password
+      - DB_NAME=connecta_db
+    depends_on:
+      - postgres
+
+  media-service:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        - SERVICE_NAME=media-service
+    container_name: connecta-media-service
+    restart: unless-stopped
+    ports:
+      - '3006:3006'
+    environment:
+      - NODE_ENV=production
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_USERNAME=connecta_user
+      - DB_PASSWORD=connecta_password
+      - DB_NAME=connecta_db
+    depends_on:
+      - postgres
+
+  payments-service:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        - SERVICE_NAME=payments-service
+    container_name: connecta-payments-service
+    restart: unless-stopped
+    ports:
+      - '3007:3007'
+    environment:
+      - NODE_ENV=production
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_USERNAME=connecta_user
+      - DB_PASSWORD=connecta_password
+      - DB_NAME=connecta_db
+    depends_on:
+      - postgres
+
+  notifications-service:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        - SERVICE_NAME=notifications-service
+    container_name: connecta-notifications-service
+    restart: unless-stopped
+    ports:
+      - '3008:3008'
+    environment:
+      - NODE_ENV=production
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_USERNAME=connecta_user
+      - DB_PASSWORD=connecta_password
+      - DB_NAME=connecta_db
+    depends_on:
+      - postgres
+
+  search-service:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        - SERVICE_NAME=search-service
+    container_name: connecta-search-service
+    restart: unless-stopped
+    ports:
+      - '3009:3009'
+    environment:
+      - NODE_ENV=production
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_USERNAME=connecta_user
+      - DB_PASSWORD=connecta_password
+      - DB_NAME=connecta_db
+    depends_on:
+      - postgres
+
+  content-service:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        - SERVICE_NAME=content-service
+    container_name: connecta-content-service
+    restart: unless-stopped
+    ports:
+      - '3010:3010'
+    depends_on: []
+
+  support-service:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        - SERVICE_NAME=support-service
+    container_name: connecta-support-service
+    restart: unless-stopped
+    ports:
+      - '3011:3011'
+    depends_on: []
+
+  admin-service:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        - SERVICE_NAME=admin-service
+    container_name: connecta-admin-service
+    restart: unless-stopped
+    ports:
+      - '3012:3012'
+    environment:
+      - NODE_ENV=production
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_USERNAME=connecta_user
+      - DB_PASSWORD=connecta_password
+      - DB_NAME=connecta_db
+    depends_on:
+      - postgres
 
 volumes:
-  pgdata:
+  postgres_data:

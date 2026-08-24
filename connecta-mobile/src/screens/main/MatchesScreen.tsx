@@ -1,15 +1,24 @@
-import React from 'react';
-import { View, Text, StyleSheet, FlatList } from 'react-native';
+import React, { useState, useCallback } from 'react';
+import { View, Text, StyleSheet, FlatList, RefreshControl } from 'react-native';
 import { useMatches } from '../../hooks/useMatch';
 import { MatchCard } from '../../components/dating/MatchCard';
 import { LoadingSpinner } from '../../components/common/LoadingSpinner';
 import { colors } from '../../theme/colors';
 import { typography } from '../../theme/typography';
 import { spacing } from '../../theme/spacing';
+import { borderRadius } from '../../theme/borderRadius';
 import { Match } from '../../types/match';
 
 export const MatchesScreen: React.FC = () => {
-  const { data, isLoading } = useMatches();
+  const { data, isLoading, refetch } = useMatches();
+  const [refreshing, setRefreshing] = useState(false);
+
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true);
+    await refetch();
+    setRefreshing(false);
+  }, [refetch]);
+
   if (isLoading) return <LoadingSpinner />;
   const matches = data?.data?.data || [];
 
@@ -17,9 +26,20 @@ export const MatchesScreen: React.FC = () => {
     <View style={styles.container}>
       <Text style={styles.title}>Matches</Text>
       {matches.length === 0 ? (
-        <View style={styles.empty}><Text style={styles.emptyText}>No matches yet</Text><Text style={styles.emptySubtext}>Keep swiping to find your match!</Text></View>
+        <View style={styles.empty}>
+          <Text style={styles.emptyIcon}>💫</Text>
+          <Text style={styles.emptyText}>No matches yet</Text>
+          <Text style={styles.emptySubtext}>Keep swiping to find your match!</Text>
+        </View>
       ) : (
-        <FlatList data={matches} keyExtractor={(item: Match) => item.id} numColumns={3} contentContainerStyle={styles.list} renderItem={({ item }) => <MatchCard match={item} />} />
+        <FlatList
+          data={matches}
+          keyExtractor={(item: Match) => item.id}
+          numColumns={3}
+          contentContainerStyle={styles.list}
+          renderItem={({ item }) => <MatchCard match={item} />}
+          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />}
+        />
       )}
     </View>
   );
@@ -30,6 +50,7 @@ const styles = StyleSheet.create({
   title: { ...typography.h2, padding: spacing.md },
   list: { padding: spacing.sm },
   empty: { flex: 1, justifyContent: 'center', alignItems: 'center' },
+  emptyIcon: { fontSize: 48, marginBottom: spacing.md },
   emptyText: { ...typography.h3, marginBottom: spacing.xs },
   emptySubtext: { ...typography.body, color: colors.textSecondary },
 });

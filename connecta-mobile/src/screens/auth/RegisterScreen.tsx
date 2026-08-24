@@ -1,11 +1,15 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, KeyboardAvoidingView, Platform } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, KeyboardAvoidingView, Platform, TouchableOpacity, Alert } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { Input } from '../../components/common/Input';
 import { Button } from '../../components/common/Button';
 import { useAuth } from '../../hooks/useAuth';
+import { getPasswordStrength } from '../../utils/validators';
 import { colors } from '../../theme/colors';
 import { typography } from '../../theme/typography';
 import { spacing } from '../../theme/spacing';
+import { borderRadius } from '../../theme/borderRadius';
+import { Linking } from 'react-native';
 
 interface RegisterScreenProps { navigation: any; }
 
@@ -16,10 +20,11 @@ interface FormErrors {
   gender?: string;
   password?: string;
   confirmPassword?: string;
+  terms?: string;
 }
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-const GENDER_VALUES = ['male', 'female', 'non_binary', 'other'];
+const GENDERS = ['Male', 'Female', 'Non-binary', 'Other'] as const;
 const DOB_RE = /^(\d{2})-(\d{2})-(\d{4})$/;
 
 function parseDob(ddmmyyyy: string): Date | null {
@@ -39,17 +44,16 @@ function toIsoDob(ddmmyyyy: string): string {
   return `${match[3]}-${match[2]}-${match[1]}`;
 }
 
+const STRENGTH_COLORS = { weak: colors.error, medium: colors.warning, strong: colors.success };
+
 function validate(values: {
-  fullName: string; email: string; dateOfBirth: string; gender: string; password: string; confirmPassword: string;
+  fullName: string; email: string; dateOfBirth: string; gender: string; password: string; confirmPassword: string; termsAccepted: boolean;
 }): FormErrors {
   const errors: FormErrors = {};
-
   if (!values.fullName.trim()) errors.fullName = 'Full name is required';
   else if (values.fullName.trim().length < 2) errors.fullName = 'Name must be at least 2 characters';
-
   if (!values.email.trim()) errors.email = 'Email is required';
   else if (!EMAIL_RE.test(values.email.trim())) errors.email = 'Enter a valid email address';
-
   if (!values.dateOfBirth.trim()) errors.dateOfBirth = 'Date of birth is required';
   else if (!DOB_RE.test(values.dateOfBirth.trim())) errors.dateOfBirth = 'Use format DD-MM-YYYY';
   else {
@@ -61,17 +65,13 @@ function validate(values: {
       else if (age > 120) errors.dateOfBirth = 'Enter a valid date';
     }
   }
-
-  if (!values.gender.trim()) errors.gender = 'Gender is required';
-  else if (!GENDER_VALUES.includes(values.gender.trim().toLowerCase())) errors.gender = `Must be: ${GENDER_VALUES.join(', ')}`;
-
+  if (!values.gender) errors.gender = 'Select your gender';
   if (!values.password) errors.password = 'Password is required';
   else if (values.password.length < 8) errors.password = 'At least 8 characters';
   else if (!/[A-Z]/.test(values.password) || !/[0-9]/.test(values.password)) errors.password = 'Include 1 uppercase and 1 number';
-
   if (!values.confirmPassword) errors.confirmPassword = 'Confirm your password';
   else if (values.password !== values.confirmPassword) errors.confirmPassword = 'Passwords do not match';
-
+  if (!values.termsAccepted) errors.terms = 'You must accept the terms';
   return errors;
 }
 
@@ -82,58 +82,125 @@ export const RegisterScreen: React.FC<RegisterScreenProps> = ({ navigation }) =>
   const [confirmPassword, setConfirmPassword] = useState('');
   const [dateOfBirth, setDateOfBirth] = useState('');
   const [gender, setGender] = useState('');
+  const [termsAccepted, setTermsAccepted] = useState(false);
   const [errors, setErrors] = useState<FormErrors>({});
   const [submitted, setSubmitted] = useState(false);
-  const { register, loading, error } = useAuth();
+  const { register, loading, error: authError } = useAuth();
+  const [serverError, setServerError] = useState<string | null>(null);
+
+  const passwordStrength = password ? getPasswordStrength(password) : null;
 
   const handleRegister = async () => {
-    const fieldErrors = validate({ fullName, email, dateOfBirth, gender, password, confirmPassword });
+    const fieldErrors = validate({ fullName, email, dateOfBirth, gender, password, confirmPassword, termsAccepted });
     setErrors(fieldErrors);
     setSubmitted(true);
     if (Object.keys(fieldErrors).length > 0) return;
 
+    setServerError(null);
     try {
-      await register({ email: email.trim(), password, fullName: fullName.trim(), dateOfBirth: toIsoDob(dateOfBirth.trim()), gender: gender.trim().toLowerCase() });
+      await register({ email: email.trim(), password, fullName: fullName.trim(), dateOfBirth: toIsoDob(dateOfBirth.trim()), gender: gender.toLowerCase().replace(/[- ]/g, '_') });
     } catch (err: any) {
-      const msg = err?.response?.data?.message || err?.message || 'Registration failed';
-      console.warn('Registration failed:', msg);
+      const msg = err?.response?.data?.error?.message || err?.response?.data?.message || err?.message || 'Registration failed';
+      setServerError(msg);
     }
   };
 
-  const setField = (setter: (v: string) => void) => (v: string) => {
-    setter(v);
-    if (submitted) {
-      const updated = { fullName, email, dateOfBirth, gender, password, confirmPassword };
-      const key = setter === setFullName ? 'fullName' : setter === setEmail ? 'email' : setter === setDateOfBirth ? 'dateOfBirth' : setter === setGender ? 'gender' : setter === setPassword ? 'password' : 'confirmPassword';
-      updated[key] = v;
-      setErrors(validate(updated));
-    }
+  const updateField = (field: string, value: string) => {
+    const updated = { fullName, email, dateOfBirth, gender, password, confirmPassword, termsAccepted };
+    (updated as any)[field] = value;
+    if (field === 'fullName') setFullName(value);
+    else if (field === 'email') setEmail(value);
+    else if (field === 'dateOfBirth') setDateOfBirth(value);
+    else if (field === 'gender') setGender(value);
+    else if (field === 'password') setPassword(value);
+    else if (field === 'confirmPassword') setConfirmPassword(value);
+    if (submitted) setErrors(validate(updated));
   };
 
   return (
-    <KeyboardAvoidingView style={styles.container} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
-      <ScrollView contentContainerStyle={styles.content}>
-        <Text style={styles.title}>Create Account</Text>
-        <Text style={styles.subtitle}>Find your perfect match</Text>
-        <Input label="Full Name" placeholder="Enter your full name" value={fullName} onChangeText={setField(setFullName)} autoCapitalize="words" error={errors.fullName} />
-        <Input label="Email" placeholder="Enter your email" value={email} onChangeText={setField(setEmail)} keyboardType="email-address" autoCapitalize="none" error={errors.email} />
-        <Input label="Date of Birth" placeholder="DD-MM-YYYY" value={dateOfBirth} onChangeText={setField(setDateOfBirth)} keyboardType="numeric" error={errors.dateOfBirth} />
-        <Input label="Gender" placeholder="male, female, non_binary, other" value={gender} onChangeText={setField(setGender)} autoCapitalize="none" error={errors.gender} />
-        <Input label="Password" placeholder="Min 8 chars, 1 uppercase, 1 number" value={password} onChangeText={setField(setPassword)} secureTextEntry error={errors.password} />
-        <Input label="Confirm Password" placeholder="Confirm your password" value={confirmPassword} onChangeText={setField(setConfirmPassword)} secureTextEntry error={errors.confirmPassword} />
-        {error && <Text style={styles.error}>{error}</Text>}
-        <Button title="Create Account" onPress={handleRegister} loading={loading} style={styles.button} />
-        <Button title="Already have an account? Sign In" variant="ghost" onPress={() => navigation.goBack()} />
-      </ScrollView>
-    </KeyboardAvoidingView>
+    <SafeAreaView style={styles.safeArea}>
+      <KeyboardAvoidingView style={styles.container} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+        <ScrollView contentContainerStyle={styles.content}>
+          <Text style={styles.title}>Create Account</Text>
+          <Text style={styles.subtitle}>Find your perfect match</Text>
+
+          <Input label="Full Name" placeholder="Enter your full name" value={fullName} onChangeText={(v) => updateField('fullName', v)} autoCapitalize="words" error={errors.fullName} />
+          <Input label="Email" placeholder="Enter your email" value={email} onChangeText={(v) => updateField('email', v)} keyboardType="email-address" autoCapitalize="none" error={errors.email} />
+          <Input label="Date of Birth" placeholder="DD-MM-YYYY" value={dateOfBirth} onChangeText={(v) => updateField('dateOfBirth', v)} keyboardType="numeric" error={errors.dateOfBirth} />
+
+          <Text style={styles.fieldLabel}>Gender</Text>
+          <View style={styles.genderRow}>
+            {GENDERS.map((g) => (
+              <TouchableOpacity
+                key={g}
+                style={[styles.genderOption, gender === g && styles.genderSelected]}
+                onPress={() => updateField('gender', g)}
+                activeOpacity={0.7}
+              >
+                <Text style={[styles.genderText, gender === g && styles.genderTextSelected]}>{g}</Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+          {errors.gender && <Text style={styles.fieldError}>{errors.gender}</Text>}
+
+          <Input label="Password" placeholder="Min 8 chars, 1 uppercase, 1 number" value={password} onChangeText={(v) => updateField('password', v)} secureTextEntry error={errors.password} />
+          {passwordStrength && (
+            <View style={styles.strengthRow}>
+              <View style={[styles.strengthBar, { backgroundColor: STRENGTH_COLORS[passwordStrength] }]} />
+              <Text style={[styles.strengthText, { color: STRENGTH_COLORS[passwordStrength] }]}>{passwordStrength.charAt(0).toUpperCase() + passwordStrength.slice(1)}</Text>
+            </View>
+          )}
+
+          <Input label="Confirm Password" placeholder="Confirm your password" value={confirmPassword} onChangeText={(v) => updateField('confirmPassword', v)} secureTextEntry error={errors.confirmPassword} />
+
+          <TouchableOpacity
+            style={styles.termsRow}
+            onPress={() => setTermsAccepted(!termsAccepted)}
+            activeOpacity={0.7}
+          >
+            <View style={[styles.checkbox, termsAccepted && styles.checkboxChecked]}>
+              {termsAccepted && <Text style={styles.checkmark}>✓</Text>}
+            </View>
+            <Text style={styles.termsText}>
+              I agree to the{' '}
+              <Text style={styles.termsLink} onPress={() => Linking.openURL('https://connecta.ng/terms')}>Terms of Service</Text>
+              {' '}and{' '}
+              <Text style={styles.termsLink} onPress={() => Linking.openURL('https://connecta.ng/privacy')}>Privacy Policy</Text>
+            </Text>
+          </TouchableOpacity>
+          {errors.terms && <Text style={styles.fieldError}>{errors.terms}</Text>}
+
+          {(authError || serverError) && <Text style={styles.error}>{authError || serverError}</Text>}
+          <Button title="Create Account" onPress={handleRegister} loading={loading} style={styles.button} />
+          <Button title="Already have an account? Sign In" variant="ghost" onPress={() => navigation.goBack()} />
+        </ScrollView>
+      </KeyboardAvoidingView>
+    </SafeAreaView>
   );
 };
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.white },
-  content: { padding: spacing.xl, paddingTop: spacing.xxl },
+  safeArea: { flex: 1, backgroundColor: colors.white },
+  container: { flex: 1 },
+  content: { padding: spacing.xl, paddingTop: spacing.md },
   title: { ...typography.h1, marginBottom: spacing.xs },
   subtitle: { ...typography.body, color: colors.textSecondary, marginBottom: spacing.xl },
+  fieldLabel: { ...typography.caption, color: colors.textSecondary, fontWeight: '600', marginBottom: spacing.sm, marginTop: spacing.sm },
+  genderRow: { flexDirection: 'row', gap: spacing.sm, marginBottom: spacing.sm },
+  genderOption: { flex: 1, paddingVertical: spacing.sm, borderRadius: borderRadius.input, borderWidth: 1, borderColor: colors.border, alignItems: 'center' },
+  genderSelected: { backgroundColor: colors.primary, borderColor: colors.primary },
+  genderText: { ...typography.body, color: colors.textPrimary },
+  genderTextSelected: { color: colors.white },
+  fieldError: { ...typography.small, color: colors.error, marginBottom: spacing.sm },
+  strengthRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginBottom: spacing.md, marginTop: -spacing.sm },
+  strengthBar: { height: 3, width: 40, borderRadius: 2 },
+  strengthText: { ...typography.small, fontWeight: '600' },
+  termsRow: { flexDirection: 'row', alignItems: 'flex-start', marginBottom: spacing.sm, marginTop: spacing.sm },
+  checkbox: { width: 22, height: 22, borderRadius: 4, borderWidth: 2, borderColor: colors.border, alignItems: 'center', justifyContent: 'center', marginRight: spacing.sm, marginTop: 2 },
+  checkboxChecked: { backgroundColor: colors.primary, borderColor: colors.primary },
+  checkmark: { color: colors.white, fontSize: 14, fontWeight: '700' },
+  termsText: { ...typography.caption, color: colors.textSecondary, flex: 1, lineHeight: 20 },
+  termsLink: { color: colors.primary, fontWeight: '600' },
   error: { ...typography.caption, color: colors.error, marginBottom: spacing.md },
   button: { marginTop: spacing.md },
 });

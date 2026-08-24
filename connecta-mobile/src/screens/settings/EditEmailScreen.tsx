@@ -1,0 +1,30 @@
+import React, { useState } from 'react';
+import { View, Text, StyleSheet, Alert } from 'react-native';
+import { Input } from '../../components/common/Input';
+import { Button } from '../../components/common/Button';
+import { apiClient } from '../../services/api/apiClient';
+import { colors } from '../../theme/colors';
+import { typography } from '../../theme/typography';
+import { spacing } from '../../theme/spacing';
+
+export default function EditEmailScreen({ navigation }: any) {
+  const [email, setEmail] = useState('');
+  const [loading, setLoading] = useState(false);
+  const handleSave = async () => {
+    if (!email) return;
+    setLoading(true);
+    try {
+      await apiClient.patch('/users/me', { email });
+      Alert.alert('Success', 'Email updated');
+      navigation.goBack();
+    } catch { Alert.alert('Error', 'Failed to update email'); }
+    finally { setLoading(false); }
+  };
+  return (
+    <View style={styles.container}>
+      <Input label="Email" placeholder="you@email.com" value={email} onChangeText={setEmail} keyboardType="email-address" autoCapitalize="none" />
+      <Button title="Save" onPress={handleSave} loading={loading} style={styles.btn} />
+    </View>
+  );
+}
+const styles = StyleSheet.create({ container: { flex: 1, padding: spacing.xl, backgroundColor: colors.white }, btn: { marginTop: spacing.lg } });

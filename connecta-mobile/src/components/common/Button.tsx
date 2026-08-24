@@ -27,7 +27,16 @@ export const Button: React.FC<ButtonProps> = ({
   const textStyle = [styles.text, styles[`${variant}Text`], styles[`${size}Text`]];
 
   return (
-    <TouchableOpacity style={buttonStyle} onPress={onPress} disabled={disabled || loading} activeOpacity={0.7}>
+    <TouchableOpacity
+      style={buttonStyle}
+      onPress={onPress}
+      disabled={disabled || loading}
+      activeOpacity={0.7}
+      accessible
+      accessibilityRole="button"
+      accessibilityState={{ disabled: disabled || loading, busy: loading }}
+      accessibilityLabel={title}
+    >
       {loading ? <ActivityIndicator color={variant === 'primary' ? colors.white : colors.primary} /> : <Text style={textStyle}>{title}</Text>}
     </TouchableOpacity>
   );

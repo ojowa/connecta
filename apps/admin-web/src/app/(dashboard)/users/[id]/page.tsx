@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, use } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowLeft, Ban, UserCheck, UserX, Mail, Phone, Calendar } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -11,8 +11,8 @@ import { api } from "@/lib/api";
 import { UserRecord } from "@/types";
 import { formatDate } from "@/lib/utils";
 
-export default function UserDetailPage({ params }: { params: Promise<{ id: string }> }) {
-  const { id } = use(params);
+export default function UserDetailPage({ params }: { params: { id: string } }) {
+  const { id } = params;
   const router = useRouter();
   const [user, setUser] = useState<UserRecord | null>(null);
   const [loading, setLoading] = useState(true);

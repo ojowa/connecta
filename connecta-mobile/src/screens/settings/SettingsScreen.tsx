@@ -8,6 +8,8 @@ import {
   Switch,
   SafeAreaView,
   Alert,
+  Linking,
+  ActivityIndicator,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -54,6 +56,7 @@ const SettingsScreen: React.FC = () => {
   const [matchNotifications, setMatchNotifications] = useState(true);
   const [messageNotifications, setMessageNotifications] = useState(true);
   const [callNotifications, setCallNotifications] = useState(false);
+  const [exporting, setExporting] = useState(false);
 
   const updatePrefsMutation = useMutation({
     mutationFn: (prefs: any) => apiClient.put('/notifications/preferences', prefs),
@@ -70,8 +73,35 @@ const SettingsScreen: React.FC = () => {
   const handleDeleteAccount = () => {
     Alert.alert('Delete Account', 'This action cannot be undone. All your data will be permanently deleted.', [
       { text: 'Cancel', style: 'cancel' },
-      { text: 'Delete', style: 'destructive', onPress: () => { /* Navigate to delete account confirmation */ } },
+      {
+        text: 'Delete', style: 'destructive', onPress: async () => {
+          try {
+            await apiClient.delete('/users/me');
+            logout();
+          } catch {
+            Alert.alert('Error', 'Failed to delete account. Please try again.');
+          }
+        },
+      },
     ]);
+  };
+
+  const handleDownloadData = async () => {
+    setExporting(true);
+    try {
+      await apiClient.post('/users/me/export-data');
+      Alert.alert('Request Submitted', 'Your data export is being prepared. You will receive a download link via email within 24 hours.');
+    } catch {
+      Alert.alert('Error', 'Failed to request data export. Please try again.');
+    } finally {
+      setExporting(false);
+    }
+  };
+
+  const handleOpenUrl = (url: string, title: string) => {
+    Linking.openURL(url).catch(() => {
+      Alert.alert('Error', `Cannot open ${title}. Please try again later.`);
+    });
   };
 
   return (
@@ -138,7 +168,11 @@ const SettingsScreen: React.FC = () => {
         <SectionHeader title="Privacy" />
         <View style={styles.section}>
           <SettingsRow label="Block List" onPress={() => navigation.navigate('BlockList')} />
-          <SettingsRow label="Download Data" onPress={() => Alert.alert('Coming Soon', 'Data export will be available soon.')} />
+          <SettingsRow
+            label={exporting ? 'Requesting...' : 'Download Data'}
+            onPress={handleDownloadData}
+            rightElement={exporting ? <ActivityIndicator size="small" color={colors.primary} /> : undefined}
+          />
           <SettingsRow label="Delete Account" onPress={handleDeleteAccount} destructive />
         </View>
 
@@ -151,16 +185,16 @@ const SettingsScreen: React.FC = () => {
 
         <SectionHeader title="Support" />
         <View style={styles.section}>
-          <SettingsRow label="Help Center" onPress={() => Alert.alert('Help Center', 'Visit connecta.ng/help for support.')} />
+          <SettingsRow label="Help Center" onPress={() => handleOpenUrl('https://connecta.ng/help', 'Help Center')} />
           <SettingsRow label="Report a Problem" onPress={() => navigation.navigate('ReportProblem')} />
-          <SettingsRow label="Community Guidelines" onPress={() => Alert.alert('Community Guidelines', 'Be respectful, honest, and safe. Full guidelines at connecta.ng/guidelines.')} />
+          <SettingsRow label="Community Guidelines" onPress={() => handleOpenUrl('https://connecta.ng/guidelines', 'Community Guidelines')} />
         </View>
 
         <SectionHeader title="About" />
         <View style={styles.section}>
           <SettingsRow label="App Version" rightElement={<Text style={styles.versionText}>1.0.0</Text>} />
-          <SettingsRow label="Terms of Service" onPress={() => Alert.alert('Terms of Service', 'Full terms at connecta.ng/terms')} />
-          <SettingsRow label="Privacy Policy" onPress={() => Alert.alert('Privacy Policy', 'Full policy at connecta.ng/privacy')} />
+          <SettingsRow label="Terms of Service" onPress={() => handleOpenUrl('https://connecta.ng/terms', 'Terms of Service')} />
+          <SettingsRow label="Privacy Policy" onPress={() => handleOpenUrl('https://connecta.ng/privacy', 'Privacy Policy')} />
         </View>
 
         <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>

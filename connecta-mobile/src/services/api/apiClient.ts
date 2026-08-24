@@ -1,14 +1,11 @@
 import axios, { AxiosError, InternalAxiosRequestConfig } from 'axios';
 import { useAppStore } from '../../store';
 import { API_CONFIG } from '../../constants/api';
-import { resolveApiUrl } from '../../lib/network';
 
-let baseURL = process.env.EXPO_PUBLIC_API_URL;
-
-resolveApiUrl().then((url) => { baseURL = url; });
+const baseURL = process.env.EXPO_PUBLIC_LOCAL_API_URL || 'http://localhost:3000/v1';
 
 export const apiClient = axios.create({
-  get baseURL() { return baseURL; },
+  baseURL,
   timeout: API_CONFIG.timeout,
   headers: { 'Content-Type': 'application/json' },
 });

@@ -33,12 +33,6 @@ export class UsersController {
     return this.usersService.deleteAccount(userId, body.password);
   }
 
-  @Get(':id')
-  @ApiOperation({ summary: 'Get public profile' })
-  getUser(@Param('id') id: string, @Body('_userId') viewerId: string) {
-    return this.usersService.getPublicProfile(id, viewerId);
-  }
-
   @Get('me/preferences')
   @ApiOperation({ summary: 'Get preferences' })
   getPreferences(@Body('_userId') userId: string) {
@@ -49,6 +43,89 @@ export class UsersController {
   @ApiOperation({ summary: 'Update preferences' })
   updatePreferences(@Body('_userId') userId: string, @Body() body: UpdatePreferencesDto) {
     return this.usersService.updatePreferences(userId, body);
+  }
+
+  @Get('me/blocks')
+  @ApiOperation({ summary: 'List blocked users' })
+  getBlockedUsers(
+    @Body('_userId') userId: string,
+    @Query('page') page?: number,
+    @Query('limit') limit?: number,
+  ) {
+    return this.usersService.getBlockedUsers(userId, page, limit);
+  }
+
+  @Get('me/profile')
+  @ApiOperation({ summary: 'Get user profile with photos' })
+  getProfile(@Body('_userId') userId: string) {
+    return this.usersService.getProfile(userId);
+  }
+
+  @Post('me/export-data')
+  @ApiOperation({ summary: 'Export user data' })
+  exportData(@Body('_userId') userId: string) {
+    return this.usersService.exportData(userId);
+  }
+
+  @Get('me/prekeys')
+  @ApiOperation({ summary: 'Get pre-keys' })
+  getPreKeys(@Body('_userId') userId: string) {
+    return this.usersService.getPreKeys(userId);
+  }
+
+  @Post('me/prekeys')
+  @ApiOperation({ summary: 'Upload pre-key bundle' })
+  uploadPreKeys(@Body('_userId') userId: string, @Body() body: any) {
+    return this.usersService.uploadPreKeys(userId, body);
+  }
+
+  @Get('me/prekeys/bundle')
+  @ApiOperation({ summary: 'Get pre-key bundle' })
+  getPreKeyBundle(@Body('_userId') userId: string) {
+    return this.usersService.getPreKeyBundle(userId);
+  }
+
+  @Get('me/backup')
+  @ApiOperation({ summary: 'Get backup' })
+  getBackup(@Body('_userId') userId: string) {
+    return this.usersService.getBackup(userId);
+  }
+
+  @Post('me/backup')
+  @ApiOperation({ summary: 'Backup keys' })
+  backupKeys(@Body('_userId') userId: string, @Body() body: any) {
+    return this.usersService.backupKeys(userId, body);
+  }
+
+  @Get('sync')
+  @ApiOperation({ summary: 'Get sync delta for user profiles' })
+  getSync(@Body('_userId') userId: string, @Query('since') since?: string) {
+    const sinceTime = since ? parseInt(since, 10) : 0;
+    return this.usersService.getSyncDelta(userId, sinceTime);
+  }
+
+  @Get('sessions')
+  @ApiOperation({ summary: 'Get sessions' })
+  getSessions(@Body('_userId') userId: string) {
+    return this.usersService.getSessions(userId);
+  }
+
+  @Post('sessions')
+  @ApiOperation({ summary: 'Create session' })
+  createSession(@Body('_userId') userId: string, @Body() body: any) {
+    return this.usersService.createSession(userId, body);
+  }
+
+  @Delete('sessions/:sessionId')
+  @ApiOperation({ summary: 'Delete session' })
+  deleteSession(@Body('_userId') userId: string, @Param('sessionId') sessionId: string) {
+    return this.usersService.deleteSession(userId, sessionId);
+  }
+
+  @Get(':id')
+  @ApiOperation({ summary: 'Get public profile' })
+  getUser(@Param('id') id: string, @Body('_userId') viewerId: string) {
+    return this.usersService.getPublicProfile(id, viewerId);
   }
 
   @Post(':id/block')
@@ -63,16 +140,6 @@ export class UsersController {
     return this.usersService.unblockUser(userId, id);
   }
 
-  @Get('me/blocks')
-  @ApiOperation({ summary: 'List blocked users' })
-  getBlockedUsers(
-    @Body('_userId') userId: string,
-    @Query('page') page?: number,
-    @Query('limit') limit?: number,
-  ) {
-    return this.usersService.getBlockedUsers(userId, page, limit);
-  }
-
   @Post(':id/report')
   @ApiOperation({ summary: 'Report user' })
   reportUser(
@@ -81,60 +148,5 @@ export class UsersController {
     @Body() body: ReportUserDto,
   ) {
     return this.usersService.reportUser(userId, id, body);
-  }
-
-  @Post('me/prekeys')
-  @ApiOperation({ summary: 'Upload pre-key bundle' })
-  uploadPreKeys(@Body('_userId') userId: string, @Body() body: any) {
-    return this.usersService.uploadPreKeys(userId, body);
-  }
-
-  @Get('me/prekeys')
-  @ApiOperation({ summary: 'Get pre-keys' })
-  getPreKeys(@Body('_userId') userId: string) {
-    return this.usersService.getPreKeys(userId);
-  }
-
-  @Get('me/prekeys/bundle')
-  @ApiOperation({ summary: 'Get pre-key bundle' })
-  getPreKeyBundle(@Body('_userId') userId: string) {
-    return this.usersService.getPreKeyBundle(userId);
-  }
-
-  @Post('sessions')
-  @ApiOperation({ summary: 'Create session' })
-  createSession(@Body('_userId') userId: string, @Body() body: any) {
-    return this.usersService.createSession(userId, body);
-  }
-
-  @Get('sessions')
-  @ApiOperation({ summary: 'Get sessions' })
-  getSessions(@Body('_userId') userId: string) {
-    return this.usersService.getSessions(userId);
-  }
-
-  @Delete('sessions/:sessionId')
-  @ApiOperation({ summary: 'Delete session' })
-  deleteSession(@Body('_userId') userId: string, @Param('sessionId') sessionId: string) {
-    return this.usersService.deleteSession(userId, sessionId);
-  }
-
-  @Post('me/backup')
-  @ApiOperation({ summary: 'Backup keys' })
-  backupKeys(@Body('_userId') userId: string, @Body() body: any) {
-    return this.usersService.backupKeys(userId, body);
-  }
-
-  @Get('me/backup')
-  @ApiOperation({ summary: 'Get backup' })
-  getBackup(@Body('_userId') userId: string) {
-    return this.usersService.getBackup(userId);
-  }
-
-  @Get('sync')
-  @ApiOperation({ summary: 'Get sync delta for user profiles' })
-  getSync(@Body('_userId') userId: string, @Query('since') since?: string) {
-    const sinceTime = since ? parseInt(since, 10) : 0;
-    return this.usersService.getSyncDelta(userId, sinceTime);
   }
 }

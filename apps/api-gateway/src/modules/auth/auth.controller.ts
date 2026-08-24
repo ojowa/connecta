@@ -92,4 +92,18 @@ export class AuthController {
   resetPassword(@Body() body: any) {
     return this.authService.resetPassword(body);
   }
+
+  @Get('2fa/settings')
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Get 2FA settings' })
+  get2FASettings(@Body('_userId') userId: string) {
+    return this.authService.get2FASettings(userId);
+  }
+
+  @Post('2fa/toggle')
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Enable or disable 2FA' })
+  toggle2FA(@Body('_userId') userId: string, @Body() body: any) {
+    return this.authService.toggle2FA(userId, body);
+  }
 }

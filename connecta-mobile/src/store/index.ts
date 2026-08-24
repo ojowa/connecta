@@ -67,18 +67,37 @@ export const useAppStore = create<AppState>()(
           }
           return {};
         }),
-        updateMessage: (id, data) => set(() => {
-          return {};
+        updateMessage: (id, data) => set((state) => {
+          const activeChatId = state.activeChatId;
+          if (!activeChatId) return {};
+          const messages = (state as any).messages?.[activeChatId];
+          if (!messages) return {};
+          const idx = messages.findIndex((m: any) => m.id === id);
+          if (idx === -1) return {};
+          const updated = [...messages];
+          updated[idx] = { ...updated[idx], ...data };
+          return { messages: { ...state.messages, [activeChatId]: updated } } as any;
         }),
-        removeMessage: (id) => set(() => {
-          return {};
+        removeMessage: (id) => set((state) => {
+          const activeChatId = state.activeChatId;
+          if (!activeChatId) return {};
+          const messages = (state as any).messages?.[activeChatId];
+          if (!messages) return {};
+          return {
+            messages: {
+              ...state.messages,
+              [activeChatId]: messages.filter((m: any) => m.id !== id),
+            },
+          } as any;
         }),
         markMessagesRead: (conversationId) => set((state) => {
           const unreadCounts = { ...state.unreadCounts, [conversationId]: 0 };
           return { unreadCounts, totalUnread: Object.values(unreadCounts).reduce((a, b) => a + b, 0) };
         }),
-        addNewMatch: (match) => set(() => {
-          return {};
+        addNewMatch: (match) => set((state) => {
+          const matches = (state as any).matches || [];
+          if (matches.some((m: any) => m.id === match.id)) return {};
+          return { matches: [match, ...matches] } as any;
         }),
         logout: () => set({
           user: null, token: null, refreshToken: null, isAuthenticated: false,

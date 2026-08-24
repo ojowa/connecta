@@ -1,41 +1,20 @@
 import React from 'react';
-import { View, Text, StyleSheet, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useQuery } from '@tanstack/react-query';
+import { apiClient } from '../../services/api/apiClient';
+import { ENDPOINTS } from '../../constants/endpoints';
 import { Button } from '../../components/common/Button';
 import { colors } from '../../theme/colors';
 import { typography } from '../../theme/typography';
 import { spacing } from '../../theme/spacing';
 import { borderRadius } from '../../theme/borderRadius';
 
-const TIPS = [
-  {
-    id: '1',
-    icon: '\uD83D\uDCCD',
-    title: 'Meet in public places',
-    description:
-      'Always meet in a public place for your first few dates',
-  },
-  {
-    id: '2',
-    icon: '\uD83D\uDE0A',
-    title: 'Tell a friend',
-    description:
-      "Let a friend know where you're going and who you're meeting",
-  },
-  {
-    id: '3',
-    icon: '\uD83D\uDCB3',
-    title: "Don't share financial info",
-    description:
-      "Never send money or share financial details with someone you haven't met",
-  },
-  {
-    id: '4',
-    icon: '\uD83D\uDCA1',
-    title: 'Trust your instincts',
-    description:
-      'If something feels off, it probably is. Trust your gut',
-  },
+const FALLBACK_TIPS = [
+  { id: '1', icon: '\uD83D\uDCCD', title: 'Meet in public places', description: 'Always meet in a public place for your first few dates' },
+  { id: '2', icon: '\uD83D\uDE0A', title: 'Tell a friend', description: "Let a friend know where you're going and who you're meeting" },
+  { id: '3', icon: '\uD83D\uDCB3', title: "Don't share financial info", description: "Never send money or share financial details with someone you haven't met" },
+  { id: '4', icon: '\uD83D\uDCA1', title: 'Trust your instincts', description: 'If something feels off, it probably is. Trust your gut' },
 ];
 
 interface SafetyTipsProps {
@@ -43,12 +22,28 @@ interface SafetyTipsProps {
 }
 
 const SafetyTips: React.FC<SafetyTipsProps> = ({ navigation }) => {
+  const { data: tips = FALLBACK_TIPS, isLoading } = useQuery({
+    queryKey: ['safetyTips'],
+    queryFn: () => apiClient.get(ENDPOINTS.CONTENT.SAFETY_TIPS).then((r) => r.data?.tips || r.data || FALLBACK_TIPS),
+    staleTime: 30 * 60 * 1000,
+  });
+
+  if (isLoading) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color={colors.primary} />
+        </View>
+      </SafeAreaView>
+    );
+  }
+
   return (
     <SafeAreaView style={styles.container}>
       <ScrollView contentContainerStyle={styles.content}>
         <Text style={styles.title}>Safety Tips</Text>
 
-        {TIPS.map((tip) => (
+        {tips.map((tip: any) => (
           <View key={tip.id} style={styles.card}>
             <View style={styles.iconContainer}>
               <Text style={styles.icon}>{tip.icon}</Text>
@@ -77,6 +72,11 @@ const styles = StyleSheet.create({
   },
   content: {
     padding: spacing.lg,
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   title: {
     ...typography.h2,

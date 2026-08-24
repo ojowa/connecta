@@ -198,4 +198,32 @@ export class UsersService {
 
     return { data: profile };
   }
+
+  async getProfile(userId: string) {
+    const user = await this.userRepo.findOne({ where: { id: userId } });
+    if (!user) throw new NotFoundException('User not found');
+    const profile = await this.profileRepo.findOne({ where: { userId } });
+    const photos = profile
+      ? await this.photoRepo.find({ where: { profileId: profile.id }, order: { order: 'ASC' } })
+      : [];
+    const { passwordHash, ...userData } = user;
+    return { user: userData, profile: profile || null, photos };
+  }
+
+  async exportData(userId: string) {
+    const user = await this.userRepo.findOne({ where: { id: userId } });
+    if (!user) throw new NotFoundException('User not found');
+    const profile = await this.profileRepo.findOne({ where: { userId } });
+    const photos = profile
+      ? await this.photoRepo.find({ where: { profileId: profile.id } })
+      : [];
+    const { passwordHash, ...userData } = user;
+    return {
+      user: userData,
+      profile: profile || null,
+      photos,
+      exportedAt: new Date().toISOString(),
+      message: 'Data export initiated. You will receive an email when ready.',
+    };
+  }
 }

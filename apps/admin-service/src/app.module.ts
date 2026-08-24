@@ -1,57 +1,28 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { JwtModule } from '@nestjs/jwt';
-import { NatsModule } from '@app/common';
+import { AdminUser, AdminSession, AuditLog, User, Profile, SystemSetting, Report, Notification, Subscription, Transaction, Plan } from '@app/common/entities';
 import { AdminController } from './admin.controller';
 import { AdminService } from './admin.service';
-import { ModerationEventsHandler } from './events/moderation-events.handler';
-import {
-  AdminUser,
-  AdminSession,
-  AuditLog,
-  SystemSetting,
-  User,
-  Report,
-  Subscription,
-  Transaction,
-  Plan,
-  Profile,
-  Notification,
-  Photo,
-} from '@app/common/entities';
+
+const entities = [AdminUser, AdminSession, AuditLog, User, Profile, SystemSetting, Report, Notification, Subscription, Transaction, Plan];
 
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
-    NatsModule,
     TypeOrmModule.forRoot({
       type: 'postgres',
       host: process.env.DB_HOST || 'localhost',
       port: parseInt(process.env.DB_PORT || '5432', 10),
-      username: process.env.DB_USERNAME || 'postgres',
-      password: process.env.DB_PASSWORD || '',
+      username: process.env.DB_USERNAME || 'connecta_user',
+      password: process.env.DB_PASSWORD || 'connecta_password',
       database: process.env.DB_NAME || 'connecta_db',
-      autoLoadEntities: true,
-      synchronize: false,
+      entities,
+      synchronize: process.env.NODE_ENV !== 'production',
     }),
-    TypeOrmModule.forFeature([
-      AdminUser,
-      AdminSession,
-      AuditLog,
-      SystemSetting,
-      User,
-      Report,
-      Subscription,
-      Transaction,
-      Plan,
-      Profile,
-      Notification,
-      Photo,
-    ]),
-    JwtModule.register({ secret: process.env.JWT_SECRET || '', signOptions: { expiresIn: '15m' } }),
+    TypeOrmModule.forFeature(entities),
   ],
   controllers: [AdminController],
-  providers: [AdminService, ModerationEventsHandler],
+  providers: [AdminService],
 })
 export class AppModule {}

@@ -7,8 +7,10 @@ import {
   TouchableOpacity,
   Alert,
   SafeAreaView,
+  Image,
 } from 'react-native';
 import { Button } from '../../components/common/Button';
+import { ImageProcessor } from '../../utils/imageProcessing';
 import { colors } from '../../theme/colors';
 import { typography } from '../../theme/typography';
 import { spacing } from '../../theme/spacing';
@@ -40,9 +42,27 @@ const PhotoManagerScreen: React.FC<PhotoManagerScreenProps> = ({ navigation }) =
     });
   }, [navigation, photos]);
 
-  const handleSave = () => {
-    Alert.alert('Saved', 'Your photos have been updated.');
-    navigation.goBack();
+  const handleSave = async () => {
+    const uris = photos.filter((p): p is string => p !== null && !p.startsWith('http'));
+    if (uris.length === 0) {
+      navigation.goBack();
+      return;
+    }
+    try {
+      for (const uri of uris) {
+        await ImageProcessor.uploadImage({
+          uri,
+          width: 1080,
+          height: 1440,
+          size: 0,
+          mimeType: 'image/jpeg',
+        });
+      }
+      Alert.alert('Saved', 'Your photos have been updated.');
+      navigation.goBack();
+    } catch {
+      Alert.alert('Error', 'Failed to upload photos.');
+    }
   };
 
   const handleAddPhoto = () => {
@@ -62,25 +82,29 @@ const PhotoManagerScreen: React.FC<PhotoManagerScreenProps> = ({ navigation }) =
     ]);
   };
 
-  const handleTakePhoto = () => {
+  const handleTakePhoto = async () => {
     const emptyIndex = photos.findIndex((p) => p === null);
     if (emptyIndex === -1) {
       Alert.alert('Full', 'You have reached the maximum number of photos.');
       return;
     }
+    const image = await ImageProcessor.takePhoto();
+    if (!image) return;
     const newPhotos = [...photos];
-    newPhotos[emptyIndex] = `photo_${Date.now()}`;
+    newPhotos[emptyIndex] = image.uri;
     setPhotos(newPhotos);
   };
 
-  const handleChooseFromGallery = () => {
+  const handleChooseFromGallery = async () => {
     const emptyIndex = photos.findIndex((p) => p === null);
     if (emptyIndex === -1) {
       Alert.alert('Full', 'You have reached the maximum number of photos.');
       return;
     }
+    const image = await ImageProcessor.pickImage();
+    if (!image) return;
     const newPhotos = [...photos];
-    newPhotos[emptyIndex] = `photo_${Date.now()}`;
+    newPhotos[emptyIndex] = image.uri;
     setPhotos(newPhotos);
   };
 
@@ -115,11 +139,7 @@ const PhotoManagerScreen: React.FC<PhotoManagerScreenProps> = ({ navigation }) =
             <View key={index} style={styles.photoSlot}>
               {photo ? (
                 <View style={styles.photoContainer}>
-                  <View style={styles.photoPlaceholder}>
-                    <Text style={styles.photoPlaceholderText}>
-                      {index + 1}
-                    </Text>
-                  </View>
+                  <Image source={{ uri: photo }} style={styles.photoImage} />
                   <TouchableOpacity
                     style={styles.deleteButton}
                     onPress={() => handleDeletePhoto(index)}
@@ -208,6 +228,10 @@ const styles = StyleSheet.create({
   photoPlaceholderText: {
     ...typography.h2,
     color: colors.gray400,
+  },
+  photoImage: {
+    flex: 1,
+    borderRadius: borderRadius.card,
   },
   deleteButton: {
     position: 'absolute',

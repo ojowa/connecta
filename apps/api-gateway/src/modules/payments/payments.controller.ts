@@ -67,6 +67,31 @@ export class PaymentsController {
     return this.paymentsService.getPaymentHistory(userId, page, limit);
   }
 
+  @Get('wallet')
+  @ApiOperation({ summary: 'Get wallet balance and transactions' })
+  @ApiBearerAuth()
+  wallet(@Body('_userId') userId: string) {
+    return this.paymentsService.getWallet(userId);
+  }
+
+  @Get('transactions')
+  @ApiOperation({ summary: 'Get transaction history' })
+  @ApiBearerAuth()
+  transactions(
+    @Body('_userId') userId: string,
+    @Query('page') page?: number,
+    @Query('limit') limit?: number,
+  ) {
+    return this.paymentsService.getTransactions(userId, page, limit);
+  }
+
+  @Get('options')
+  @ApiOperation({ summary: 'Get available payment options' })
+  @ApiBearerAuth()
+  options(@Body('_userId') userId: string) {
+    return this.paymentsService.getPaymentOptions(userId);
+  }
+
   @Post('refund/:transactionId')
   @ApiOperation({ summary: 'Request refund' })
   @ApiBearerAuth()

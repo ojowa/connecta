@@ -8,6 +8,8 @@ import {
   FlatList,
   SafeAreaView,
   Alert,
+  Linking,
+  ActivityIndicator,
 } from 'react-native';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useNavigation } from '@react-navigation/native';
@@ -21,6 +23,9 @@ interface PurchaseOption {
   id: string;
   title: string;
   price: string;
+  amount: number;
+  currency: string;
+  purpose: string;
   isBestValue?: boolean;
 }
 
@@ -32,16 +37,10 @@ interface Transaction {
   type: 'purchase' | 'usage' | 'refund';
 }
 
-// TODO: In production, purchase options should come from the API
-const PURCHASE_OPTIONS: PurchaseOption[] = [
-  { id: 'sl10', title: '10 Super Likes', price: '$4.99' },
-  { id: 'boost5', title: '5 Boosts', price: '$7.99' },
-  {
-    id: 'bundle',
-    title: 'Bundle (15 Super Likes + 5 Boosts)',
-    price: '$9.99',
-    isBestValue: true,
-  },
+const FALLBACK_OPTIONS: PurchaseOption[] = [
+  { id: 'sl10', title: '10 Super Likes', price: '$4.99', amount: 499, currency: 'USD', purpose: 'sl10' },
+  { id: 'boost5', title: '5 Boosts', price: '$7.99', amount: 799, currency: 'USD', purpose: 'boost5' },
+  { id: 'bundle', title: 'Bundle (15 Super Likes + 5 Boosts)', price: '$9.99', amount: 999, currency: 'USD', purpose: 'bundle', isBestValue: true },
 ];
 
 const SuperLikeIcon: React.FC = () => (
@@ -110,6 +109,12 @@ const WalletScreen: React.FC = () => {
     queryFn: () => apiClient.get('/payments/transactions').then((r) => r.data),
   });
 
+  const { data: purchaseOptions = FALLBACK_OPTIONS } = useQuery({
+    queryKey: ['purchaseOptions'],
+    queryFn: () => apiClient.get('/payments/options').then((r) => r.data?.options || r.data || FALLBACK_OPTIONS),
+    staleTime: 5 * 60 * 1000,
+  });
+
   const credits = walletData?.credits ?? 0;
   const superLikes = walletData?.superLikes ?? 0;
   const boosts = walletData?.boosts ?? 0;
@@ -118,17 +123,24 @@ const WalletScreen: React.FC = () => {
   const navigation = useNavigation<any>();
 
   const initPaymentMutation = useMutation({
-    mutationFn: (purpose: string) => apiClient.post('/payments/initialize', {
-      amount: purpose === 'sl10' ? '4.99' : purpose === 'boost5' ? '7.99' : '9.99',
-      currency: 'USD',
-      purpose,
+    mutationFn: (option: PurchaseOption) => apiClient.post('/payments/initialize', {
+      amount: option.amount,
+      currency: option.currency,
+      purpose: option.purpose,
     }),
-    onSuccess: (response) => {
-      Alert.alert(
-        'Payment',
-        `Payment initialized. Reference: ${response.data.reference}\n\nIn production, this opens the Paystack checkout.`,
-        [{ text: 'OK' }]
-      );
+    onSuccess: async (response) => {
+      const authorizationUrl = response.data?.authorization_url || response.data?.data?.authorization_url;
+      const reference = response.data?.reference || response.data?.data?.reference;
+      if (authorizationUrl) {
+        await Linking.openURL(authorizationUrl);
+        Alert.alert(
+          'Complete Payment',
+          `Reference: ${reference}\n\nAfter completing payment, your balance will update automatically.`,
+          [{ text: 'OK' }]
+        );
+      } else {
+        Alert.alert('Payment', `Reference: ${reference}\n\nPayment initialized. Please check your email for the payment link.`);
+      }
       queryClient.invalidateQueries({ queryKey: ['wallet'] });
       queryClient.invalidateQueries({ queryKey: ['transactions'] });
     },
@@ -137,8 +149,11 @@ const WalletScreen: React.FC = () => {
     },
   });
 
-  const handleBuy = (optionId: string) => {
-    initPaymentMutation.mutate(optionId);
+  const handleBuy = (option: PurchaseOption) => {
+    Alert.alert('Confirm Purchase', `Buy ${option.title} for ${option.price}?`, [
+      { text: 'Cancel', style: 'cancel' },
+      { text: 'Buy', onPress: () => initPaymentMutation.mutate(option) },
+    ]);
   };
 
   return (
@@ -173,12 +188,18 @@ const WalletScreen: React.FC = () => {
         </View>
 
         <Text style={styles.sectionTitle}>Purchase</Text>
+        {initPaymentMutation.isPending && (
+          <View style={styles.loadingContainer}>
+            <ActivityIndicator size="large" color={colors.primary} />
+            <Text style={styles.loadingText}>Processing payment...</Text>
+          </View>
+        )}
         <View style={styles.purchaseSection}>
-          {PURCHASE_OPTIONS.map((option) => (
+          {purchaseOptions.map((option: PurchaseOption) => (
             <PurchaseCard
               key={option.id}
               option={option}
-              onBuy={() => handleBuy(option.id)}
+              onBuy={() => handleBuy(option)}
             />
           ))}
         </View>
@@ -295,6 +316,15 @@ const styles = StyleSheet.create({
   purchaseSection: {
     paddingHorizontal: spacing.lg,
     gap: spacing.sm,
+  },
+  loadingContainer: {
+    alignItems: 'center',
+    paddingVertical: spacing.md,
+  },
+  loadingText: {
+    ...typography.caption,
+    color: colors.textSecondary,
+    marginTop: spacing.sm,
   },
   purchaseCard: {
     backgroundColor: colors.background,

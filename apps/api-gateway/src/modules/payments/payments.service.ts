@@ -252,4 +252,62 @@ export class PaymentsService {
     }
     return { received: true };
   }
+
+  async getWallet(userId: string) {
+    const user = await this.userRepo.findOne({ where: { id: userId } });
+    const sub = await this.subRepo.findOne({ where: { userId, status: 'active' } });
+    const completedTxns = await this.txnRepo.find({
+      where: { userId, status: 'completed' },
+      order: { createdAt: 'DESC' },
+      take: 10,
+    });
+    return {
+      balance: (user as any).walletBalance || 0,
+      currency: 'NGN',
+      subscription: sub ? { planId: sub.planId, status: sub.status, expiresAt: sub.currentPeriodEnd } : null,
+      recentTransactions: completedTxns.map((t) => ({
+        id: t.id,
+        type: t.type,
+        amount: t.amount / 100,
+        currency: t.currency,
+        status: t.status,
+        createdAt: t.createdAt,
+      })),
+    };
+  }
+
+  async getTransactions(userId: string, page = 1, limit = 20) {
+    const [transactions, total] = await this.txnRepo.findAndCount({
+      where: { userId },
+      order: { createdAt: 'DESC' },
+      skip: (page - 1) * limit,
+      take: limit,
+    });
+    return {
+      transactions: transactions.map((t) => ({
+        id: t.id,
+        type: t.type,
+        amount: t.amount / 100,
+        currency: t.currency,
+        status: t.status,
+        reference: t.reference,
+        paymentMethod: t.paymentMethod,
+        createdAt: t.createdAt,
+      })),
+      meta: { page, limit, total, hasMore: total > page * limit },
+    };
+  }
+
+  async getPaymentOptions(userId: string) {
+    return {
+      methods: [
+        { id: 'card', name: 'Credit/Debit Card', enabled: true, icon: 'credit-card' },
+        { id: 'bank_transfer', name: 'Bank Transfer', enabled: true, icon: 'bank' },
+        { id: 'ussd', name: 'USSD', enabled: true, icon: 'phone' },
+        { id: 'mobile_money', name: 'Mobile Money', enabled: false, icon: 'smartphone' },
+      ],
+      currencies: ['NGN', 'GHS', 'KES', 'ZAR'],
+      defaultCurrency: 'NGN',
+    };
+  }
 }

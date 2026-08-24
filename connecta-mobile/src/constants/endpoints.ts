@@ -8,6 +8,8 @@ export const ENDPOINTS = {
     LOGOUT: '/auth/logout',
     FORGOT_PASSWORD: '/auth/password/forgot',
     RESET_PASSWORD: '/auth/password/reset',
+    TWO_FA_SETTINGS: '/auth/2fa/settings',
+    TWO_FA_TOGGLE: '/auth/2fa/toggle',
   },
   USERS: {
     ME: '/users/me',
@@ -73,6 +75,9 @@ export const ENDPOINTS = {
     VERIFY: '/payments/verify',
     HISTORY: '/payments/history',
     REFUND: (transactionId: string) => `/payments/refund/${transactionId}`,
+    WALLET: '/payments/wallet',
+    TRANSACTIONS: '/payments/transactions',
+    OPTIONS: '/payments/options',
   },
   NOTIFICATIONS: {
     LIST: '/notifications',
@@ -86,5 +91,11 @@ export const ENDPOINTS = {
   },
   SYNC: {
     VECTOR_CLOCK: '/sync/vector-clock',
+  },
+  CONTENT: {
+    SAFETY_TIPS: '/content/safety-tips',
+  },
+  SUPPORT: {
+    REPORT: '/support/report',
   },
 };
