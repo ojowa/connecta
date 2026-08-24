@@ -41,16 +41,20 @@ export function useDeleteMessage(conversationId: string) {
   });
 }
 
-export function useReactToMessage() {
+export function useReactToMessage(conversationId: string) {
+  const queryClient = useQueryClient();
   return useMutation({
     mutationFn: ({ messageId, emoji }: { messageId: string; emoji: string }) =>
-      chatApi.reactToMessage(messageId, emoji),
+      chatApi.reactToMessage(conversationId, messageId, emoji),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['messages', conversationId] });
+    },
   });
 }
 
-export function useMarkAsRead() {
+export function useMarkAsRead(conversationId: string) {
   return useMutation({
-    mutationFn: (messageId: string) => chatApi.markAsRead(messageId),
+    mutationFn: () => chatApi.markAsRead(conversationId),
   });
 }
 

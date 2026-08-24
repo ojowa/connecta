@@ -10,14 +10,14 @@ export class ChatController {
 
   @Get('conversations')
   @ApiOperation({ summary: 'Get conversations' })
-  getConversations(@Headers('x-user-id') userId: string, @Query('page') page?: number, @Query('limit') limit?: number) {
-    return this.chatService.getConversations(userId, page, limit);
+  getConversations(@Headers('x-user-id') userId: string, @Query('page') page?: string, @Query('limit') limit?: string) {
+    return this.chatService.getConversations(userId, page ? parseInt(page, 10) : 1, limit ? parseInt(limit, 10) : 20);
   }
 
   @Get('conversations/:id/messages')
   @ApiOperation({ summary: 'Get messages' })
-  getMessages(@Headers('x-user-id') userId: string, @Param('id') conversationId: string, @Query('page') page?: number, @Query('limit') limit?: number) {
-    return this.chatService.getMessages(userId, conversationId, page, limit);
+  getMessages(@Headers('x-user-id') userId: string, @Param('id') conversationId: string, @Query('page') page?: string, @Query('limit') limit?: string) {
+    return this.chatService.getMessages(userId, conversationId, page ? parseInt(page, 10) : 1, limit ? parseInt(limit, 10) : 50);
   }
 
   @Post('conversations/:id/messages')

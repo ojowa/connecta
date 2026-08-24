@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Repository, In } from 'typeorm';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { Conversation, ConversationParticipant, Message, MessageReaction, ReadReceipt, User } from '@app/common/entities';
 
@@ -19,8 +19,56 @@ export class ChatService {
   async getConversations(userId: string, page = 1, limit = 20) {
     const participations = await this.partRepo.find({ where: { userId }, order: { lastReadAt: 'DESC' }, skip: (page - 1) * limit, take: limit });
     const convIds = participations.map((p) => p.conversationId);
+    if (convIds.length === 0) return { conversations: [], meta: { page, limit, hasMore: false } };
+
     const conversations = await this.convRepo.findByIds(convIds);
-    return { conversations: conversations.map((c) => ({ ...c, unreadCount: participations.find((p) => p.conversationId === c.id)?.unreadCount || 0 })), meta: { page, limit, hasMore: participations.length === limit } };
+    const allParticipantIds = new Set<string>();
+    const convParticipantMap = new Map<string, string[]>();
+    for (const p of participations) {
+      allParticipantIds.add(p.userId);
+    }
+    const allParts = await this.partRepo.find({ where: { conversationId: In(convIds) } });
+    for (const p of allParts) {
+      allParticipantIds.add(p.userId);
+      const list = convParticipantMap.get(p.conversationId) || [];
+      list.push(p.userId);
+      convParticipantMap.set(p.conversationId, list);
+    }
+
+    const users = allParticipantIds.size > 0 ? await this.userRepo.find({ where: { id: In([...allParticipantIds]) } }) : [];
+    const userMap = new Map(users.map((u) => [u.id, u]));
+
+    const lastMessageIds = conversations.filter((c) => c.lastMessageId).map((c) => c.lastMessageId!);
+    const lastMessages = lastMessageIds.length > 0 ? await this.msgRepo.find({ where: { id: In(lastMessageIds) } }) : [];
+    const lastMsgMap = new Map(lastMessages.map((m) => [m.id, m]));
+
+    const partMap = new Map(participations.map((p) => [p.conversationId, p]));
+
+    return {
+      conversations: conversations.map((c) => {
+        const participantIds = convParticipantMap.get(c.id) || [];
+        const participantNames: Record<string, string> = {};
+        const participantAvatars: Record<string, string> = {};
+        for (const pid of participantIds) {
+          const user = userMap.get(pid);
+          participantNames[pid] = user?.fullName || 'Unknown';
+        }
+        const part = partMap.get(c.id);
+        const lastMsg = c.lastMessageId ? lastMsgMap.get(c.lastMessageId) : null;
+        return {
+          id: c.id,
+          type: c.type,
+          participantIds,
+          participantNames,
+          participantAvatars,
+          lastMessage: lastMsg ? { id: lastMsg.id, content: lastMsg.content, senderId: lastMsg.senderId, type: lastMsg.type, createdAt: lastMsg.createdAt } : null,
+          unreadCount: part?.unreadCount || 0,
+          createdAt: c.createdAt,
+          updatedAt: c.lastMessageAt || c.createdAt,
+        };
+      }),
+      meta: { page, limit, hasMore: participations.length === limit },
+    };
   }
 
   async getMessages(userId: string, conversationId: string, page = 1, limit = 50) {
@@ -35,7 +83,7 @@ export class ChatService {
     if (!participation) throw new BadRequestException('Not a participant');
     const message = this.msgRepo.create({ conversationId, senderId: userId, content: data.content, type: data.type || 'text' });
     const saved = await this.msgRepo.save(message);
-    await this.partRepo.update({ conversationId, userId: { not: userId } as any }, { unreadCount: () => 'unread_count + 1' });
+    await this.partRepo.update({ conversationId, userId: { not: userId } as any }, { unreadCount: () => '"unreadCount" + 1' });
     this.eventEmitter.emit('chat.message_sent', { conversationId, message: saved });
     return saved;
   }
@@ -69,7 +117,12 @@ export class ChatService {
   }
 
   async searchMessages(userId: string, query: string, conversationId?: string) {
-    const qb = this.msgRepo.createQueryBuilder('m').where('m.content ILIKE :query', { query: `%${query}%` });
+    const myConvIds = (await this.partRepo.find({ where: { userId } })).map((p) => p.conversationId);
+    if (myConvIds.length === 0) return { messages: [] };
+
+    const qb = this.msgRepo.createQueryBuilder('m')
+      .where('m.content ILIKE :query', { query: `%${query}%` })
+      .andWhere('m.conversationId IN (:...convIds)', { convIds: myConvIds });
     if (conversationId) qb.andWhere('m.conversationId = :conversationId', { conversationId });
     const messages = await qb.orderBy('m.createdAt', 'DESC').take(50).getMany();
     return { messages };

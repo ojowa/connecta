@@ -18,12 +18,12 @@ export const ConversationScreen: React.FC<{ route: any }> = ({ route }) => {
   const { data, isLoading } = useMessages(conversationId);
   const sendMessage = useSendMessage();
   const deleteMessage = useDeleteMessage(conversationId);
-  const reactToMessage = useReactToMessage();
+  const reactToMessage = useReactToMessage(conversationId);
   const userId = useAppStore((s) => s.user?.id);
   const flatListRef = useRef<FlatList>(null);
   const [typingUsers, setTypingUsers] = useState<string[]>([]);
 
-  const messages = data?.data?.data || [];
+  const messages = data?.messages || [];
 
   const handleSend = useCallback((content: string) => {
     sendMessage.mutate({ conversationId, content });

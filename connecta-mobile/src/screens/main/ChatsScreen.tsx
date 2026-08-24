@@ -18,7 +18,7 @@ export const ChatsScreen: React.FC = ({ navigation }: any) => {
   }, [refetch]);
 
   if (isLoading) return <LoadingSpinner />;
-  const conversations = data?.data?.data || [];
+  const conversations = data?.conversations || [];
 
   return (
     <View style={styles.container}>
