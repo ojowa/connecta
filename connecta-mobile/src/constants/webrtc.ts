@@ -3,18 +3,8 @@ export const WEBRTC_CONFIG: RTCConfiguration = {
     { urls: 'stun:stun.l.google.com:19302' },
     { urls: 'stun:stun1.l.google.com:19302' },
     { urls: 'stun:stun2.l.google.com:19302' },
-    {
-      urls: [
-        'turn:turn.connecta.app:3478?transport=udp',
-        'turn:turn.connecta.app:3478?transport=tcp',
-        'turns:turn.connecta.app:5349?transport=tcp',
-      ],
-      username: process.env.TURN_USERNAME || 'connecta',
-      credential: process.env.TURN_CREDENTIAL || '',
-    },
   ],
   iceCandidatePoolSize: 10,
-  iceTransportPolicy: 'all',
 };
 
 export const CALL_QUALITY = {

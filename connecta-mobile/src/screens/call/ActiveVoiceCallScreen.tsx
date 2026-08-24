@@ -1,5 +1,5 @@
-import React, { useEffect, useCallback } from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import React, { useEffect, useCallback, useState } from 'react';
+import { View, Text, StyleSheet, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useWebRTC } from '../../hooks/useWebRTC';
 import { CallControls } from '../../components/call/CallControls';
@@ -21,13 +21,21 @@ interface ActiveVoiceCallScreenProps {
 
 export const ActiveVoiceCallScreen: React.FC<ActiveVoiceCallScreenProps> = ({ navigation, route }) => {
   const { callerId = '', callerName = '' } = route?.params || {};
+  const [callError, setCallError] = useState<string | null>(null);
   const {
     formattedDuration, isMuted, isSpeakerEnabled, connectionState,
     startCall, endCall, toggleMute, toggleSpeaker,
   } = useWebRTC();
 
   useEffect(() => {
-    if (callerId) startCall(callerId, 'audio');
+    if (callerId) {
+      startCall(callerId, 'audio').catch((err: any) => {
+        setCallError(err.message || 'Failed to start call');
+        Alert.alert('Call Failed', err.message || 'Could not initialize call. Please check your connection.', [
+          { text: 'OK', onPress: () => navigation.goBack() },
+        ]);
+      });
+    }
   }, [callerId]);
 
   const handleEndCall = useCallback(() => {

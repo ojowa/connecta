@@ -1,5 +1,5 @@
-import React, { useEffect, useCallback } from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import React, { useEffect, useCallback, useState } from 'react';
+import { View, Text, StyleSheet, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { RTCView } from 'react-native-webrtc';
 import { useWebRTC } from '../../hooks/useWebRTC';
@@ -23,13 +23,21 @@ interface ActiveVideoCallScreenProps {
 
 export const ActiveVideoCallScreen: React.FC<ActiveVideoCallScreenProps> = ({ navigation, route }) => {
   const { callerId = '', callerName = '' } = route?.params || {};
+  const [callError, setCallError] = useState<string | null>(null);
   const {
     formattedDuration, isMuted, connectionState, localStream, remoteStream,
     startCall, endCall, toggleMute, toggleVideo, switchCamera,
   } = useWebRTC();
 
   useEffect(() => {
-    if (callerId) startCall(callerId, 'video');
+    if (callerId) {
+      startCall(callerId, 'video').catch((err: any) => {
+        setCallError(err.message || 'Failed to start call');
+        Alert.alert('Call Failed', err.message || 'Could not initialize video call. Please check your connection.', [
+          { text: 'OK', onPress: () => navigation.goBack() },
+        ]);
+      });
+    }
   }, [callerId]);
 
   const handleEndCall = useCallback(() => {

@@ -19,47 +19,53 @@ class WebRTCManager {
   }
 
   async startCall(peerId: string, type: 'audio' | 'video'): Promise<void> {
-    const localStream = await this.fetchLocalStream(type);
-    const peerConnection = this.createPeerConnection();
+    try {
+      const localStream = await this.fetchLocalStream(type);
+      const peerConnection = this.createPeerConnection();
 
-    localStream.getTracks().forEach((track) => peerConnection.addTrack(track, localStream));
+      localStream.getTracks().forEach((track) => peerConnection.addTrack(track, localStream));
 
-    const offer = await peerConnection.createOffer({
-      offerToReceiveAudio: true,
-      offerToReceiveVideo: type === 'video',
-    });
-    await peerConnection.setLocalDescription(offer);
+      const offer = await peerConnection.createOffer({
+        offerToReceiveAudio: true,
+        offerToReceiveVideo: type === 'video',
+      });
+      await peerConnection.setLocalDescription(offer);
 
-    const callId = await this.generateCallId();
+      const callId = await this.generateCallId();
 
-    this.state = {
-      callId,
-      peerId,
-      isInitiator: true,
-      localStream,
-      remoteStream: null,
-      peerConnection,
-      state: 'connecting',
-      type,
-      startedAt: Date.now(),
-      isMuted: false,
-      isVideoEnabled: type === 'video',
-      isSpeakerEnabled: true,
-    };
+      this.state = {
+        callId,
+        peerId,
+        isInitiator: true,
+        localStream,
+        remoteStream: null,
+        peerConnection,
+        state: 'connecting',
+        type,
+        startedAt: Date.now(),
+        isMuted: false,
+        isVideoEnabled: type === 'video',
+        isSpeakerEnabled: true,
+      };
 
-    this.notifyStateChange();
+      this.notifyStateChange();
 
-    SocketManager.getInstance().emit('call.initiated', {
-      calleeId: peerId,
-      callType: type,
-    });
+      SocketManager.getInstance().emit('call.initiated', {
+        calleeId: peerId,
+        callType: type,
+      });
 
-    SocketManager.getInstance().emit('sdp.offer', {
-      callId,
-      offer,
-    });
+      SocketManager.getInstance().emit('sdp.offer', {
+        callId,
+        offer,
+      });
 
-    this.startQualityMonitoring();
+      this.startQualityMonitoring();
+    } catch (error: any) {
+      console.error('Failed to start call:', error.message);
+      this.notifyStateChange();
+      throw error;
+    }
   }
 
   async acceptCall(callId: string, offer: any, callType: 'audio' | 'video' = 'video'): Promise<void> {
@@ -119,45 +125,50 @@ class WebRTCManager {
   }
 
   private createPeerConnection(): RTCPeerConnection {
-    const pc = new RTCPeerConnection(WEBRTC_CONFIG);
+    try {
+      const pc = new RTCPeerConnection(WEBRTC_CONFIG);
 
-    (pc as any).onicecandidate = (event: any) => {
-      if (event.candidate) {
-        SocketManager.getInstance().emit('ice.candidate', {
-          callId: this.state?.callId,
-          candidate: event.candidate,
-        });
-      }
-    };
+      (pc as any).onicecandidate = (event: any) => {
+        if (event.candidate) {
+          SocketManager.getInstance().emit('ice.candidate', {
+            callId: this.state?.callId,
+            candidate: event.candidate,
+          });
+        }
+      };
 
-    (pc as any).ontrack = (event: any) => {
-      if (this.state && event.streams?.[0]) {
-        this.state.remoteStream = event.streams[0];
-        this.notifyStateChange();
-      }
-    };
-
-    (pc as any).oniceconnectionstatechange = () => {
-      const iceState = pc.iceConnectionState;
-      if (iceState === 'connected' || iceState === 'completed') {
-        this.reconnectAttempts = 0;
-        if (this.state && this.state.state !== 'connected') {
-          this.state.state = 'connected';
-          this.state.connectedAt = Date.now();
+      (pc as any).ontrack = (event: any) => {
+        if (this.state && event.streams?.[0]) {
+          this.state.remoteStream = event.streams[0];
           this.notifyStateChange();
         }
-      } else if (iceState === 'failed') {
-        this.handleConnectionFailure();
-      } else if (iceState === 'disconnected') {
-        if (this.state) {
-          this.state.state = 'reconnecting';
-          this.notifyStateChange();
-        }
-        this.attemptReconnect();
-      }
-    };
+      };
 
-    return pc;
+      (pc as any).oniceconnectionstatechange = () => {
+        const iceState = pc.iceConnectionState;
+        if (iceState === 'connected' || iceState === 'completed') {
+          this.reconnectAttempts = 0;
+          if (this.state && this.state.state !== 'connected') {
+            this.state.state = 'connected';
+            this.state.connectedAt = Date.now();
+            this.notifyStateChange();
+          }
+        } else if (iceState === 'failed') {
+          this.handleConnectionFailure();
+        } else if (iceState === 'disconnected') {
+          if (this.state) {
+            this.state.state = 'reconnecting';
+            this.notifyStateChange();
+          }
+          this.attemptReconnect();
+        }
+      };
+
+      return pc;
+    } catch (error: any) {
+      console.error('Failed to create PeerConnection:', error.message);
+      throw new Error(`Failed to initialize PeerConnection: ${error.message}`);
+    }
   }
 
   private async fetchLocalStream(type: 'audio' | 'video'): Promise<MediaStream> {
