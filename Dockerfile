@@ -17,7 +17,7 @@ FROM node:20-alpine AS runner
 ARG SERVICE_NAME=api-gateway
 
 WORKDIR /app
-COPY --from=builder /app/dist/apps/${SERVICE_NAME} ./dist
+COPY --from=builder /app/dist/apps/${SERVICE_NAME}/src ./dist
 COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/package.json ./
 

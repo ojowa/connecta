@@ -2,12 +2,10 @@ import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { EventEmitterModule } from '@nestjs/event-emitter';
-import { User, Session, OtpCode, BiometricCredential, Profile, Notification, Subscription } from '@app/common/entities';
+import { allEntities } from '@app/common/entities';
 import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
 import { JwtModule } from '@nestjs/jwt';
-
-const entities = [User, Session, OtpCode, BiometricCredential, Profile, Notification, Subscription];
 
 @Module({
   imports: [
@@ -19,10 +17,10 @@ const entities = [User, Session, OtpCode, BiometricCredential, Profile, Notifica
       username: process.env.DB_USERNAME || 'connecta_user',
       password: process.env.DB_PASSWORD || 'connecta_password',
       database: process.env.DB_NAME || 'connecta_db',
-      entities,
+      entities: allEntities,
       synchronize: process.env.NODE_ENV !== 'production',
     }),
-    TypeOrmModule.forFeature(entities),
+    TypeOrmModule.forFeature(allEntities),
     EventEmitterModule.forRoot(),
     JwtModule.register({
       global: true,

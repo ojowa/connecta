@@ -2,11 +2,9 @@ import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { EventEmitterModule } from '@nestjs/event-emitter';
-import { User, Profile, Like, Pass, Match, DailyLike, Photo, Conversation, ConversationParticipant, UserPreference, Notification, Block, Report, Interest, ProfileInterest, Session, Message } from '@app/common/entities';
+import { allEntities } from '@app/common/entities';
 import { MatchingController } from './matching.controller';
 import { MatchingService } from './matching.service';
-
-const entities = [User, Profile, Like, Pass, Match, DailyLike, Photo, Conversation, ConversationParticipant, UserPreference, Notification, Block, Report, Interest, ProfileInterest, Session, Message];
 
 @Module({
   imports: [
@@ -18,10 +16,10 @@ const entities = [User, Profile, Like, Pass, Match, DailyLike, Photo, Conversati
       username: process.env.DB_USERNAME || 'connecta_user',
       password: process.env.DB_PASSWORD || 'connecta_password',
       database: process.env.DB_NAME || 'connecta_db',
-      entities,
+      entities: allEntities,
       synchronize: process.env.NODE_ENV !== 'production',
     }),
-    TypeOrmModule.forFeature(entities),
+    TypeOrmModule.forFeature(allEntities),
     EventEmitterModule.forRoot(),
   ],
   controllers: [MatchingController],

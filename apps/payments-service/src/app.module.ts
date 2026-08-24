@@ -2,11 +2,9 @@ import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { EventEmitterModule } from '@nestjs/event-emitter';
-import { Plan, Subscription, Transaction, User, Notification } from '@app/common/entities';
+import { allEntities } from '@app/common/entities';
 import { PaymentsController } from './payments.controller';
 import { PaymentsService } from './payments.service';
-
-const entities = [Plan, Subscription, Transaction, User, Notification];
 
 @Module({
   imports: [
@@ -18,10 +16,10 @@ const entities = [Plan, Subscription, Transaction, User, Notification];
       username: process.env.DB_USERNAME || 'connecta_user',
       password: process.env.DB_PASSWORD || 'connecta_password',
       database: process.env.DB_NAME || 'connecta_db',
-      entities,
+      entities: allEntities,
       synchronize: process.env.NODE_ENV !== 'production',
     }),
-    TypeOrmModule.forFeature(entities),
+    TypeOrmModule.forFeature(allEntities),
     EventEmitterModule.forRoot(),
   ],
   controllers: [PaymentsController],
