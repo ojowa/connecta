@@ -1,5 +1,5 @@
-import React, { useRef, useCallback, useState } from 'react';
-import { View, StyleSheet, FlatList, KeyboardAvoidingView, Platform, Text } from 'react-native';
+import React, { useRef, useCallback, useState, useLayoutEffect } from 'react';
+import { View, StyleSheet, FlatList, KeyboardAvoidingView, Platform, Text, TouchableOpacity } from 'react-native';
 import { useMessages, useSendMessage, useDeleteMessage, useReactToMessage } from '../../hooks/useChat';
 import { ChatBubble } from '../../components/chat/ChatBubble';
 import { ChatInput } from '../../components/chat/ChatInput';
@@ -13,8 +13,8 @@ import { borderRadius } from '../../theme/borderRadius';
 import { Message } from '../../types/chat';
 import { apiClient } from '../../services/api/apiClient';
 
-export const ConversationScreen: React.FC<{ route: any }> = ({ route }) => {
-  const { conversationId } = route.params;
+export const ConversationScreen: React.FC<{ route: any; navigation: any }> = ({ route, navigation }) => {
+  const { conversationId, otherUserId = '', otherName = 'Chat', otherAvatar } = route.params || {};
   const { data, isLoading } = useMessages(conversationId);
   const sendMessage = useSendMessage();
   const deleteMessage = useDeleteMessage(conversationId);
@@ -22,6 +22,40 @@ export const ConversationScreen: React.FC<{ route: any }> = ({ route }) => {
   const userId = useAppStore((s) => s.user?.id);
   const flatListRef = useRef<FlatList>(null);
   const [typingUsers, setTypingUsers] = useState<string[]>([]);
+
+  useLayoutEffect(() => {
+    navigation.setOptions({
+      title: otherName,
+      headerRight: () => (
+        <View style={styles.headerActions}>
+          <TouchableOpacity style={styles.headerButton} onPress={handleVoiceCall}>
+            <Text style={styles.headerButtonIcon}>📞</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.headerButton} onPress={handleVideoCall}>
+            <Text style={styles.headerButtonIcon}>📹</Text>
+          </TouchableOpacity>
+        </View>
+      ),
+    });
+  }, [navigation, otherName, otherUserId]);
+
+  const handleVoiceCall = useCallback(() => {
+    navigation.navigate('ActiveVoiceCall', {
+      callerId: otherUserId,
+      callerName: otherName,
+      callerAvatar: otherAvatar,
+      callType: 'voice',
+    });
+  }, [navigation, otherUserId, otherName, otherAvatar]);
+
+  const handleVideoCall = useCallback(() => {
+    navigation.navigate('ActiveVideoCall', {
+      callerId: otherUserId,
+      callerName: otherName,
+      callerAvatar: otherAvatar,
+      callType: 'video',
+    });
+  }, [navigation, otherUserId, otherName, otherAvatar]);
 
   const messages = data?.messages || [];
 
@@ -83,4 +117,7 @@ const styles = StyleSheet.create({
   list: { padding: spacing.md },
   typingContainer: { paddingVertical: spacing.xs, paddingHorizontal: spacing.md },
   typingText: { ...typography.caption, color: colors.textSecondary, fontStyle: 'italic' },
+  headerActions: { flexDirection: 'row', gap: spacing.sm },
+  headerButton: { width: 36, height: 36, borderRadius: 18, backgroundColor: colors.gray100, justifyContent: 'center', alignItems: 'center' },
+  headerButtonIcon: { fontSize: 18 },
 });

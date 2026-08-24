@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, RefreshControl } from 'react-native';
 import { useConversations } from '../../hooks/useChat';
 import { ChatList } from '../../components/chat/ChatList';
 import { LoadingSpinner } from '../../components/common/LoadingSpinner';
+import { useAppStore } from '../../store';
 import { colors } from '../../theme/colors';
 import { typography } from '../../theme/typography';
 import { spacing } from '../../theme/spacing';
@@ -31,7 +32,14 @@ export const ChatsScreen: React.FC = ({ navigation }: any) => {
         </View>
       ) : (
         <View style={{ flex: 1 }} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />}>
-          <ChatList conversations={conversations} isLoading={isLoading} onConversationPress={(id) => navigation.navigate('Conversation', { conversationId: id })} />
+          <ChatList conversations={conversations} isLoading={isLoading} onConversationPress={(id) => {
+            const conv = conversations.find((c: any) => c.id === id);
+            const currentUserId = useAppStore.getState().user?.id;
+            const otherUserId = conv?.participantIds?.find((pid: string) => pid !== currentUserId) || '';
+            const otherName = conv?.participantNames?.[otherUserId] || 'Unknown';
+            const otherAvatar = conv?.participantAvatars?.[otherUserId];
+            navigation.navigate('Conversation', { conversationId: id, otherUserId, otherName, otherAvatar });
+          }} />
         </View>
       )}
     </View>

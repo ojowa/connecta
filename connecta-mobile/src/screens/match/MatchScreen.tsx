@@ -48,7 +48,12 @@ const MatchScreen: React.FC<MatchScreenProps> = ({ navigation, route }) => {
   }, []);
 
   const handleSendMessage = () => {
-    navigation.navigate('Conversation', { conversationId });
+    navigation.navigate('Conversation', {
+      conversationId,
+      otherUserId: matchedUser?.userId || '',
+      otherName: matchedUser?.fullName || 'Unknown',
+      otherAvatar: matchedUser?.avatar,
+    });
   };
 
   const handleKeepSwiping = () => {
