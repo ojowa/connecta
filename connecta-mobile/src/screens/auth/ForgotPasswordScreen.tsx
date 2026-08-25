@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, Alert } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { Input } from '../../components/common/Input';
 import { Button } from '../../components/common/Button';
 import { authApi } from '../../services/api/authApi';
@@ -29,26 +30,31 @@ export const ForgotPasswordScreen: React.FC<ForgotPasswordProps> = ({ navigation
 
   if (sent) {
     return (
-      <View style={styles.container}>
-        <Text style={styles.title}>Check Your Email</Text>
-        <Text style={styles.subtitle}>We've sent a password reset link to {email}</Text>
-        <Button title="Back to Login" onPress={() => navigation.goBack()} />
-      </View>
+      <SafeAreaView style={styles.safeArea}>
+        <View style={styles.container}>
+          <Text style={styles.title}>Check Your Email</Text>
+          <Text style={styles.subtitle}>We've sent a password reset link to {email}</Text>
+          <Button title="Back to Login" onPress={() => navigation.goBack()} />
+        </View>
+      </SafeAreaView>
     );
   }
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Forgot Password</Text>
-      <Text style={styles.subtitle}>Enter your email to receive a reset link</Text>
-      <Input label="Email" placeholder="Enter your email" value={email} onChangeText={setEmail} keyboardType="email-address" autoCapitalize="none" />
-      <Button title="Send Reset Link" onPress={handleSubmit} loading={loading} />
-      <Button title="Back to Login" variant="ghost" onPress={() => navigation.goBack()} />
-    </View>
+    <SafeAreaView style={styles.safeArea}>
+      <View style={styles.container}>
+        <Text style={styles.title}>Forgot Password</Text>
+        <Text style={styles.subtitle}>Enter your email to receive a reset link</Text>
+        <Input label="Email" placeholder="Enter your email" value={email} onChangeText={setEmail} keyboardType="email-address" autoCapitalize="none" />
+        <Button title="Send Reset Link" onPress={handleSubmit} loading={loading} />
+        <Button title="Back to Login" variant="ghost" onPress={() => navigation.goBack()} />
+      </View>
+    </SafeAreaView>
   );
 };
 
 const styles = StyleSheet.create({
+  safeArea: { flex: 1, backgroundColor: colors.white },
   container: { flex: 1, backgroundColor: colors.white, padding: spacing.xl, justifyContent: 'center' },
   title: { ...typography.h1, marginBottom: spacing.xs },
   subtitle: { ...typography.body, color: colors.textSecondary, marginBottom: spacing.xl },

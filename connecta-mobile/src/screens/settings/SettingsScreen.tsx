@@ -6,11 +6,11 @@ import {
   ScrollView,
   TouchableOpacity,
   Switch,
-  SafeAreaView,
   Alert,
   Linking,
   ActivityIndicator,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';

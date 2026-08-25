@@ -1,6 +1,7 @@
 import React from 'react';
 import { Text } from 'react-native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { DiscoverScreen } from '../screens/main/DiscoverScreen';
 import { MatchesScreen } from '../screens/main/MatchesScreen';
 import { ChatsScreen } from '../screens/main/ChatsScreen';
@@ -16,13 +17,14 @@ const TabIcon: React.FC<{ emoji: string; focused: boolean; color: string }> = ({
 
 export const MainTabNavigator: React.FC = () => {
   const totalUnread = useAppStore((s) => s.totalUnread);
+  const insets = useSafeAreaInsets();
   return (
     <Tab.Navigator
       screenOptions={{
         headerShown: false,
         tabBarActiveTintColor: colors.primary,
         tabBarInactiveTintColor: colors.gray400,
-        tabBarStyle: { paddingBottom: 8, height: 60 },
+        tabBarStyle: { paddingBottom: Math.max(insets.bottom, 8), height: 60 + Math.max(insets.bottom - 8, 0) },
       }}
     >
       <Tab.Screen

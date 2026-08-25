@@ -6,9 +6,9 @@ import {
   ScrollView,
   TouchableOpacity,
   Alert,
-  SafeAreaView,
   Image,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { Button } from '../../components/common/Button';
 import { ImageProcessor } from '../../utils/imageProcessing';
 import { profileApi } from '../../services/api/profileApi';

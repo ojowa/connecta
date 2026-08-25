@@ -60,6 +60,7 @@ export class ImageProcessor {
         if (onProgress && e.total) onProgress(Math.round((e.loaded * 100) / e.total));
       },
     });
-    return response.data.data.url;
+    const data = response.data?.data || response.data;
+    return data?.url || '';
   }
 }

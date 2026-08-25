@@ -1,5 +1,6 @@
 import React, { useEffect } from 'react';
 import { View, StyleSheet, StatusBar } from 'react-native';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { LoadingSpinner } from '../../components/common/LoadingSpinner';
 import { colors } from '../../theme/colors';
@@ -9,6 +10,7 @@ import { Text } from '../../components/common';
 
 const SplashScreen: React.FC = () => {
   const navigation = useNavigation<any>();
+  const insets = useSafeAreaInsets();
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -19,7 +21,7 @@ const SplashScreen: React.FC = () => {
   }, [navigation]);
 
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={styles.container}>
       <StatusBar barStyle="light-content" backgroundColor={colors.primary} />
       <View style={styles.content}>
         <View style={styles.logoContainer}>
@@ -37,10 +39,10 @@ const SplashScreen: React.FC = () => {
           Find Your Connection
         </Text>
       </View>
-      <View style={styles.bottom}>
+      <View style={[styles.bottom, { bottom: Math.max(insets.bottom, spacing.xxl) }]}>
         <LoadingSpinner size="small" color={colors.white} />
       </View>
-    </View>
+    </SafeAreaView>
   );
 };
 

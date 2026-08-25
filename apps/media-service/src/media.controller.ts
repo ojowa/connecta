@@ -1,5 +1,6 @@
-import { Controller, Get, Post, Delete, Body, Param, Headers } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
+import { Controller, Get, Post, Delete, Body, Param, Headers, UseInterceptors, UploadedFile } from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
+import { ApiTags, ApiOperation, ApiBearerAuth, ApiConsumes } from '@nestjs/swagger';
 import { MediaService } from './media.service';
 
 @ApiTags('Media')
@@ -10,8 +11,10 @@ export class MediaController {
 
   @Post('upload')
   @ApiOperation({ summary: 'Upload file' })
-  upload(@Headers('x-user-id') userId: string, @Body() body: any) {
-    return this.mediaService.upload(userId, body);
+  @ApiConsumes('multipart/form-data')
+  @UseInterceptors(FileInterceptor('photo'))
+  upload(@Headers('x-user-id') userId: string, @UploadedFile() file: Express.Multer.File, @Body() body: any) {
+    return this.mediaService.upload(userId, body, file);
   }
 
   @Post('presigned-url')

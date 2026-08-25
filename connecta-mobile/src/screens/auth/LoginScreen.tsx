@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, KeyboardAvoidingView, Platform } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { Input } from '../../components/common/Input';
 import { Button } from '../../components/common/Button';
 import { useAuth } from '../../hooks/useAuth';
@@ -28,22 +29,24 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
   };
 
   return (
-    <KeyboardAvoidingView style={styles.container} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
-      <View style={styles.content}>
-        <Text style={styles.title}>Welcome Back</Text>
-        <Text style={styles.subtitle}>Sign in to continue</Text>
-        <Input label="Email or Phone" placeholder="Enter your email or phone" value={identifier} onChangeText={setIdentifier} keyboardType="email-address" autoCapitalize="none" />
-        <Input label="Password" placeholder="Enter your password" value={password} onChangeText={setPassword} secureTextEntry />
-        {(authError || serverError) && <Text style={styles.error}>{authError || serverError}</Text>}
-        <Button title="Sign In" onPress={handleLogin} loading={loading} style={styles.button} />
-        <TouchableOpacity onPress={() => navigation.navigate('ForgotPassword')}>
-          <Text style={styles.forgot}>Forgot Password?</Text>
-        </TouchableOpacity>
-        <TouchableOpacity onPress={() => navigation.navigate('Register')}>
-          <Text style={styles.link}>Don't have an account? <Text style={styles.linkBold}>Sign Up</Text></Text>
-        </TouchableOpacity>
-      </View>
-    </KeyboardAvoidingView>
+    <SafeAreaView style={styles.container}>
+      <KeyboardAvoidingView style={styles.container} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
+        <View style={styles.content}>
+          <Text style={styles.title}>Welcome Back</Text>
+          <Text style={styles.subtitle}>Sign in to continue</Text>
+          <Input label="Email or Phone" placeholder="Enter your email or phone" value={identifier} onChangeText={setIdentifier} keyboardType="email-address" autoCapitalize="none" />
+          <Input label="Password" placeholder="Enter your password" value={password} onChangeText={setPassword} secureTextEntry />
+          {(authError || serverError) && <Text style={styles.error}>{authError || serverError}</Text>}
+          <Button title="Sign In" onPress={handleLogin} loading={loading} style={styles.button} />
+          <TouchableOpacity onPress={() => navigation.navigate('ForgotPassword')}>
+            <Text style={styles.forgot}>Forgot Password?</Text>
+          </TouchableOpacity>
+          <TouchableOpacity onPress={() => navigation.navigate('Register')}>
+            <Text style={styles.link}>Don't have an account? <Text style={styles.linkBold}>Sign Up</Text></Text>
+          </TouchableOpacity>
+        </View>
+      </KeyboardAvoidingView>
+    </SafeAreaView>
   );
 };
 

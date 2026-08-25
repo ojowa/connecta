@@ -8,8 +8,29 @@ import { v4 as uuid } from 'uuid';
 export class MediaService {
   constructor(@InjectRepository(Media) private mediaRepo: Repository<Media>) {}
 
-  async upload(userId: string, data: any) {
-    const media = this.mediaRepo.create({ userId, url: data.url || `https://storage.connecta.app/${uuid()}`, mimeType: data.mimeType, sizeBytes: data.sizeBytes, purpose: data.purpose || 'profile', metadata: data.metadata });
+  async upload(userId: string, data: any, file?: Express.Multer.File) {
+    let url: string;
+    let mimeType = data.mimeType;
+    let sizeBytes = data.sizeBytes;
+
+    if (file) {
+      url = `https://storage.connecta.app/${userId}/${uuid()}.${file.originalname.split('.').pop() || 'jpg'}`;
+      mimeType = file.mimetype;
+      sizeBytes = file.size;
+    } else if (data.url) {
+      url = data.url;
+    } else {
+      throw new BadRequestException('No file or URL provided');
+    }
+
+    const media = this.mediaRepo.create({
+      userId,
+      url,
+      mimeType,
+      sizeBytes,
+      purpose: data.purpose || 'profile',
+      metadata: data.metadata,
+    });
     return this.mediaRepo.save(media);
   }
 

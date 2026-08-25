@@ -7,6 +7,7 @@ import {
   NativeSyntheticEvent,
   NativeScrollEvent,
 } from 'react-native';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { Button, Text } from '../../components/common';
 import { colors } from '../../theme/colors';
@@ -43,6 +44,7 @@ const steps: OnboardingStep[] = [
 
 const OnboardingFlow: React.FC = () => {
   const { width: screenWidth } = useWindowDimensions();
+  const insets = useSafeAreaInsets();
   const navigation = useNavigation<any>();
   const scrollViewRef = useRef<ScrollView>(null);
   const [currentPage, setCurrentPage] = useState(0);
@@ -65,59 +67,61 @@ const OnboardingFlow: React.FC = () => {
   };
 
   return (
-    <View style={styles.container}>
-      <ScrollView
-        ref={scrollViewRef}
-        horizontal
-        pagingEnabled
-        showsHorizontalScrollIndicator={false}
-        onMomentumScrollEnd={handleScroll}
-        scrollEventThrottle={16}
-      >
-        {steps.map((step) => (
-          <View key={step.id} style={[styles.page, { width: screenWidth }]}>
-            <View style={styles.iconContainer}>
-              <View style={[styles.circle, { backgroundColor: step.color, width: Math.min(160, screenWidth * 0.4), height: Math.min(160, screenWidth * 0.4), borderRadius: Math.min(80, screenWidth * 0.2) }]}>
-                <View style={styles.circleInner}>
-                  <View style={[styles.dot, { backgroundColor: colors.white, width: Math.min(12, screenWidth * 0.03), height: Math.min(12, screenWidth * 0.03), borderRadius: Math.min(6, screenWidth * 0.015) }]} />
-                  <View style={[styles.dot, { backgroundColor: colors.white, width: Math.min(12, screenWidth * 0.03), height: Math.min(12, screenWidth * 0.03), borderRadius: Math.min(6, screenWidth * 0.015) }]} />
-                  <View style={[styles.dot, { backgroundColor: colors.white, width: Math.min(12, screenWidth * 0.03), height: Math.min(12, screenWidth * 0.03), borderRadius: Math.min(6, screenWidth * 0.015) }]} />
+    <SafeAreaView style={styles.container}>
+      <View style={styles.container}>
+        <ScrollView
+          ref={scrollViewRef}
+          horizontal
+          pagingEnabled
+          showsHorizontalScrollIndicator={false}
+          onMomentumScrollEnd={handleScroll}
+          scrollEventThrottle={16}
+        >
+          {steps.map((step) => (
+            <View key={step.id} style={[styles.page, { width: screenWidth }]}>
+              <View style={styles.iconContainer}>
+                <View style={[styles.circle, { backgroundColor: step.color, width: Math.min(160, screenWidth * 0.4), height: Math.min(160, screenWidth * 0.4), borderRadius: Math.min(80, screenWidth * 0.2) }]}>
+                  <View style={styles.circleInner}>
+                    <View style={[styles.dot, { backgroundColor: colors.white, width: Math.min(12, screenWidth * 0.03), height: Math.min(12, screenWidth * 0.03), borderRadius: Math.min(6, screenWidth * 0.015) }]} />
+                    <View style={[styles.dot, { backgroundColor: colors.white, width: Math.min(12, screenWidth * 0.03), height: Math.min(12, screenWidth * 0.03), borderRadius: Math.min(6, screenWidth * 0.015) }]} />
+                    <View style={[styles.dot, { backgroundColor: colors.white, width: Math.min(12, screenWidth * 0.03), height: Math.min(12, screenWidth * 0.03), borderRadius: Math.min(6, screenWidth * 0.015) }]} />
+                  </View>
                 </View>
               </View>
+              <View style={styles.textContainer}>
+                <Text variant="h2" style={styles.title}>
+                  {step.title}
+                </Text>
+                <Text variant="body" style={styles.subtitle}>
+                  {step.subtitle}
+                </Text>
+              </View>
             </View>
-            <View style={styles.textContainer}>
-              <Text variant="h2" style={styles.title}>
-                {step.title}
-              </Text>
-              <Text variant="body" style={styles.subtitle}>
-                {step.subtitle}
-              </Text>
-            </View>
-          </View>
-        ))}
-      </ScrollView>
-
-      <View style={styles.footer}>
-        <View style={styles.dots}>
-          {steps.map((_, index) => (
-            <View
-              key={index}
-              style={[
-                styles.dotIndicator,
-                index === currentPage && styles.activeDot,
-                index === currentPage && { backgroundColor: steps[currentPage].color },
-              ]}
-            />
           ))}
+        </ScrollView>
+
+        <View style={[styles.footer, { paddingBottom: Math.max(insets.bottom, spacing.xxl) }]}>
+          <View style={styles.dots}>
+            {steps.map((_, index) => (
+              <View
+                key={index}
+                style={[
+                  styles.dotIndicator,
+                  index === currentPage && styles.activeDot,
+                  index === currentPage && { backgroundColor: steps[currentPage].color },
+                ]}
+              />
+            ))}
+          </View>
+          <Button
+            title={currentPage === steps.length - 1 ? 'Get Started' : 'Next'}
+            onPress={handleNext}
+            size="large"
+            style={[styles.button, { backgroundColor: steps[currentPage].color }]}
+          />
         </View>
-        <Button
-          title={currentPage === steps.length - 1 ? 'Get Started' : 'Next'}
-          onPress={handleNext}
-          size="large"
-          style={[styles.button, { backgroundColor: steps[currentPage].color }]}
-        />
       </View>
-    </View>
+    </SafeAreaView>
   );
 };
 

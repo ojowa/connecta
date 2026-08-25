@@ -8,6 +8,7 @@ import {
   TouchableOpacity,
   Image,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { matchApi } from '../../services/api/matchApi';
 import { colors } from '../../theme/colors';
@@ -144,7 +145,7 @@ const LikesYouScreen: React.FC = () => {
   if (isLoading) return <LoadingSpinner message="Loading likes..." />;
 
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={styles.container}>
       <Text style={styles.title}>Likes You</Text>
       {likes.length === 0 ? (
         <View style={styles.empty}>
@@ -173,7 +174,7 @@ const LikesYouScreen: React.FC = () => {
           }
         />
       )}
-    </View>
+    </SafeAreaView>
   );
 };
 

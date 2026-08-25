@@ -13,6 +13,7 @@ import {
   Modal,
   TextInput,
 } from 'react-native';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiClient } from '../../services/api/apiClient';
 import { colors } from '../../theme/colors';
@@ -273,6 +274,7 @@ const CreateMomentModal: React.FC<{
 
 const MomentsScreen: React.FC = () => {
   const { width: SCREEN_WIDTH } = useWindowDimensions();
+  const insets = useSafeAreaInsets();
   const user = useAppStore((s) => s.user);
   const queryClient = useQueryClient();
   const { data: moments = [], isLoading, refetch } = useMoments();
@@ -374,8 +376,8 @@ const MomentsScreen: React.FC = () => {
   const otherUsers = userList.filter((u) => u.id !== user?.id);
 
   return (
-    <View style={styles.container}>
-      <View style={styles.header}>
+    <SafeAreaView style={styles.container}>
+      <View style={[styles.header, { paddingTop: Math.max(insets.top, spacing.lg) }]}>
         <Text style={styles.title}>Moments</Text>
         <TouchableOpacity
           style={styles.createButton}
@@ -445,7 +447,7 @@ const MomentsScreen: React.FC = () => {
         onSubmit={handleCreateMoment}
         isPending={createMoment.isPending}
       />
-    </View>
+    </SafeAreaView>
   );
 };
 
@@ -456,7 +458,6 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingHorizontal: spacing.md,
-    paddingTop: spacing.lg,
     paddingBottom: spacing.sm,
   },
   title: { ...typography.h2, color: colors.textPrimary },

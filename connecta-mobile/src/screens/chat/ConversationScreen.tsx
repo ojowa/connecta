@@ -1,5 +1,6 @@
 import React, { useRef, useCallback, useState, useLayoutEffect, useEffect } from 'react';
 import { View, StyleSheet, FlatList, KeyboardAvoidingView, Platform, Text, TouchableOpacity, useWindowDimensions } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useMessages, useSendMessage, useDeleteMessage, useReactToMessage } from '../../hooks/useChat';
 import { ChatBubble } from '../../components/chat/ChatBubble';
 import { ChatInput } from '../../components/chat/ChatInput';
@@ -118,10 +119,11 @@ export const ConversationScreen: React.FC<{ route: any; navigation: any }> = ({ 
 
   const handleSendImage = useCallback(async (uri: string) => {
     const formData = new FormData();
-    formData.append('file', { uri, type: 'image/jpeg', name: 'photo.jpg' } as any);
+    formData.append('photo', { uri, type: 'image/jpeg', name: 'photo.jpg' } as any);
     try {
       const uploadRes = await apiClient.post(ENDPOINTS.MEDIA.UPLOAD, formData, { headers: { 'Content-Type': 'multipart/form-data' } });
-      const imageUrl = uploadRes.data?.url || uploadRes.data?.data?.url;
+      const uploaded = uploadRes.data?.data || uploadRes.data;
+      const imageUrl = uploaded?.url;
       if (imageUrl) sendMessage.mutate({ conversationId, content: imageUrl, type: 'image' });
     } catch {}
   }, [conversationId, sendMessage]);
@@ -135,47 +137,49 @@ export const ConversationScreen: React.FC<{ route: any; navigation: any }> = ({ 
   }, [reactToMessage]);
 
   return (
-    <KeyboardAvoidingView style={styles.container} behavior={Platform.OS === 'ios' ? 'padding' : undefined} keyboardVerticalOffset={keyboardOffset}>
-      {isLoading ? <LoadingSpinner /> : (
-        <FlatList
-          ref={flatListRef}
-          data={feed}
-          keyExtractor={(item: FeedItem) => item.id}
-          renderItem={({ item }) => {
-            if (item.type === 'call') {
-              const callItem = item as CallEvent & { content: string };
+    <SafeAreaView style={styles.container}>
+      <KeyboardAvoidingView style={styles.container} behavior={Platform.OS === 'ios' ? 'padding' : undefined} keyboardVerticalOffset={keyboardOffset}>
+        {isLoading ? <LoadingSpinner /> : (
+          <FlatList
+            ref={flatListRef}
+            data={feed}
+            keyExtractor={(item: FeedItem) => item.id}
+            renderItem={({ item }) => {
+              if (item.type === 'call') {
+                const callItem = item as CallEvent & { content: string };
+                return (
+                  <View style={styles.callEvent}>
+                    <Text style={styles.callEventText}>{callItem.content}</Text>
+                    <Text style={styles.callEventTime}>
+                      {new Date(callItem.startedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                    </Text>
+                  </View>
+                );
+              }
+              const msg = item as Message;
               return (
-                <View style={styles.callEvent}>
-                  <Text style={styles.callEventText}>{callItem.content}</Text>
-                  <Text style={styles.callEventTime}>
-                    {new Date(callItem.startedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                  </Text>
-                </View>
+                <ChatBubble
+                  message={msg}
+                  isOwn={msg.senderId === userId}
+                  onDelete={handleDelete}
+                  onReact={handleReact}
+                />
               );
+            }}
+            contentContainerStyle={styles.list}
+            inverted
+            ListFooterComponent={
+              typingUsers.length > 0 ? (
+                <View style={styles.typingContainer}>
+                  <Text style={styles.typingText}>{typingUsers.join(', ')} {typingUsers.length === 1 ? 'is' : 'are'} typing...</Text>
+                </View>
+              ) : null
             }
-            const msg = item as Message;
-            return (
-              <ChatBubble
-                message={msg}
-                isOwn={msg.senderId === userId}
-                onDelete={handleDelete}
-                onReact={handleReact}
-              />
-            );
-          }}
-          contentContainerStyle={styles.list}
-          inverted
-          ListFooterComponent={
-            typingUsers.length > 0 ? (
-              <View style={styles.typingContainer}>
-                <Text style={styles.typingText}>{typingUsers.join(', ')} {typingUsers.length === 1 ? 'is' : 'are'} typing...</Text>
-              </View>
-            ) : null
-          }
-        />
-      )}
-      <ChatInput onSend={handleSend} onSendImage={handleSendImage} />
-    </KeyboardAvoidingView>
+          />
+        )}
+        <ChatInput onSend={handleSend} onSendImage={handleSendImage} />
+      </KeyboardAvoidingView>
+    </SafeAreaView>
   );
 };
 

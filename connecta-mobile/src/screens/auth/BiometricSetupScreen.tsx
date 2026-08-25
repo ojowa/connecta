@@ -1,5 +1,6 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { Button } from '../../components/common/Button';
 import { BiometricAuthService } from '../../services/storage/biometricAuth';
 import { useAppStore } from '../../store';
@@ -16,16 +17,19 @@ export const BiometricSetupScreen: React.FC = ({ navigation }: any) => {
   };
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Enable Biometric Login</Text>
-      <Text style={styles.subtitle}>Use fingerprint or face recognition for quick sign-in</Text>
-      <Button title="Enable" onPress={handleEnable} />
-      <Button title="Skip" variant="ghost" onPress={() => navigation.goBack()} />
-    </View>
+    <SafeAreaView style={styles.safeArea}>
+      <View style={styles.container}>
+        <Text style={styles.title}>Enable Biometric Login</Text>
+        <Text style={styles.subtitle}>Use fingerprint or face recognition for quick sign-in</Text>
+        <Button title="Enable" onPress={handleEnable} />
+        <Button title="Skip" variant="ghost" onPress={() => navigation.goBack()} />
+      </View>
+    </SafeAreaView>
   );
 };
 
 const styles = StyleSheet.create({
+  safeArea: { flex: 1, backgroundColor: colors.white },
   container: { flex: 1, backgroundColor: colors.white, padding: spacing.xl, justifyContent: 'center' },
   title: { ...typography.h1, textAlign: 'center', marginBottom: spacing.xs },
   subtitle: { ...typography.body, color: colors.textSecondary, textAlign: 'center', marginBottom: spacing.xl },
