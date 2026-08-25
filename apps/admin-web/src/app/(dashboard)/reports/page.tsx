@@ -32,7 +32,7 @@ export default function ReportsPage() {
     api.get<{ reports: ReportRecord[]; meta: PaginatedMeta }>("/admin/reports", {
       page, limit: 20, status: statusFilter !== "all" ? statusFilter : undefined,
     })
-      .then((res) => { setReports(res.reports); setMeta(res.meta); })
+      .then((res) => { setReports(res?.reports || []); setMeta(res?.meta || { page: 1, limit: 20, total: 0, hasMore: false }); })
       .catch(console.error)
       .finally(() => setLoading(false));
   };

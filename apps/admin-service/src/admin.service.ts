@@ -92,4 +92,58 @@ export class AdminService {
     const totalReports = await this.reportRepo.count();
     return { totalUsers, activeUsers, totalSubscriptions, totalTransactions, totalReports };
   }
+
+  async getAnalytics(period?: string) {
+    const periodDays = period === '24h' ? 1 : period === '7d' ? 7 : period === '90d' ? 90 : period === '1y' ? 365 : 30;
+    const since = new Date(Date.now() - periodDays * 24 * 60 * 60 * 1000);
+
+    const totalUsers = await this.userRepo.count();
+    const newUsers = await this.userRepo.createQueryBuilder('u').where('u.createdAt >= :since', { since }).getCount();
+    const growthRate = totalUsers > 0 ? `${((newUsers / totalUsers) * 100).toFixed(1)}%` : '0%';
+
+    const totalReports = await this.reportRepo.count();
+    const pendingReports = await this.reportRepo.count({ where: { status: 'pending' as any } });
+    const resolvedReports = await this.reportRepo.count({ where: { status: 'resolved' as any } });
+    const resolutionRate = totalReports > 0 ? `${((resolvedReports / totalReports) * 100).toFixed(1)}%` : '0%';
+
+    let totalRevenue = 0;
+    try {
+      const revenueResult = await this.txnRepo
+        .createQueryBuilder('t')
+        .select('SUM(t.amount)', 'total')
+        .where('t.status = :status', { status: 'completed' })
+        .andWhere('t.createdAt >= :since', { since })
+        .getRawOne();
+      totalRevenue = parseFloat(revenueResult?.total) || 0;
+    } catch {}
+
+    const activeSubscriptions = await this.subRepo.count({ where: { status: 'active' as any } });
+
+    const dataPoints: Array<{ date: string; users: number; revenue: number }> = [];
+    for (let i = periodDays; i >= 0; i--) {
+      const dayStart = new Date(Date.now() - i * 24 * 60 * 60 * 1000);
+      const dayEnd = new Date(dayStart.getTime() + 24 * 60 * 60 * 1000);
+      const dayUsers = await this.userRepo.createQueryBuilder('u').where('u.createdAt >= :start AND u.createdAt < :end', { start: dayStart, end: dayEnd }).getCount();
+      let dayRevenue = 0;
+      try {
+        const dayRev = await this.txnRepo
+          .createQueryBuilder('t')
+          .select('SUM(t.amount)', 'total')
+          .where('t.status = :status', { status: 'completed' })
+          .andWhere('t.createdAt >= :start AND t.createdAt < :end', { start: dayStart, end: dayEnd })
+          .getRawOne();
+        dayRevenue = parseFloat(dayRev?.total) || 0;
+      } catch {}
+      dataPoints.push({ date: dayStart.toISOString().split('T')[0], users: dayUsers, revenue: dayRevenue });
+    }
+
+    return {
+      period: period || '30d',
+      generatedAt: new Date().toISOString(),
+      users: { total: totalUsers, newInPeriod: newUsers, growthRate },
+      revenue: { totalInPeriod: totalRevenue, currency: 'NGN', activeSubscriptions },
+      safety: { totalReports, pendingReports, resolvedReports, resolutionRate },
+      dataPoints,
+    };
+  }
 }

@@ -25,7 +25,7 @@ export default function UsersPage() {
   const fetchUsers = (page = 1) => {
     setLoading(true);
     api.get<{ users: UserRecord[]; meta: PaginatedMeta }>("/admin/users", { page, limit: 20, search, status })
-      .then((res) => { setUsers(res.users); setMeta(res.meta); })
+      .then((res) => { setUsers(res?.users || []); setMeta(res?.meta || { page: 1, limit: 20, total: 0, hasMore: false }); })
       .catch(console.error)
       .finally(() => setLoading(false));
   };

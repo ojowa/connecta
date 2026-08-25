@@ -28,11 +28,18 @@ export class AdminController {
     return this.adminService.getDashboard(period);
   }
 
+  @Get('analytics')
+  @ApiOperation({ summary: 'Get analytics data' })
+  getAnalytics(@Headers('authorization') auth: string, @Query('period') period?: string) {
+    this.verifyAuth(auth);
+    return this.adminService.getAnalytics(period);
+  }
+
   @Get('users')
   @ApiOperation({ summary: 'Get all users' })
-  getUsers(@Headers('authorization') auth: string, @Query('page') page?: number, @Query('limit') limit?: number, @Query('status') status?: string) {
+  getUsers(@Headers('authorization') auth: string, @Query('page') page?: string, @Query('limit') limit?: string, @Query('status') status?: string) {
     this.verifyAuth(auth);
-    return this.adminService.getUsers(page, limit, status);
+    return this.adminService.getUsers(parseInt(page || '1'), parseInt(limit || '20'), status);
   }
 
   @Post('users/:id/suspend')
@@ -51,9 +58,9 @@ export class AdminController {
 
   @Get('reports')
   @ApiOperation({ summary: 'Get all reports' })
-  getReports(@Headers('authorization') auth: string, @Query('page') page?: number, @Query('limit') limit?: number) {
+  getReports(@Headers('authorization') auth: string, @Query('page') page?: string, @Query('limit') limit?: string) {
     this.verifyAuth(auth);
-    return this.adminService.getReports(page, limit);
+    return this.adminService.getReports(parseInt(page || '1'), parseInt(limit || '20'));
   }
 
   @Get('stats')

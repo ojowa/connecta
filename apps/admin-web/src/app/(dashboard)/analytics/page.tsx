@@ -49,10 +49,10 @@ export default function AnalyticsPage() {
       </div>
 
       <div className="grid gap-4 md:grid-cols-4">
-        <StatCard title="Total Users" value={data.users.total} icon={Users} description={`${data.users.growthRate} growth`} />
-        <StatCard title="New Users" value={data.users.newInPeriod} icon={TrendingUp} description={`in ${period}`} />
-        <StatCard title="Revenue" value={data.revenue.totalInPeriod} format="currency" icon={DollarSign} />
-        <StatCard title="Pending Reports" value={data.safety.pendingReports} icon={AlertTriangle} description={`${data.safety.resolutionRate} resolution rate`} />
+        <StatCard title="Total Users" value={data.users?.total || 0} icon={Users} description={`${data.users?.growthRate || '0%'} growth`} />
+        <StatCard title="New Users" value={data.users?.newInPeriod || 0} icon={TrendingUp} description={`in ${period}`} />
+        <StatCard title="Revenue" value={data.revenue?.totalInPeriod || 0} format="currency" icon={DollarSign} />
+        <StatCard title="Pending Reports" value={data.safety?.pendingReports || 0} icon={AlertTriangle} description={`${data.safety?.resolutionRate || '0%'} resolution rate`} />
       </div>
 
       <Card>
@@ -62,7 +62,7 @@ export default function AnalyticsPage() {
         <CardContent>
           <div className="h-[300px]">
             <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={data.dataPoints}>
+              <LineChart data={data.dataPoints || []}>
                 <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
                 <XAxis dataKey="date" className="text-xs" tickFormatter={(v) => new Date(v).toLocaleDateString("en-US", { month: "short", day: "numeric" })} />
                 <YAxis className="text-xs" />
@@ -82,7 +82,7 @@ export default function AnalyticsPage() {
         <CardContent>
           <div className="h-[300px]">
             <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={data.dataPoints}>
+              <LineChart data={data.dataPoints || []}>
                 <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
                 <XAxis dataKey="date" className="text-xs" tickFormatter={(v) => new Date(v).toLocaleDateString("en-US", { month: "short", day: "numeric" })} />
                 <YAxis className="text-xs" tickFormatter={(v) => `₦${(v / 1000).toFixed(0)}K`} />
