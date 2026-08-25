@@ -139,4 +139,16 @@ export class MatchingController {
   deleteMoment(@Headers('x-user-id') userId: string, @Param('id') momentId: string) {
     return this.matchingService.deleteMoment(userId, momentId);
   }
+
+  @Get('scam-check/:userId')
+  @ApiOperation({ summary: 'Check scam risk for a conversation' })
+  checkScamRisk(@Headers('x-user-id') userId: string, @Param('userId') targetUserId: string) {
+    return this.matchingService.checkScamRisk(userId, targetUserId);
+  }
+
+  @Get('icebreakers/:userId')
+  @ApiOperation({ summary: 'Get AI-generated icebreakers for a match' })
+  getIcebreakers(@Headers('x-user-id') userId: string, @Param('userId') targetUserId: string) {
+    return this.matchingService.getIcebreakers(userId, targetUserId);
+  }
 }

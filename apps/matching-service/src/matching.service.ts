@@ -3,6 +3,11 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, In, MoreThan } from 'typeorm';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { User, Profile, Like, Pass, Match, DailyLike, Photo, UserPreference, Block, Interest, ProfileInterest, Boost, PhotoLike, Moment, MomentView } from '@app/common/entities';
+import { MatchmakingEngine } from './ai/matchmaking.engine';
+import { CompatibilityEngine } from './ai/compatibility.engine';
+import { ScamDetector } from './ai/scam.detector';
+import { IcebreakerGenerator } from './ai/icebreaker.generator';
+import { CandidateGenerator } from './ai/candidate.generator';
 
 @Injectable()
 export class MatchingService {
@@ -23,9 +28,21 @@ export class MatchingService {
     @InjectRepository(Moment) private momentRepo: Repository<Moment>,
     @InjectRepository(MomentView) private momentViewRepo: Repository<MomentView>,
     private readonly eventEmitter: EventEmitter2,
+    private readonly matchmakingEngine: MatchmakingEngine,
+    private readonly compatibilityEngine: CompatibilityEngine,
+    private readonly scamDetector: ScamDetector,
+    private readonly icebreakerGenerator: IcebreakerGenerator,
+    private readonly candidateGenerator: CandidateGenerator,
   ) {}
 
+  private validateUserId(userId: string) {
+    if (!userId || userId === '' || !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(userId)) {
+      throw new BadRequestException('Valid user ID is required');
+    }
+  }
+
   async getFeed(userId: string, page = 1, limit = 20) {
+    this.validateUserId(userId);
     const user = await this.userRepo.findOne({ where: { id: userId } });
     if (!user) throw new NotFoundException('User not found');
 
@@ -106,21 +123,43 @@ export class MatchingService {
       }
     }
 
-    return {
-      candidates: sortedUserIds.map((uid) => {
-        const u = users.find((usr) => usr.id === uid)!;
-        const profile = profileMap.get(u.id);
-        const profilePhotos = profile ? (photoMap.get(profile.id) || []) : [];
-        const profileInterests = profile ? (interestMap.get(profile.id) || []) : [];
-        return {
-          user: { id: u.id, fullName: u.fullName, dateOfBirth: u.dateOfBirth, gender: u.gender },
-          profile: profile ? {
-            ...profile,
-            photos: profilePhotos,
-            interests: profileInterests,
-          } : null,
-        };
+    const candidates = sortedUserIds.map((uid) => {
+      const u = users.find((usr) => usr.id === uid)!;
+      const profile = profileMap.get(u.id);
+      const profilePhotos = profile ? (photoMap.get(profile.id) || []) : [];
+      const profileInterestsList = profile ? (interestMap.get(profile.id) || []) : [];
+      return {
+        user: { id: u.id, fullName: u.fullName, dateOfBirth: u.dateOfBirth, gender: u.gender },
+        profile: profile ? {
+          ...profile,
+          photos: profilePhotos,
+          interests: profileInterestsList,
+        } : null,
+      };
+    });
+
+    const enriched = await Promise.all(
+      candidates.map(async (c) => {
+        try {
+          const compatibility = await this.compatibilityEngine.score(userId, c.user.id);
+          return { ...c, compatibility };
+        } catch {
+          return c;
+        }
       }),
+    );
+
+    enriched.sort((a, b) => {
+      const aBoosted = boostedUserIds.includes(a.user.id) ? 1 : 0;
+      const bBoosted = boostedUserIds.includes(b.user.id) ? 1 : 0;
+      if (aBoosted !== bBoosted) return bBoosted - aBoosted;
+      const aScore = (a as any).compatibility?.overallScore ?? 0;
+      const bScore = (b as any).compatibility?.overallScore ?? 0;
+      return bScore - aScore;
+    });
+
+    return {
+      candidates: enriched,
       meta: { page, limit, hasMore: users.length === limit },
     };
   }
@@ -431,36 +470,40 @@ export class MatchingService {
     const target = await this.userRepo.findOne({ where: { id: targetUserId } });
     if (!user || !target) throw new NotFoundException('User not found');
 
-    const userProfile = await this.profileRepo.findOne({ where: { userId } });
-    const targetProfile = await this.profileRepo.findOne({ where: { userId: targetUserId } });
+    const result = await this.compatibilityEngine.score(userId, targetUserId);
 
-    let score = 50;
-    const factors: Record<string, boolean> = {};
+    const icebreakers = await this.icebreakerGenerator.generate(
+      await this.profileRepo.findOne({ where: { userId } }),
+      {
+        userId: target.id,
+        fullName: target.fullName,
+        age: target.dateOfBirth ? this.calculateAge(target.dateOfBirth) : 0,
+        gender: target.gender || '',
+        bio: '',
+        jobTitle: '',
+        city: '',
+        distanceKm: 0,
+        verified: false,
+        completionPercentage: 0,
+        photos: [],
+        interests: [],
+        relationshipGoal: '',
+      },
+      result,
+    );
 
-    if (userProfile && targetProfile) {
-      const userPIs = await this.profileInterestRepo.find({ where: { profileId: userProfile.id } });
-      const targetPIs = await this.profileInterestRepo.find({ where: { profileId: targetProfile.id } });
-      const userIds = new Set(userPIs.map((p) => p.interestId));
-      const overlap = targetPIs.filter((p) => userIds.has(p.interestId)).length;
-      const total = new Set([...userPIs.map((p) => p.interestId), ...targetPIs.map((p) => p.interestId)]).size;
-      const interestScore = total > 0 ? Math.round((overlap / total) * 100) : 0;
-      score = interestScore;
-      factors.interests = interestScore > 60;
+    return { compatibility: result.overallScore, breakdown: result.breakdown, sharedInterests: result.sharedInterests, insights: result.insights, icebreakers };
+  }
+
+  private calculateAge(dateOfBirth: Date): number {
+    const today = new Date();
+    const birth = new Date(dateOfBirth);
+    let age = today.getFullYear() - birth.getFullYear();
+    const monthDiff = today.getMonth() - birth.getMonth();
+    if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birth.getDate())) {
+      age--;
     }
-
-    if (user.dateOfBirth && target.dateOfBirth) {
-      const ageDiff = Math.abs(new Date(user.dateOfBirth).getFullYear() - new Date(target.dateOfBirth).getFullYear());
-      const ageScore = Math.max(0, 100 - ageDiff * 5);
-      score = Math.round((score + ageScore) / 2);
-      factors.age = ageDiff <= 5;
-    }
-
-    if (userProfile?.city && targetProfile?.city) {
-      factors.location = userProfile.city === targetProfile.city;
-      if (factors.location) score = Math.min(100, score + 10);
-    }
-
-    return { compatibility: score, factors };
+    return age;
   }
 
   async getSync(userId: string, since: number) {
@@ -533,5 +576,68 @@ export class MatchingService {
       ...m,
       expired: new Date(m.expiresAt) <= new Date(),
     }));
+  }
+
+  async checkScamRisk(userId: string, targetUserId: string) {
+    return this.scamDetector.analyzeConversation(userId, targetUserId);
+  }
+
+  async getIcebreakers(userId: string, targetUserId: string) {
+    const userProfile = await this.profileRepo.findOne({ where: { userId } });
+    const targetProfile = await this.profileRepo.findOne({ where: { userId: targetUserId } });
+    const targetUser = await this.userRepo.findOne({ where: { id: targetUserId } });
+    if (!targetProfile || !targetUser) throw new NotFoundException('Target user not found');
+
+    const targetInterests = await this.profileInterestRepo.find({ where: { profileId: targetProfile.id }, relations: ['interest'] });
+    const interestNames = targetInterests.map((pi) => pi.interest?.name).filter((n): n is string => !!n);
+
+    const candidateProfile = {
+      userId: targetUserId,
+      fullName: targetUser.fullName,
+      age: targetUser.dateOfBirth ? this.calculateAge(targetUser.dateOfBirth) : 0,
+      gender: targetProfile.gender || '',
+      bio: targetProfile.bio || '',
+      jobTitle: targetProfile.jobTitle || '',
+      city: targetProfile.city || '',
+      distanceKm: 0,
+      verified: targetProfile.verified,
+      completionPercentage: targetProfile.completionPercentage,
+      photos: [],
+      interests: interestNames,
+      relationshipGoal: targetProfile.relationshipGoal || '',
+    };
+
+    const compatibility = await this.compatibilityEngine.score(userId, targetUserId);
+    return this.icebreakerGenerator.generate(userProfile, candidateProfile, compatibility);
+  }
+
+  async getBehavioralAnalysis(userId: string) {
+    const user = await this.userRepo.findOne({ where: { id: userId } });
+    if (!user) throw new NotFoundException('User not found');
+    const profile = await this.profileRepo.findOne({ where: { userId } });
+
+    let riskScore = 0;
+    const flags: string[] = [];
+
+    const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
+    const [messages24h, likesGiven24h, totalReports, photoCount] = await Promise.all([
+      this.likeRepo.count({ where: { userId, createdAt: MoreThan(oneDayAgo) } }),
+      this.likeRepo.count({ where: { userId, createdAt: MoreThan(oneDayAgo) } }),
+      0,
+      profile ? 0 : 0,
+    ]);
+
+    if (messages24h > 200) { flags.push('mass_messaging'); riskScore += 0.4; }
+    if (likesGiven24h > 100) { flags.push('like_spam'); riskScore += 0.3; }
+    if (photoCount === 0) { flags.push('no_photos'); riskScore += 0.2; }
+    if (profile && !profile.bio) { flags.push('no_bio'); riskScore += 0.1; }
+
+    const finalRisk = Math.min(riskScore, 1);
+    return {
+      riskScore: Number(finalRisk.toFixed(2)),
+      flags,
+      isSuspicious: finalRisk > 0.5,
+      safetyScore: Math.round((1 - finalRisk) * 100),
+    };
   }
 }

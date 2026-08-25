@@ -5,6 +5,13 @@ import { EventEmitterModule } from '@nestjs/event-emitter';
 import { allEntities } from '@app/common/entities';
 import { MatchingController } from './matching.controller';
 import { MatchingService } from './matching.service';
+import { CompatibilityEngine } from './ai/compatibility.engine';
+import { CandidateGenerator } from './ai/candidate.generator';
+import { DiversityInjector } from './ai/diversity.injector';
+import { BehaviorAnalyzer } from './ai/behavior.analyzer';
+import { ScamDetector } from './ai/scam.detector';
+import { IcebreakerGenerator } from './ai/icebreaker.generator';
+import { MatchmakingEngine } from './ai/matchmaking.engine';
 
 @Module({
   imports: [
@@ -23,6 +30,15 @@ import { MatchingService } from './matching.service';
     EventEmitterModule.forRoot(),
   ],
   controllers: [MatchingController],
-  providers: [MatchingService],
+  providers: [
+    MatchingService,
+    CompatibilityEngine,
+    CandidateGenerator,
+    DiversityInjector,
+    BehaviorAnalyzer,
+    ScamDetector,
+    IcebreakerGenerator,
+    MatchmakingEngine,
+  ],
 })
 export class AppModule {}

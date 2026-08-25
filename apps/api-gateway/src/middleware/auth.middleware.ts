@@ -20,9 +20,11 @@ export class AuthMiddleware implements NestMiddleware {
   use(req: Request, _res: Response, next: NextFunction) {
     const url = (req as any).originalUrl || req.url;
 
+    const isPublic = this.publicPaths.some((p) => url.startsWith(p));
+
     const authHeader = req.headers.authorization;
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      if (this.publicPaths.some((p) => url.startsWith(p))) {
+      if (isPublic) {
         return next();
       }
       return next();
@@ -30,12 +32,14 @@ export class AuthMiddleware implements NestMiddleware {
 
     const token = authHeader.split(' ')[1];
     try {
-      const payload: any = jwt.decode(token);
+      const payload: any = jwt.verify(token, process.env.JWT_SECRET || 'your-secret-key');
       if (payload && payload.sub) {
         (req as any).userId = payload.sub;
       }
     } catch {
-      // Token invalid — continue without userId, downstream services will reject if needed
+      if (!isPublic) {
+        return next();
+      }
     }
 
     next();
