@@ -32,9 +32,15 @@ export class CallsController {
     return this.callsService.endCall(callId, userId, body.reason);
   }
 
+  @Get('pair')
+  @ApiOperation({ summary: 'Call history between two users' })
+  pairHistory(@Headers('x-user-id') userId: string, @Query('otherUserId') otherUserId: string) {
+    return this.callsService.getPairHistory(userId, otherUserId);
+  }
+
   @Get('history')
   @ApiOperation({ summary: 'Call history' })
-  history(@Headers('x-user-id') userId: string, @Query('page') page?: number, @Query('limit') limit?: number, @Query('call_type') callType?: string, @Query('direction') direction?: string) {
-    return this.callsService.getHistory(userId, page, limit, callType, direction);
+  history(@Headers('x-user-id') userId: string, @Query('page') page?: string, @Query('limit') limit?: string, @Query('call_type') callType?: string, @Query('direction') direction?: string) {
+    return this.callsService.getHistory(userId, parseInt(page || '1'), parseInt(limit || '20'), callType, direction);
   }
 }

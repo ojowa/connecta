@@ -14,12 +14,24 @@ export interface Message {
   conversationId: string;
   senderId: string;
   content: string;
-  type: 'text' | 'image' | 'voice' | 'video' | 'gif';
+  type: 'text' | 'image' | 'voice' | 'video' | 'gif' | 'call';
   status: 'pending' | 'sent' | 'delivered' | 'read';
   reactions?: Reaction[];
   replyTo?: string;
   createdAt: string;
   updatedAt: string;
+}
+
+export interface CallEvent {
+  id: string;
+  callerId: string;
+  calleeId: string;
+  callType: string;
+  status: string;
+  connectedAt: string | null;
+  endedAt: string | null;
+  duration: number | null;
+  startedAt: string;
 }
 
 export interface Reaction {

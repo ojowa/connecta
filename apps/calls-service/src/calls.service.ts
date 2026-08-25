@@ -44,6 +44,18 @@ export class CallsService {
     return { callId, status: 'ended', duration };
   }
 
+  async getPairHistory(userId: string, otherUserId: string) {
+    const calls = await this.callRepo
+      .createQueryBuilder('c')
+      .where(
+        '(c.callerId = :userId AND c.calleeId = :otherUserId) OR (c.callerId = :otherUserId AND c.calleeId = :userId)',
+        { userId, otherUserId },
+      )
+      .orderBy('c.startedAt', 'ASC')
+      .getMany();
+    return calls;
+  }
+
   async getHistory(userId: string, page = 1, limit = 20, callType?: string, direction?: string) {
     const qb = this.callRepo.createQueryBuilder('c').where('(c.callerId = :userId OR c.calleeId = :userId)', { userId });
     if (callType) qb.andWhere('c.callType = :callType', { callType });

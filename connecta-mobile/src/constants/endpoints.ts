@@ -70,6 +70,7 @@ export const ENDPOINTS = {
     REJECT: (callId: string) => `/calls/${callId}/reject`,
     END: (callId: string) => `/calls/${callId}/end`,
     HISTORY: '/calls/history',
+    PAIR_HISTORY: (otherUserId: string) => `/calls/pair?otherUserId=${otherUserId}`,
   },
   MEDIA: {
     UPLOAD: '/media/upload',

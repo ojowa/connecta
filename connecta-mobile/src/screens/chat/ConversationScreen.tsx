@@ -1,4 +1,4 @@
-import React, { useRef, useCallback, useState, useLayoutEffect } from 'react';
+import React, { useRef, useCallback, useState, useLayoutEffect, useEffect } from 'react';
 import { View, StyleSheet, FlatList, KeyboardAvoidingView, Platform, Text, TouchableOpacity, useWindowDimensions } from 'react-native';
 import { useMessages, useSendMessage, useDeleteMessage, useReactToMessage } from '../../hooks/useChat';
 import { ChatBubble } from '../../components/chat/ChatBubble';
@@ -10,8 +10,41 @@ import { colors } from '../../theme/colors';
 import { typography } from '../../theme/typography';
 import { spacing } from '../../theme/spacing';
 import { borderRadius } from '../../theme/borderRadius';
-import { Message } from '../../types/chat';
+import { Message, CallEvent } from '../../types/chat';
 import { apiClient } from '../../services/api/apiClient';
+
+type FeedItem = Message | (CallEvent & { type: 'call'; senderId: string; conversationId: string; content: string });
+
+const CALL_STATUS_TEXT: Record<string, { icon: string; label: string }> = {
+  ringing: { icon: '📞', label: 'Call' },
+  ended: { icon: '📞', label: 'Call ended' },
+  rejected: { icon: '❌', label: 'Call declined' },
+  active: { icon: '📞', label: 'Call ended' },
+};
+
+function formatDuration(seconds: number | null): string {
+  if (!seconds || seconds <= 0) return '';
+  const m = Math.floor(seconds / 60);
+  const s = seconds % 60;
+  return m > 0 ? `${m}m ${s}s` : `${s}s`;
+}
+
+function callsToMessages(calls: CallEvent[], userId: string): FeedItem[] {
+  return calls.map((call) => {
+    const isOutgoing = call.callerId === userId;
+    const meta = CALL_STATUS_TEXT[call.status] || CALL_STATUS_TEXT.ended;
+    const dur = formatDuration(call.duration);
+    const typeLabel = call.callType === 'video' ? 'Video' : 'Voice';
+    const content = `${meta.icon} ${typeLabel} ${isOutgoing ? 'to' : 'from'} ${isOutgoing ? 'them' : 'you'}${call.status === 'ended' ? ' · ' + dur : call.status === 'rejected' ? '' : ''}`;
+    return {
+      ...call,
+      type: 'call' as const,
+      senderId: isOutgoing ? call.callerId : call.calleeId,
+      conversationId: '',
+      content,
+    };
+  });
+}
 
 export const ConversationScreen: React.FC<{ route: any; navigation: any }> = ({ route, navigation }) => {
   const { conversationId, otherUserId = '', otherName = 'Chat', otherAvatar } = route.params || {};
@@ -24,6 +57,20 @@ export const ConversationScreen: React.FC<{ route: any; navigation: any }> = ({ 
   const userId = useAppStore((s) => s.user?.id);
   const flatListRef = useRef<FlatList>(null);
   const [typingUsers, setTypingUsers] = useState<string[]>([]);
+  const [callEvents, setCallEvents] = useState<FeedItem[]>([]);
+
+  useEffect(() => {
+    if (!otherUserId) return;
+    apiClient
+      .get(ENDPOINTS.CALLS.PAIR_HISTORY(otherUserId))
+      .then((res) => {
+        const calls: CallEvent[] = res.data?.data || res.data || [];
+        if (Array.isArray(calls) && calls.length > 0) {
+          setCallEvents(callsToMessages(calls, userId || ''));
+        }
+      })
+      .catch(() => {});
+  }, [otherUserId, userId]);
 
   useLayoutEffect(() => {
     navigation.setOptions({
@@ -61,6 +108,10 @@ export const ConversationScreen: React.FC<{ route: any; navigation: any }> = ({ 
 
   const messages = data?.messages || [];
 
+  const feed: FeedItem[] = [...messages, ...callEvents].sort(
+    (a, b) => new Date(b.createdAt || b.startedAt).getTime() - new Date(a.createdAt || a.startedAt).getTime(),
+  );
+
   const handleSend = useCallback((content: string) => {
     sendMessage.mutate({ conversationId, content });
   }, [conversationId, sendMessage]);
@@ -88,16 +139,30 @@ export const ConversationScreen: React.FC<{ route: any; navigation: any }> = ({ 
       {isLoading ? <LoadingSpinner /> : (
         <FlatList
           ref={flatListRef}
-          data={messages}
-          keyExtractor={(item: Message) => item.id}
-          renderItem={({ item }) => (
-            <ChatBubble
-              message={item}
-              isOwn={item.senderId === userId}
-              onDelete={handleDelete}
-              onReact={handleReact}
-            />
-          )}
+          data={feed}
+          keyExtractor={(item: FeedItem) => item.id}
+          renderItem={({ item }) => {
+            if (item.type === 'call') {
+              const callItem = item as CallEvent & { content: string };
+              return (
+                <View style={styles.callEvent}>
+                  <Text style={styles.callEventText}>{callItem.content}</Text>
+                  <Text style={styles.callEventTime}>
+                    {new Date(callItem.startedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                  </Text>
+                </View>
+              );
+            }
+            const msg = item as Message;
+            return (
+              <ChatBubble
+                message={msg}
+                isOwn={msg.senderId === userId}
+                onDelete={handleDelete}
+                onReact={handleReact}
+              />
+            );
+          }}
           contentContainerStyle={styles.list}
           inverted
           ListFooterComponent={
@@ -122,4 +187,7 @@ const styles = StyleSheet.create({
   headerActions: { flexDirection: 'row', gap: spacing.sm },
   headerButton: { width: 36, height: 36, borderRadius: 18, backgroundColor: colors.gray100, justifyContent: 'center', alignItems: 'center' },
   headerButtonIcon: { fontSize: 18 },
+  callEvent: { alignSelf: 'center', marginVertical: spacing.sm, alignItems: 'center' },
+  callEventText: { ...typography.caption, color: colors.textSecondary, textAlign: 'center' },
+  callEventTime: { ...typography.small, color: colors.gray400, marginTop: 2 },
 });
