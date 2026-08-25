@@ -10,21 +10,5 @@ services:
         value: production
       - key: PORT
         value: "3000"
-      - key: DB_HOST
-        value: ep-crimson-recipe-a4vfpflj-pooler.us-east-1.aws.neon.tech
-      - key: DB_PORT
-        value: "5432"
-      - key: DB_USERNAME
-        value: neondb_owner
-      - key: DB_PASSWORD
-        value: npg_Q8BXmCJSbt3i
-      - key: DB_NAME
-        value: ojchat
-      - key: DB_SCHEMA
-        value: public
-      - key: JWT_SECRET
-        value: connecta-prod-jwt-2026-xk9m
-      - key: JWT_REFRESH_SECRET
-        value: connecta-prod-refresh-2026-p7zn
       - key: REDIS_URL
         value: redis://localhost:6379
