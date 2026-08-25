@@ -277,7 +277,30 @@ class WebRTCManager {
     if (!this.state?.localStream) return;
     const videoTrack = this.state.localStream.getVideoTracks()[0];
     if (videoTrack) {
-      await (videoTrack as any).switchCamera();
+      try {
+        await (videoTrack as any)._switchCamera();
+      } catch {
+        const settings = videoTrack.getSettings();
+        const currentFacing = (settings as any).facingMode || 'user';
+        const newFacing = currentFacing === 'user' ? 'environment' : 'user';
+        try {
+          const newStream = await mediaDevices.getUserMedia({
+            audio: false,
+            video: { facingMode: newFacing, width: CALL_QUALITY.VIDEO.width, height: CALL_QUALITY.VIDEO.height },
+          });
+          const newVideoTrack = newStream.getVideoTracks()[0];
+          if (this.state?.peerConnection && newVideoTrack) {
+            const sender = this.state.peerConnection.getSenders().find((s: any) => s.track?.kind === 'video');
+            if (sender) await sender.replaceTrack(newVideoTrack);
+            videoTrack.stop();
+            this.state.localStream.removeTrack(videoTrack);
+            this.state.localStream.addTrack(newVideoTrack);
+            this.notifyStateChange();
+          }
+        } catch (fallbackErr) {
+          console.error('Failed to switch camera:', fallbackErr);
+        }
+      }
     }
   }
 
