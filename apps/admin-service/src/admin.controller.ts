@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Query, Param } from '@nestjs/common';
+import { Controller, Get, Post, Body, Query, Param, Headers, UnauthorizedException } from '@nestjs/common';
 import { ApiTags, ApiOperation } from '@nestjs/swagger';
 import { AdminService } from './admin.service';
 
@@ -13,39 +13,53 @@ export class AdminController {
     return this.adminService.login(body.email, body.password);
   }
 
+  private verifyAuth(authHeader?: string) {
+    if (!authHeader?.startsWith('Bearer ')) throw new UnauthorizedException('Missing token');
+    const token = authHeader.slice(7);
+    const payload = this.adminService.verifyToken(token);
+    if (!payload) throw new UnauthorizedException('Invalid token');
+    return payload;
+  }
+
   @Get('dashboard')
   @ApiOperation({ summary: 'Get dashboard stats' })
-  getDashboard() {
-    return this.adminService.getDashboard();
+  getDashboard(@Headers('authorization') auth: string, @Query('period') period?: string) {
+    this.verifyAuth(auth);
+    return this.adminService.getDashboard(period);
   }
 
   @Get('users')
   @ApiOperation({ summary: 'Get all users' })
-  getUsers(@Query('page') page?: number, @Query('limit') limit?: number, @Query('status') status?: string) {
+  getUsers(@Headers('authorization') auth: string, @Query('page') page?: number, @Query('limit') limit?: number, @Query('status') status?: string) {
+    this.verifyAuth(auth);
     return this.adminService.getUsers(page, limit, status);
   }
 
   @Post('users/:id/suspend')
   @ApiOperation({ summary: 'Suspend user' })
-  suspendUser(@Param('id') id: string, @Body() body: any) {
+  suspendUser(@Headers('authorization') auth: string, @Param('id') id: string, @Body() body: any) {
+    this.verifyAuth(auth);
     return this.adminService.suspendUser(id, body.reason);
   }
 
   @Post('users/:id/activate')
   @ApiOperation({ summary: 'Activate user' })
-  activateUser(@Param('id') id: string) {
+  activateUser(@Headers('authorization') auth: string, @Param('id') id: string) {
+    this.verifyAuth(auth);
     return this.adminService.activateUser(id);
   }
 
   @Get('reports')
   @ApiOperation({ summary: 'Get all reports' })
-  getReports(@Query('page') page?: number, @Query('limit') limit?: number) {
+  getReports(@Headers('authorization') auth: string, @Query('page') page?: number, @Query('limit') limit?: number) {
+    this.verifyAuth(auth);
     return this.adminService.getReports(page, limit);
   }
 
   @Get('stats')
   @ApiOperation({ summary: 'Get platform stats' })
-  getStats() {
+  getStats(@Headers('authorization') auth: string) {
+    this.verifyAuth(auth);
     return this.adminService.getStats();
   }
 }
