@@ -20,7 +20,7 @@ export default function UserDetailPage({ params }: { params: { id: string } }) {
 
   useEffect(() => {
     api.get<{ user: UserRecord }>(`/admin/users/${id}`)
-      .then((res) => setUser(res.user))
+      .then((res) => setUser(res?.user || null))
       .catch(console.error)
       .finally(() => setLoading(false));
   }, [id]);

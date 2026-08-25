@@ -18,7 +18,7 @@ export default function SettingsPage() {
 
   useEffect(() => {
     api.get<{ settings: SystemSettings }>("/admin/settings")
-      .then((res) => setSettings(res.settings))
+      .then((res) => setSettings(res?.settings || {}))
       .catch(console.error)
       .finally(() => setLoading(false));
   }, []);

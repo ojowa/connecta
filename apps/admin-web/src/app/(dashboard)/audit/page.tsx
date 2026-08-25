@@ -18,7 +18,7 @@ export default function AuditPage() {
   const fetchEntries = (page = 1) => {
     setLoading(true);
     api.get<{ auditEntries: AuditEntry[]; meta: PaginatedMeta }>("/admin/audit-log", { page, limit: 50 })
-      .then((res) => { setEntries(res.auditEntries); setMeta(res.meta); })
+      .then((res) => { setEntries(res?.auditEntries || []); setMeta(res?.meta || { page: 1, limit: 50, total: 0, hasMore: false }); })
       .catch(console.error)
       .finally(() => setLoading(false));
   };

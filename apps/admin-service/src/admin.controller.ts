@@ -56,6 +56,27 @@ export class AdminController {
     return this.adminService.activateUser(id);
   }
 
+  @Post('users/:id/ban')
+  @ApiOperation({ summary: 'Ban user' })
+  banUser(@Headers('authorization') auth: string, @Param('id') id: string, @Body() body: any) {
+    this.verifyAuth(auth);
+    return this.adminService.banUser(id, body.reason);
+  }
+
+  @Post('users/:id/unsuspend')
+  @ApiOperation({ summary: 'Unsuspend user' })
+  unsuspendUser(@Headers('authorization') auth: string, @Param('id') id: string) {
+    this.verifyAuth(auth);
+    return this.adminService.activateUser(id);
+  }
+
+  @Get('users/:id')
+  @ApiOperation({ summary: 'Get user by ID' })
+  getUser(@Headers('authorization') auth: string, @Param('id') id: string) {
+    this.verifyAuth(auth);
+    return this.adminService.getUser(id);
+  }
+
   @Get('reports')
   @ApiOperation({ summary: 'Get all reports' })
   getReports(@Headers('authorization') auth: string, @Query('page') page?: string, @Query('limit') limit?: string) {
@@ -63,10 +84,45 @@ export class AdminController {
     return this.adminService.getReports(parseInt(page || '1'), parseInt(limit || '20'));
   }
 
+  @Post('reports/:id/resolve')
+  @ApiOperation({ summary: 'Resolve a report' })
+  resolveReport(@Headers('authorization') auth: string, @Param('id') id: string, @Body() body: any) {
+    this.verifyAuth(auth);
+    return this.adminService.resolveReport(id, body);
+  }
+
+  @Post('broadcast')
+  @ApiOperation({ summary: 'Send broadcast notification' })
+  broadcast(@Headers('authorization') auth: string, @Body() body: any) {
+    this.verifyAuth(auth);
+    return this.adminService.broadcast(body);
+  }
+
   @Get('stats')
   @ApiOperation({ summary: 'Get platform stats' })
   getStats(@Headers('authorization') auth: string) {
     this.verifyAuth(auth);
     return this.adminService.getStats();
+  }
+
+  @Get('settings')
+  @ApiOperation({ summary: 'Get platform settings' })
+  getSettings(@Headers('authorization') auth: string) {
+    this.verifyAuth(auth);
+    return this.adminService.getSettings();
+  }
+
+  @Put('settings')
+  @ApiOperation({ summary: 'Update platform settings' })
+  updateSettings(@Headers('authorization') auth: string, @Body() body: any) {
+    this.verifyAuth(auth);
+    return this.adminService.updateSettings(body);
+  }
+
+  @Get('audit-log')
+  @ApiOperation({ summary: 'Get audit log' })
+  getAuditLog(@Headers('authorization') auth: string, @Query('page') page?: string, @Query('limit') limit?: string) {
+    this.verifyAuth(auth);
+    return this.adminService.getAuditLog(parseInt(page || '1'), parseInt(limit || '50'));
   }
 }

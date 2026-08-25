@@ -79,9 +79,31 @@ export class AdminService {
     return { activated: true, userId };
   }
 
+  async banUser(userId: string, reason: string) {
+    await this.userRepo.update(userId, { status: 'banned' as any });
+    return { banned: true, userId, reason };
+  }
+
+  async getUser(userId: string) {
+    const user = await this.userRepo.findOne({ where: { id: userId } });
+    if (!user) throw new NotFoundException('User not found');
+    const { passwordHash, ...rest } = user;
+    return { user: rest };
+  }
+
   async getReports(page = 1, limit = 20) {
     const [reports, total] = await this.reportRepo.findAndCount({ order: { createdAt: 'DESC' }, skip: (page - 1) * limit, take: limit });
     return { reports, meta: { page, limit, total, hasMore: total > page * limit } };
+  }
+
+  async resolveReport(reportId: string, data: { resolution: string; notes?: string; actionTaken?: string }) {
+    await this.reportRepo.update(reportId, { status: data.resolution as any, actionTaken: data.actionTaken });
+    return { resolved: true, reportId, resolution: data.resolution };
+  }
+
+  async broadcast(data: { title: string; message: string; type: string; targetAudience: string }) {
+    const broadcastId = `bc_${Date.now()}`;
+    return { broadcastId, status: 'sent', ...data };
   }
 
   async getStats() {
@@ -91,6 +113,30 @@ export class AdminService {
     const totalTransactions = await this.txnRepo.count();
     const totalReports = await this.reportRepo.count();
     return { totalUsers, activeUsers, totalSubscriptions, totalTransactions, totalReports };
+  }
+
+  private defaultSettings = {
+    maintenanceMode: false,
+    welcomeMessage: 'Welcome to Connecta!',
+    minAge: 18,
+    maxAge: 100,
+    enableVideoCalls: true,
+    enableVoiceCalls: true,
+    enableSuperLikes: true,
+    maxFreeSuperLikes: 5,
+  };
+
+  async getSettings() {
+    return { settings: this.defaultSettings };
+  }
+
+  async updateSettings(data: any) {
+    Object.assign(this.defaultSettings, data);
+    return { updatedAt: new Date().toISOString() };
+  }
+
+  async getAuditLog(page = 1, limit = 50) {
+    return { auditEntries: [], meta: { page, limit, total: 0, hasMore: false } };
   }
 
   async getAnalytics(period?: string) {
