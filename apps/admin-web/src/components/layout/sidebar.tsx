@@ -13,6 +13,11 @@ import {
   ClipboardList,
   Shield,
   Flame,
+  Activity,
+  TrendingUp,
+  DollarSign,
+  Globe,
+  Server,
 } from "lucide-react";
 
 const navItems = [
@@ -20,7 +25,12 @@ const navItems = [
   { href: "/users", label: "Users", icon: Users },
   { href: "/reports", label: "Reports", icon: AlertTriangle },
   { href: "/moderation", label: "Moderation", icon: Shield },
-  { href: "/analytics", label: "Analytics", icon: BarChart3 },
+  { href: "/activity", label: "Live Activity", icon: Activity },
+  { href: "/match-analytics", label: "Match Analytics", icon: TrendingUp },
+  { href: "/revenue", label: "Revenue", icon: DollarSign },
+  { href: "/geographic", label: "Geographic", icon: Globe },
+  { href: "/analytics", label: "Growth Analytics", icon: BarChart3 },
+  { href: "/system", label: "System Health", icon: Server },
   { href: "/broadcast", label: "Broadcast", icon: Radio },
   { href: "/settings", label: "Settings", icon: Settings },
   { href: "/audit", label: "Audit Log", icon: ClipboardList },

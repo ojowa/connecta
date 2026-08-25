@@ -125,4 +125,39 @@ export class AdminController {
     this.verifyAuth(auth);
     return this.adminService.getAuditLog(parseInt(page || '1'), parseInt(limit || '50'));
   }
+
+  @Get('live-activity')
+  @ApiOperation({ summary: 'Get real-time platform activity' })
+  getLiveActivity(@Headers('authorization') auth: string) {
+    this.verifyAuth(auth);
+    return this.adminService.getLiveActivity();
+  }
+
+  @Get('match-analytics')
+  @ApiOperation({ summary: 'Get match analytics' })
+  getMatchAnalytics(@Headers('authorization') auth: string, @Query('period') period?: string) {
+    this.verifyAuth(auth);
+    return this.adminService.getMatchAnalytics(period);
+  }
+
+  @Get('revenue-deep-dive')
+  @ApiOperation({ summary: 'Get detailed revenue analytics' })
+  getRevenueDeepDive(@Headers('authorization') auth: string, @Query('period') period?: string) {
+    this.verifyAuth(auth);
+    return this.adminService.getRevenueDeepDive(period);
+  }
+
+  @Get('geo-analytics')
+  @ApiOperation({ summary: 'Get geographic analytics' })
+  getGeoAnalytics(@Headers('authorization') auth: string) {
+    this.verifyAuth(auth);
+    return this.adminService.getGeoAnalytics();
+  }
+
+  @Get('system-health')
+  @ApiOperation({ summary: 'Get system health status' })
+  getSystemHealth(@Headers('authorization') auth: string) {
+    this.verifyAuth(auth);
+    return this.adminService.getSystemHealth();
+  }
 }
