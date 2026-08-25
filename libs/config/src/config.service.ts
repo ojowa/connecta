@@ -19,6 +19,19 @@ export class AppConfigService {
   }
 
   get database() {
+    const url = this.get('DATABASE_URL');
+    if (url) {
+      const parsed = new URL(url);
+      return {
+        host: parsed.hostname,
+        port: parseInt(parsed.port, 10) || 5432,
+        username: parsed.username,
+        password: parsed.password,
+        database: parsed.pathname.replace(/^\//, ''),
+        synchronize: this.get('DB_SYNCHRONIZE', false),
+        ssl: this.get('DB_SSL', parsed.searchParams.get('sslmode') === 'require' || false),
+      };
+    }
     return {
       host: this.getRequired('DB_HOST'),
       port: this.get('DB_PORT', 5432),
