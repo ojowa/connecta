@@ -1,0 +1,51 @@
+services:
+  - type: web
+    name: connecta-backend
+    runtime: docker
+    dockerfilePath: Dockerfile
+    plan: starter
+    healthCheckPath: /health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 3000
+      - key: DB_HOST
+        fromDatabase:
+          name: connecta-db
+          property: host
+      - key: DB_PORT
+        fromDatabase:
+          name: connecta-db
+          property: port
+      - key: DB_USERNAME
+        fromDatabase:
+          name: connecta-db
+          property: user
+      - key: DB_PASSWORD
+        fromDatabase:
+          name: connecta-db
+          property: password
+      - key: DB_NAME
+        fromDatabase:
+          name: connecta-db
+          property: database
+      - key: JWT_SECRET
+        generateValue: true
+      - key: JWT_REFRESH_SECRET
+        generateValue: true
+      - key: REDIS_URL
+        fromService:
+          name: connecta-redis
+          type: redis
+          property: connectionString
+
+  - type: postgres
+    name: connecta-db
+    plan: starter
+    databaseName: connecta_db
+    ipAllowList: []
+
+  - type: redis
+    name: connecta-redis
+    plan: starter
