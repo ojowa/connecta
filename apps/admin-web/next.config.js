@@ -1,3 +1,5 @@
+require('dotenv').config({ path: require('path').resolve(__dirname, '.env') });
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   async rewrites() {
