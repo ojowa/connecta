@@ -29,7 +29,7 @@ export const MatchesScreen: React.FC = () => {
     <SafeAreaView style={styles.safeArea}>
       <View style={styles.container}>
       <Text style={styles.title}>Matches</Text>
-      <TouchableOpacity style={styles.likesButton} onPress={() => navigation.navigate('LikesYou')}>
+      <TouchableOpacity style={styles.likesButton} onPress={() => (navigation as any).navigate('LikesYou')}>
         <Text style={styles.likesButtonText}>See Who Likes You</Text>
       </TouchableOpacity>
       {matches.length === 0 ? (

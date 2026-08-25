@@ -1,7 +1,8 @@
 import React, { useRef, useCallback, useState, useLayoutEffect, useEffect } from 'react';
 import { View, StyleSheet, FlatList, KeyboardAvoidingView, Platform, Text, TouchableOpacity, useWindowDimensions } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useMessages, useSendMessage, useDeleteMessage, useReactToMessage } from '../../hooks/useChat';
+import { useMessages, useSendMessage, useDeleteMessage, useReactToMessage, useTypingIndicator } from '../../hooks/useChat';
+import { chatApi } from '../../services/api/chatApi';
 import { ChatBubble } from '../../components/chat/ChatBubble';
 import { ChatInput } from '../../components/chat/ChatInput';
 import { LoadingSpinner } from '../../components/common/LoadingSpinner';
@@ -57,7 +58,8 @@ export const ConversationScreen: React.FC<{ route: any; navigation: any }> = ({ 
   const reactToMessage = useReactToMessage(conversationId);
   const userId = useAppStore((s) => s.user?.id);
   const flatListRef = useRef<FlatList>(null);
-  const [typingUsers, setTypingUsers] = useState<string[]>([]);
+  const typingUsers = useTypingIndicator(conversationId);
+  const [replyTo, setReplyTo] = useState<{ id: string; content: string } | null>(null);
   const [callEvents, setCallEvents] = useState<FeedItem[]>([]);
 
   useEffect(() => {
@@ -110,11 +112,31 @@ export const ConversationScreen: React.FC<{ route: any; navigation: any }> = ({ 
   const messages = data?.messages || [];
 
   const feed: FeedItem[] = [...messages, ...callEvents].sort(
-    (a, b) => new Date(b.createdAt || b.startedAt).getTime() - new Date(a.createdAt || a.startedAt).getTime(),
+    (a, b) => {
+      const aTime = 'createdAt' in a ? new Date(a.createdAt).getTime() : 'startedAt' in a ? new Date(a.startedAt).getTime() : 0;
+      const bTime = 'createdAt' in b ? new Date(b.createdAt).getTime() : 'startedAt' in b ? new Date(b.startedAt).getTime() : 0;
+      return bTime - aTime;
+    },
   );
 
   const handleSend = useCallback((content: string) => {
     sendMessage.mutate({ conversationId, content });
+  }, [conversationId, sendMessage]);
+
+  const handleSendVoice = useCallback(async (uri: string) => {
+    try {
+      const formData = new FormData();
+      formData.append('file', { uri, type: 'audio/m4a', name: 'voice.m4a' } as any);
+      const uploadRes = await apiClient.post(ENDPOINTS.MEDIA.UPLOAD, formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      });
+      const audioUrl = uploadRes?.data?.url || uploadRes?.data?.data?.url;
+      if (audioUrl) {
+        await sendMessage.mutate({ conversationId, content: audioUrl, type: 'voice' });
+      }
+    } catch (err) {
+      console.error('Failed to send voice message', err);
+    }
   }, [conversationId, sendMessage]);
 
   const handleSendImage = useCallback(async (uri: string) => {
@@ -135,6 +157,14 @@ export const ConversationScreen: React.FC<{ route: any; navigation: any }> = ({ 
   const handleReact = useCallback((messageId: string, emoji: string) => {
     reactToMessage.mutate({ messageId, emoji });
   }, [reactToMessage]);
+
+  const handleReply = useCallback((message: Message) => {
+    setReplyTo({ id: message.id, content: message.content });
+  }, []);
+
+  const handleCancelReply = useCallback(() => {
+    setReplyTo(null);
+  }, []);
 
   return (
     <SafeAreaView style={styles.container}>
@@ -163,6 +193,7 @@ export const ConversationScreen: React.FC<{ route: any; navigation: any }> = ({ 
                   isOwn={msg.senderId === userId}
                   onDelete={handleDelete}
                   onReact={handleReact}
+                  onReply={handleReply}
                 />
               );
             }}
@@ -177,7 +208,14 @@ export const ConversationScreen: React.FC<{ route: any; navigation: any }> = ({ 
             }
           />
         )}
-        <ChatInput onSend={handleSend} onSendImage={handleSendImage} />
+        <ChatInput
+          onSend={handleSend}
+          onSendImage={handleSendImage}
+          onSendVoice={handleSendVoice}
+          onTyping={() => chatApi.sendTyping(conversationId)}
+          replyTo={replyTo}
+          onCancelReply={handleCancelReply}
+        />
       </KeyboardAvoidingView>
     </SafeAreaView>
   );

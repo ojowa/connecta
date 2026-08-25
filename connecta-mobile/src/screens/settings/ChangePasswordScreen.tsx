@@ -38,9 +38,9 @@ export default function ChangePasswordScreen({ navigation }: any) {
   return (
     <SafeAreaView style={styles.safeArea}>
       <View style={styles.container}>
-        <Input label="Current Password" value={current} onChangeText={setCurrent} secureTextEntry />
-        <Input label="New Password" value={newPass} onChangeText={setNewPass} secureTextEntry />
-        <Input label="Confirm New Password" value={confirmPass} onChangeText={setConfirmPass} secureTextEntry />
+        <Input label="Current Password" placeholder="Enter current password" value={current} onChangeText={setCurrent} secureTextEntry />
+        <Input label="New Password" placeholder="Enter new password" value={newPass} onChangeText={setNewPass} secureTextEntry />
+        <Input label="Confirm New Password" placeholder="Confirm new password" value={confirmPass} onChangeText={setConfirmPass} secureTextEntry />
         <Button title="Change Password" onPress={handleSave} loading={loading} style={styles.btn} />
       </View>
     </SafeAreaView>

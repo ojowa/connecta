@@ -94,7 +94,7 @@ const SettingsScreen: React.FC = () => {
         {
           text: 'Delete',
           style: 'destructive',
-          onPress: async (password) => {
+          onPress: async (password?: string) => {
             if (!password) return;
             try {
               await apiClient.delete('/users/me', { data: { password } });

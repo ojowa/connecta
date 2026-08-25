@@ -4,10 +4,10 @@ import {
   Text,
   StyleSheet,
   TouchableOpacity,
-  SafeAreaView,
   Alert,
   ActivityIndicator,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiClient } from '../../services/api/apiClient';
 import { colors } from '../../theme/colors';
@@ -89,7 +89,7 @@ export default function BoostScreen() {
 
   if (isLoading) {
     return (
-      <SafeAreaView style={styles.safeArea} edges={['bottom']}>
+      <SafeAreaView style={styles.safeArea} edges={['bottom' as any]}>
         <View style={styles.center}>
           <ActivityIndicator size="large" color={colors.primary} />
         </View>
@@ -101,7 +101,7 @@ export default function BoostScreen() {
   const isActive = activeBoost && new Date(activeBoost.expiresAt).getTime() > Date.now();
 
   return (
-    <SafeAreaView style={styles.safeArea} edges={['bottom']}>
+    <SafeAreaView style={styles.safeArea} edges={['bottom' as any]}>
       <View style={styles.content}>
         <View style={styles.headerSection}>
           <Text style={styles.icon}>⚡</Text>

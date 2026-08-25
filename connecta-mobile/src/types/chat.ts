@@ -17,7 +17,7 @@ export interface Message {
   type: 'text' | 'image' | 'voice' | 'video' | 'gif' | 'call';
   status: 'pending' | 'sent' | 'delivered' | 'read';
   reactions?: Reaction[];
-  replyTo?: string;
+  replyTo?: { id: string; content: string } | string;
   createdAt: string;
   updatedAt: string;
 }

@@ -63,9 +63,18 @@ export const ChatBubble: React.FC<ChatBubbleProps> = ({ message, isOwn, onReply,
     return <Text style={[styles.text, isOwn ? styles.ownText : styles.otherText]}>{message.content}</Text>;
   };
 
+  const replyContent = typeof message.replyTo === 'object' ? message.replyTo?.content : undefined;
+
   return (
     <TouchableOpacity onLongPress={handleLongPress} activeOpacity={0.8}>
       <View style={[styles.container, isOwn ? styles.own : styles.other]}>
+        {replyContent && (
+          <View style={styles.replyContainer}>
+            <Text style={styles.replyText} numberOfLines={2}>
+              {replyContent}
+            </Text>
+          </View>
+        )}
         {renderContent()}
         {message.reactions && message.reactions.length > 0 && (
           <View style={styles.reactions}>
@@ -99,6 +108,19 @@ const styles = StyleSheet.create({
   reaction: { fontSize: 16 },
   footer: { flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-end', gap: spacing.xs, marginTop: 4 },
   time: { ...typography.small, color: colors.gray400 },
+  replyContainer: {
+    backgroundColor: 'rgba(0,0,0,0.05)',
+    borderLeftWidth: 3,
+    borderLeftColor: colors.primary,
+    padding: spacing.xs,
+    marginBottom: spacing.xs,
+    borderRadius: 4,
+  },
+  replyText: {
+    ...typography.caption,
+    color: colors.textSecondary,
+    fontStyle: 'italic',
+  },
   status: { ...typography.small, color: colors.gray400 },
   statusRead: { color: colors.primary },
 });

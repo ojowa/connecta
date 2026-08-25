@@ -1,5 +1,7 @@
+import { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { chatApi } from '../services/api/chatApi';
+import SocketManager from '../socket/SocketManager';
 
 export function useConversations(page = 1) {
   return useQuery({
@@ -64,4 +66,38 @@ export function useSearchMessages() {
     queryFn: ({ queryKey }) => chatApi.searchMessages(queryKey[1] as string),
     enabled: false,
   });
+}
+
+export function useTypingIndicator(conversationId: string) {
+  const [typingUsers, setTypingUsers] = useState<string[]>([]);
+
+  useEffect(() => {
+    if (!conversationId) return;
+    const socketManager = SocketManager.getInstance();
+    if (!socketManager) return;
+
+    const handleTypingStart = (data: { conversationId: string; userId: string }) => {
+      if (data.conversationId === conversationId) {
+        setTypingUsers(prev => [...new Set([...prev, data.userId])]);
+      }
+    };
+
+    const handleTypingStop = (data: { conversationId: string; userId: string }) => {
+      if (data.conversationId === conversationId) {
+        setTypingUsers(prev => prev.filter(id => id !== data.userId));
+      }
+    };
+
+    const socket = (socketManager as any).chatSocket;
+    if (socket) {
+      socket.on('typing.start', handleTypingStart);
+      socket.on('typing.stop', handleTypingStop);
+      return () => {
+        socket.off('typing.start', handleTypingStart);
+        socket.off('typing.stop', handleTypingStop);
+      };
+    }
+  }, [conversationId]);
+
+  return typingUsers;
 }

@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { View, TextInput, TouchableOpacity, Text, StyleSheet, Alert } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
+import { Audio } from 'expo-av';
 import { colors } from '../../theme/colors';
 import { typography } from '../../theme/typography';
 import { spacing } from '../../theme/spacing';
@@ -13,11 +15,38 @@ interface ChatInputProps {
   onSendVoice?: (uri: string) => void;
   onSendGif?: (url: string) => void;
   onTyping?: () => void;
+  replyTo?: { id: string; content: string } | null;
+  onCancelReply?: () => void;
 }
 
-export const ChatInput: React.FC<ChatInputProps> = ({ onSend, onSendImage, onSendVoice, onSendGif, onTyping }) => {
+export const ChatInput: React.FC<ChatInputProps> = ({ onSend, onSendImage, onSendVoice, onSendGif, onTyping, replyTo, onCancelReply }) => {
   const [text, setText] = useState('');
   const [isRecording, setIsRecording] = useState(false);
+  const [recording, setRecording] = useState<Audio.Recording | null>(null);
+
+  const startRecording = async () => {
+    try {
+      await Audio.requestPermissionsAsync();
+      await Audio.setAudioModeAsync({ allowsRecordingIOS: true, playsInSilentModeIOS: true });
+      const { recording: newRecording } = await Audio.Recording.createAsync(
+        Audio.RecordingOptionsPresets.HIGH_QUALITY
+      );
+      setRecording(newRecording);
+      setIsRecording(true);
+    } catch (err) {
+      console.error('Failed to start recording', err);
+    }
+  };
+
+  const stopRecording = async () => {
+    if (!recording) return;
+    setIsRecording(false);
+    await recording.stopAndUnloadAsync();
+    await Audio.setAudioModeAsync({ allowsRecordingIOS: false });
+    const uri = recording.getURI();
+    setRecording(null);
+    if (uri && onSendVoice) onSendVoice(uri);
+  };
 
   const handleSend = () => {
     if (text.trim()) {
@@ -47,11 +76,8 @@ export const ChatInput: React.FC<ChatInputProps> = ({ onSend, onSendImage, onSen
         },
       },
       {
-        text: '🎤 Voice Message',
-        onPress: () => {
-          // Placeholder — in production, use expo-av to record
-          Alert.alert('Voice', 'Voice recording coming soon');
-        },
+        text: isRecording ? '⏹️ Stop Recording' : '🎤 Voice Message',
+        onPress: isRecording ? stopRecording : startRecording,
       },
       {
         text: '😎 GIF',
@@ -66,9 +92,21 @@ export const ChatInput: React.FC<ChatInputProps> = ({ onSend, onSendImage, onSen
 
   return (
     <View style={styles.container}>
-      <TouchableOpacity style={styles.attachButton} onPress={handleAttach} activeOpacity={0.7}>
-        <Text style={styles.attachIcon}>+</Text>
-      </TouchableOpacity>
+      {replyTo && (
+        <View style={styles.replyPreview}>
+          <View style={styles.replyPreviewContent}>
+            <Text style={styles.replyPreviewLabel}>Replying to</Text>
+            <Text style={styles.replyPreviewText} numberOfLines={1}>{replyTo.content}</Text>
+          </View>
+          <TouchableOpacity onPress={onCancelReply}>
+            <Ionicons name="close" size={18} color={colors.gray400} />
+          </TouchableOpacity>
+        </View>
+      )}
+      <View style={styles.inputRow}>
+        <TouchableOpacity style={styles.attachButton} onPress={handleAttach} activeOpacity={0.7}>
+          <Text style={styles.attachIcon}>+</Text>
+        </TouchableOpacity>
       <TextInput
         style={styles.input}
         value={text}
@@ -85,12 +123,18 @@ export const ChatInput: React.FC<ChatInputProps> = ({ onSend, onSendImage, onSen
       >
         <Text style={styles.sendIcon}>↑</Text>
       </TouchableOpacity>
+      </View>
     </View>
   );
 };
 
 const styles = StyleSheet.create({
-  container: { flexDirection: 'row', alignItems: 'flex-end', padding: spacing.sm, borderTopWidth: 1, borderTopColor: colors.border, backgroundColor: colors.white },
+  container: { borderTopWidth: 1, borderTopColor: colors.border, backgroundColor: colors.white },
+  replyPreview: { flexDirection: 'row', alignItems: 'center', padding: spacing.sm, paddingBottom: 0, backgroundColor: colors.gray50 },
+  replyPreviewContent: { flex: 1, marginLeft: spacing.xs },
+  replyPreviewLabel: { ...typography.small, color: colors.primary, fontWeight: '600' },
+  replyPreviewText: { ...typography.caption, color: colors.textSecondary },
+  inputRow: { flexDirection: 'row', alignItems: 'flex-end', padding: spacing.sm },
   attachButton: { width: 36, height: 36, borderRadius: 18, backgroundColor: colors.gray100, alignItems: 'center', justifyContent: 'center', marginRight: spacing.sm },
   attachIcon: { fontSize: 22, color: colors.primary, fontWeight: '700' },
   input: { flex: 1, ...typography.body, borderWidth: 1, borderColor: colors.border, borderRadius: borderRadius.input, paddingHorizontal: spacing.md, paddingVertical: spacing.sm, maxHeight: 100, marginRight: spacing.sm },

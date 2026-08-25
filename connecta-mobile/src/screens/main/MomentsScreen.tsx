@@ -392,7 +392,7 @@ const MomentsScreen: React.FC = () => {
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.storiesScroll}>
           {user && (
             <StoryCircle
-              user={{ id: user.id, name: user.name || 'You', avatar: user.avatarUrl }}
+              user={{ id: user.id, name: user.fullName || 'You', avatar: user.avatarUrl }}
               hasUnviewed={false}
               isOwn={true}
               isSelected={selectedUserId === user.id}

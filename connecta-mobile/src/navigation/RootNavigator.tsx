@@ -34,6 +34,9 @@ import BlockListScreen from '../screens/settings/BlockListScreen';
 import ReportProblemScreen from '../screens/settings/ReportProblemScreen';
 import IncognitoScreen from '../screens/settings/IncognitoScreen';
 import { BiometricSetupScreen } from '../screens/auth/BiometricSetupScreen';
+import { InterestSelectorScreen } from '../screens/profile/InterestSelectorScreen';
+import { WhoViewedScreen } from '../screens/matches/WhoViewedScreen';
+import { DailyStreakScreen } from '../screens/gamification/DailyStreakScreen';
 
 const Stack = createNativeStackNavigator();
 
@@ -51,6 +54,7 @@ export const RootNavigator: React.FC = () => {
             <Stack.Screen name="Conversation" component={ConversationScreen} options={{ headerShown: true, title: 'Chat' }} />
             {/* Profile */}
             <Stack.Screen name="EditProfile" component={EditProfileScreen} options={{ headerShown: true, title: 'Edit Profile' }} />
+            <Stack.Screen name="InterestSelector" component={InterestSelectorScreen} options={{ headerShown: false }} />
             <Stack.Screen name="PhotoManager" component={PhotoManagerScreen} options={{ headerShown: true, title: 'Manage Photos' }} />
             <Stack.Screen name="ProfilePrompts" component={ProfilePromptsScreen} options={{ headerShown: true, title: 'Profile Prompts' }} />
             {/* Settings & Notifications */}
@@ -74,7 +78,9 @@ export const RootNavigator: React.FC = () => {
             <Stack.Screen name="Boost" component={BoostScreen} options={{ headerShown: true, title: 'Boost' }} />
             {/* Matches & Social */}
             <Stack.Screen name="LikesYou" component={LikesYouScreen} options={{ headerShown: true, title: 'Likes You' }} />
+            <Stack.Screen name="WhoViewed" component={WhoViewedScreen} options={{ headerShown: false }} />
             <Stack.Screen name="Moments" component={MomentsScreen} options={{ headerShown: true, title: 'Moments' }} />
+            <Stack.Screen name="DailyStreak" component={DailyStreakScreen} options={{ headerShown: false }} />
             {/* Safety */}
             <Stack.Screen name="Report" component={ReportScreen} options={{ headerShown: true, title: 'Report', presentation: 'modal' }} />
             <Stack.Screen name="BlockConfirmation" component={BlockConfirmation} options={{ headerShown: true, title: 'Block User', presentation: 'modal' }} />

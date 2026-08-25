@@ -1,7 +1,8 @@
 import React from 'react';
-import { View, Text, Image, StyleSheet, useWindowDimensions } from 'react-native';
+import { View, Text, Image, StyleSheet, useWindowDimensions, TouchableOpacity } from 'react-native';
 import Animated, { useAnimatedStyle, useSharedValue, withSpring, runOnJS } from 'react-native-reanimated';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
+import { Ionicons } from '@expo/vector-icons';
 import { colors } from '../../theme/colors';
 import { typography } from '../../theme/typography';
 import { spacing } from '../../theme/spacing';
@@ -16,6 +17,8 @@ interface SwipeableCardProps {
   compatibilityScore?: number;
   onSwipeLeft: () => void;
   onSwipeRight: () => void;
+  onSuperLike?: () => void;
+  onUndo?: () => void;
   style?: any;
 }
 
@@ -28,7 +31,7 @@ const calculateAge = (dateOfBirth: string): number => {
   return age;
 };
 
-export const SwipeableCard: React.FC<SwipeableCardProps> = ({ profile, compatibilityScore, onSwipeLeft, onSwipeRight, style }) => {
+export const SwipeableCard: React.FC<SwipeableCardProps> = ({ profile, compatibilityScore, onSwipeLeft, onSwipeRight, onSuperLike, onUndo, style }) => {
   const { width: screenWidth } = useWindowDimensions();
   const translateX = useSharedValue(0);
   const translateY = useSharedValue(0);
@@ -69,6 +72,7 @@ export const SwipeableCard: React.FC<SwipeableCardProps> = ({ profile, compatibi
           <View style={styles.topRow}>
             <View style={styles.nameRow}>
               <Text style={styles.name}>{profile.firstName}{age ? `, ${age}` : ''}</Text>
+              {profile.verified && <Ionicons name="checkmark-circle" size={18} color={colors.primary} style={{ marginLeft: 4 }} />}
               {profile.city && <Text style={styles.city}> | {profile.city}</Text>}
             </View>
             {typeof compatibilityScore === 'number' && (
@@ -89,6 +93,20 @@ export const SwipeableCard: React.FC<SwipeableCardProps> = ({ profile, compatibi
             </View>
           )}
         </View>
+        <View style={styles.actionButtons}>
+          <TouchableOpacity style={[styles.actionButton, styles.undoButton]} onPress={onUndo} activeOpacity={0.7}>
+            <Text style={styles.undoIcon}>↩</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={[styles.actionButton, styles.passButton]} onPress={onSwipeLeft} activeOpacity={0.7}>
+            <Text style={styles.passIcon}>✕</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={[styles.actionButton, styles.superLikeButton]} onPress={onSuperLike} activeOpacity={0.7}>
+            <Text style={styles.superLikeIcon}>⭐</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={[styles.actionButton, styles.likeButton]} onPress={onSwipeRight} activeOpacity={0.7}>
+            <Text style={styles.likeIcon}>♥</Text>
+          </TouchableOpacity>
+        </View>
       </Animated.View>
     </GestureDetector>
   );
@@ -105,4 +123,51 @@ const styles = StyleSheet.create({
   bio: { ...typography.caption, color: 'rgba(255,255,255,0.9)', marginBottom: spacing.xs },
   interestsRow: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs },
   moreInterests: { ...typography.small, color: colors.whiteOverlaySoft, alignSelf: 'center' },
+  actionButtons: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    gap: spacing.lg,
+    paddingVertical: spacing.md,
+  },
+  actionButton: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 2,
+  },
+  undoButton: {
+    borderColor: colors.warning,
+    backgroundColor: 'transparent',
+  },
+  undoIcon: {
+    fontSize: 22,
+    color: colors.warning,
+  },
+  passButton: {
+    borderColor: colors.error,
+    backgroundColor: 'transparent',
+  },
+  passIcon: {
+    fontSize: 24,
+    color: colors.error,
+    fontWeight: 'bold',
+  },
+  superLikeButton: {
+    borderColor: colors.primary,
+    backgroundColor: 'transparent',
+  },
+  superLikeIcon: {
+    fontSize: 22,
+  },
+  likeButton: {
+    borderColor: colors.primary,
+    backgroundColor: colors.primary,
+  },
+  likeIcon: {
+    fontSize: 24,
+    color: colors.white,
+  },
 });

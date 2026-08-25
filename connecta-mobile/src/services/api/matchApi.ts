@@ -1,12 +1,21 @@
 import { apiClient } from './apiClient';
 import { ENDPOINTS } from '../../constants/endpoints';
-import { ApiResponse, PaginatedResponse } from '../../types/api';
 import { MatchFeedItem, Match } from '../../types/match';
+
+interface FeedResponse {
+  candidates: MatchFeedItem[];
+  meta: { page: number; limit: number; hasMore: boolean };
+}
+
+interface MatchListResponse {
+  matches: Match[];
+  meta: { page: number; limit: number; hasMore: boolean };
+}
 
 export const matchApi = {
   async getFeed(page = 1, limit = 20) {
     const response = await apiClient.get(ENDPOINTS.MATCHING.FEED, { params: { page, limit } });
-    return response.data as ApiResponse<PaginatedResponse<MatchFeedItem>>;
+    return response.data as FeedResponse;
   },
 
   async like(targetUserId: string) {
@@ -31,7 +40,7 @@ export const matchApi = {
 
   async getMatches(page = 1, limit = 20) {
     const response = await apiClient.get(ENDPOINTS.MATCHING.MATCHES, { params: { page, limit } });
-    return response.data as ApiResponse<PaginatedResponse<Match>>;
+    return response.data as MatchListResponse;
   },
 
   async unmatch(matchId: string) {

@@ -7,5 +7,6 @@ export const borderRadius = {
   avatarSm: 20,
   avatarLg: 40,
   bottomSheet: 24,
+  lg: 20,
   full: 9999,
 };

@@ -39,7 +39,7 @@ export default function PreferencesScreen({ navigation }: any) {
             <Button
               key={opt}
               title={opt.charAt(0).toUpperCase() + opt.slice(1)}
-              variant={showMe === opt ? 'default' : 'outline'}
+              variant={showMe === opt ? 'primary' : 'outline'}
               onPress={() => setShowMe(opt)}
               style={styles.optionBtn}
             />

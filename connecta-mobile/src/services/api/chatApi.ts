@@ -1,22 +1,31 @@
 import { apiClient } from './apiClient';
 import { ENDPOINTS } from '../../constants/endpoints';
-import { ApiResponse, PaginatedResponse } from '../../types/api';
 import { Conversation, Message } from '../../types/chat';
+
+interface MessagesResponse {
+  messages: Message[];
+  meta: { page: number; limit: number; hasMore: boolean };
+}
+
+interface ConversationsResponse {
+  conversations: Conversation[];
+  meta: { page: number; limit: number; hasMore: boolean };
+}
 
 export const chatApi = {
   async getConversations(page = 1, limit = 20) {
     const response = await apiClient.get(ENDPOINTS.CHAT.CONVERSATIONS, { params: { page, limit } });
-    return response.data as ApiResponse<PaginatedResponse<Conversation>>;
+    return response.data as ConversationsResponse;
   },
 
   async getMessages(conversationId: string, page = 1, limit = 50) {
     const response = await apiClient.get(ENDPOINTS.CHAT.MESSAGES(conversationId), { params: { page, limit } });
-    return response.data as ApiResponse<PaginatedResponse<Message>>;
+    return response.data as MessagesResponse;
   },
 
   async sendMessage(conversationId: string, content: string, type = 'text') {
     const response = await apiClient.post(ENDPOINTS.CHAT.SEND(conversationId), { content, type });
-    return response.data as ApiResponse<Message>;
+    return response.data as Message;
   },
 
   async deleteMessage(conversationId: string, messageId: string) {

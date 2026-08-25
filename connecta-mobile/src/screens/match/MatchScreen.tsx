@@ -110,7 +110,7 @@ const MatchScreen: React.FC<MatchScreenProps> = ({ navigation, route }) => {
 
         {compatibility && (
           <Animated.View style={[styles.compatibilityContainer, { opacity: fadeInAnim }]}>
-            <CompatibilityScore score={compatibility.compatibility || 0} size={80} />
+            <CompatibilityScore score={compatibility.compatibility || 0} size="large" />
             <Text style={styles.compatibilityLabel}>Compatibility</Text>
             {compatibility.insights?.slice(0, 2).map((insight: string, i: number) => (
               <Text key={i} style={styles.insight}>{insight}</Text>

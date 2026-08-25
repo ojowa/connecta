@@ -1,5 +1,5 @@
 import React, { useState, useCallback } from 'react';
-import { View, Text, StyleSheet, RefreshControl } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, RefreshControl } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useConversations } from '../../hooks/useChat';
 import { ChatList } from '../../components/chat/ChatList';
@@ -27,13 +27,13 @@ export const ChatsScreen: React.FC = ({ navigation }: any) => {
       <View style={styles.container}>
       <Text style={styles.title}>Messages</Text>
       {conversations.length === 0 ? (
-        <View style={styles.empty} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />}>
+        <ScrollView style={styles.empty} contentContainerStyle={{flex:1, justifyContent:'center', alignItems:'center'}} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />}>
           <Text style={styles.emptyIcon}>💬</Text>
           <Text style={styles.emptyText}>No conversations yet</Text>
           <Text style={styles.emptySubtext}>Match with someone to start chatting</Text>
-        </View>
+        </ScrollView>
       ) : (
-        <View style={{ flex: 1 }} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />}>
+        <ScrollView style={{ flex: 1 }} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />}>
           <ChatList conversations={conversations} isLoading={isLoading} onConversationPress={(id) => {
             const conv = conversations.find((c: any) => c.id === id);
             const currentUserId = useAppStore.getState().user?.id;
@@ -42,7 +42,7 @@ export const ChatsScreen: React.FC = ({ navigation }: any) => {
             const otherAvatar = conv?.participantAvatars?.[otherUserId];
             navigation.navigate('Conversation', { conversationId: id, otherUserId, otherName, otherAvatar });
           }} />
-        </View>
+        </ScrollView>
       )}
       </View>
     </SafeAreaView>

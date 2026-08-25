@@ -46,7 +46,7 @@ const getIcon = (type: NotificationType): string => {
   }
 };
 
-const NotificationsScreen: React.FC = () => {
+const NotificationsScreen: React.FC = ({ navigation }: any) => {
   const { data: notifications = [], isLoading, refetch } = useQuery({
     queryKey: ['notifications'],
     queryFn: () => apiClient.get('/notifications').then((r) => r.data),
@@ -62,10 +62,27 @@ const NotificationsScreen: React.FC = () => {
     markAllMutation.mutate();
   }, [markAllMutation]);
 
+  const handleNotificationPress = (notification: any) => {
+    if (notification.type === 'match') {
+      navigation.navigate('MainTab', { screen: 'Matches' });
+    } else if (notification.type === 'message') {
+      if (notification.conversationId) {
+        navigation.navigate('Conversation', {
+          conversationId: notification.conversationId,
+          otherUserId: notification.senderId || '',
+          otherName: notification.senderName || '',
+        });
+      }
+    } else if (notification.type === 'like') {
+      navigation.navigate('MainTab', { screen: 'LikesYou' });
+    }
+  };
+
   const renderNotification = ({ item }: { item: Notification }) => (
     <TouchableOpacity
       style={[styles.notificationItem, !item.read && styles.unreadItem]}
       activeOpacity={0.7}
+      onPress={() => handleNotificationPress(item)}
     >
       <View style={[styles.iconCircle, { backgroundColor: TYPE_COLORS[item.type] + '20' }]}>
         <Text style={styles.iconText}>{getIcon(item.type)}</Text>

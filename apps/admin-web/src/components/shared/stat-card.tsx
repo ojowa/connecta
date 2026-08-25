@@ -5,7 +5,7 @@ import { formatNumber, formatCurrency } from "@/lib/utils";
 
 interface StatCardProps {
   title: string;
-  value: number;
+  value: number | string;
   format?: "number" | "currency";
   icon: LucideIcon;
   description?: string;
@@ -20,7 +20,7 @@ export function StatCard({ title, value, format = "number", icon: Icon, descript
           <div>
             <p className="text-sm font-medium text-muted-foreground">{title}</p>
             <p className="text-2xl font-bold">
-              {format === "currency" ? formatCurrency(value) : formatNumber(value)}
+              {typeof value === 'string' ? value : format === "currency" ? formatCurrency(value) : formatNumber(value)}
             </p>
             {description && <p className="text-xs text-muted-foreground mt-1">{description}</p>}
           </div>

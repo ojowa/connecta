@@ -4,10 +4,10 @@ import {
   Text,
   StyleSheet,
   Switch,
-  SafeAreaView,
   ActivityIndicator,
   Alert,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiClient } from '../../services/api/apiClient';
 import { colors } from '../../theme/colors';
@@ -38,7 +38,7 @@ export default function IncognitoScreen() {
 
   if (isLoading) {
     return (
-      <SafeAreaView style={styles.safeArea} edges={['bottom']}>
+      <SafeAreaView style={styles.safeArea} edges={['bottom' as any]}>
         <View style={styles.center}>
           <ActivityIndicator size="large" color={colors.primary} />
         </View>
@@ -49,7 +49,7 @@ export default function IncognitoScreen() {
   const isIncognito = me?.incognito ?? me?.incognitoMode ?? false;
 
   return (
-    <SafeAreaView style={styles.safeArea} edges={['bottom']}>
+    <SafeAreaView style={styles.safeArea} edges={['bottom' as any]}>
       <View style={styles.content}>
         <View style={styles.iconSection}>
           <Text style={styles.icon}>🕵️</Text>
