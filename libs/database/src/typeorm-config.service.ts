@@ -24,7 +24,7 @@ export class TypeOrmConfigService implements TypeOrmOptionsFactory {
       logger: 'advanced-console',
       extra: {
         max: 20,
-        connectionTimeoutMillis: 5000,
+        connectionTimeoutMillis: 30000,
         idleTimeoutMillis: 30000,
       },
     };
