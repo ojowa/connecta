@@ -19,6 +19,7 @@ const navItems = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { href: "/users", label: "Users", icon: Users },
   { href: "/reports", label: "Reports", icon: AlertTriangle },
+  { href: "/moderation", label: "Moderation", icon: Shield },
   { href: "/analytics", label: "Analytics", icon: BarChart3 },
   { href: "/broadcast", label: "Broadcast", icon: Radio },
   { href: "/settings", label: "Settings", icon: Settings },

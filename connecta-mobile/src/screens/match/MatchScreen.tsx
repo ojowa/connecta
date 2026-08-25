@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
   View,
   Text,
@@ -7,11 +7,15 @@ import {
   TouchableOpacity,
   SafeAreaView,
   useWindowDimensions,
+  ScrollView,
 } from 'react-native';
 import { colors } from '../../theme/colors';
 import { typography } from '../../theme/typography';
 import { spacing } from '../../theme/spacing';
 import { borderRadius } from '../../theme/borderRadius';
+import { apiClient } from '../../services/api/apiClient';
+import { ENDPOINTS } from '../../constants/endpoints';
+import { CompatibilityScore } from '../../components/dating/CompatibilityScore';
 
 interface MatchScreenProps {
   navigation?: any;
@@ -33,6 +37,8 @@ const MatchScreen: React.FC<MatchScreenProps> = ({ navigation, route }) => {
   const avatarSize = Math.min(100, screenWidth * 0.25);
   const scaleAnim = useRef(new Animated.Value(0)).current;
   const fadeInAnim = useRef(new Animated.Value(0)).current;
+  const [compatibility, setCompatibility] = useState<any>(null);
+  const [icebreakers, setIcebreakers] = useState<any[]>([]);
 
   useEffect(() => {
     Animated.sequence([
@@ -48,7 +54,17 @@ const MatchScreen: React.FC<MatchScreenProps> = ({ navigation, route }) => {
         useNativeDriver: true,
       }),
     ]).start();
-  }, []);
+
+    if (matchedUser?.userId) {
+      apiClient.get(ENDPOINTS.MATCHING.COMPATIBILITY(matchedUser.userId))
+        .then((res: any) => {
+          const data = res?.data || res;
+          setCompatibility(data);
+          setIcebreakers(data?.icebreakers || []);
+        })
+        .catch(() => {});
+    }
+  }, [matchedUser?.userId]);
 
   const handleSendMessage = () => {
     navigation.navigate('Conversation', {
@@ -65,13 +81,11 @@ const MatchScreen: React.FC<MatchScreenProps> = ({ navigation, route }) => {
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      <View style={styles.container}>
+      <ScrollView contentContainerStyle={styles.container}>
         <Animated.Text
           style={[
             styles.matchTitle,
-            {
-              transform: [{ scale: scaleAnim }],
-            },
+            { transform: [{ scale: scaleAnim }] },
           ]}
         >
           It's a Match!
@@ -94,6 +108,39 @@ const MatchScreen: React.FC<MatchScreenProps> = ({ navigation, route }) => {
           </Text>
         </Animated.View>
 
+        {compatibility && (
+          <Animated.View style={[styles.compatibilityContainer, { opacity: fadeInAnim }]}>
+            <CompatibilityScore score={compatibility.compatibility || 0} size={80} />
+            <Text style={styles.compatibilityLabel}>Compatibility</Text>
+            {compatibility.insights?.slice(0, 2).map((insight: string, i: number) => (
+              <Text key={i} style={styles.insight}>{insight}</Text>
+            ))}
+          </Animated.View>
+        )}
+
+        {icebreakers.length > 0 && (
+          <Animated.View style={[styles.icebreakersContainer, { opacity: fadeInAnim }]}>
+            <Text style={styles.icebreakersTitle}>Conversation Starters</Text>
+            {icebreakers.slice(0, 3).map((ib: any, i: number) => (
+              <TouchableOpacity
+                key={i}
+                style={styles.icebreakerBubble}
+                onPress={() => {
+                  navigation.navigate('Conversation', {
+                    conversationId,
+                    otherUserId: matchedUser?.userId || '',
+                    otherName: matchedUser?.fullName || 'Unknown',
+                    otherAvatar: matchedUser?.avatar,
+                    initialMessage: ib.text,
+                  });
+                }}
+              >
+                <Text style={styles.icebreakerText}>{ib.text}</Text>
+              </TouchableOpacity>
+            ))}
+          </Animated.View>
+        )}
+
         <Animated.View style={[styles.buttonsContainer, { opacity: fadeInAnim }]}>
           <TouchableOpacity
             style={styles.primaryButton}
@@ -111,7 +158,7 @@ const MatchScreen: React.FC<MatchScreenProps> = ({ navigation, route }) => {
             <Text style={styles.secondaryButtonText}>Keep Swiping</Text>
           </TouchableOpacity>
         </Animated.View>
-      </View>
+      </ScrollView>
     </SafeAreaView>
   );
 };
@@ -192,6 +239,46 @@ const styles = StyleSheet.create({
   secondaryButtonText: {
     ...typography.button,
     color: colors.white,
+  },
+  compatibilityContainer: {
+    alignItems: 'center',
+    marginBottom: spacing.xl,
+  },
+  compatibilityLabel: {
+    ...typography.caption,
+    color: colors.white,
+    marginTop: spacing.xs,
+    opacity: 0.8,
+  },
+  insight: {
+    ...typography.caption,
+    color: colors.white,
+    textAlign: 'center',
+    opacity: 0.7,
+    marginTop: spacing.xs,
+  },
+  icebreakersContainer: {
+    width: '100%',
+    marginBottom: spacing.xl,
+  },
+  icebreakersTitle: {
+    ...typography.caption,
+    color: colors.white,
+    textAlign: 'center',
+    marginBottom: spacing.sm,
+    opacity: 0.8,
+  },
+  icebreakerBubble: {
+    backgroundColor: 'rgba(255,255,255,0.15)',
+    borderRadius: borderRadius.md,
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.md,
+    marginBottom: spacing.xs,
+  },
+  icebreakerText: {
+    ...typography.body,
+    color: colors.white,
+    textAlign: 'center',
   },
 });
 

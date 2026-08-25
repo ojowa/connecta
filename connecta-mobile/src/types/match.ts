@@ -48,9 +48,25 @@ export interface Match {
   otherUser: User;
 }
 
+export interface CompatibilityBreakdown {
+  interestOverlap: number;
+  lifestyleCompatibility: number;
+  valuesAlignment: number;
+  communicationStyle: number;
+  goalAlignment: number;
+}
+
+export interface CompatibilityData {
+  overallScore: number;
+  breakdown: CompatibilityBreakdown;
+  sharedInterests: string[];
+  insights: string[];
+}
+
 export interface MatchFeedItem {
   user: User;
   profile: Profile;
+  compatibility?: CompatibilityData;
   compatibilityScore?: number;
   distance?: number;
 }

@@ -51,6 +51,10 @@ export const ENDPOINTS = {
     MOMENT_VIEW: (id: string) => `/matching/moments/${id}/view`,
     MOMENT_DELETE: (id: string) => `/matching/moments/${id}`,
     SYNC: '/matching/sync',
+    ICEBREAKERS: (userId: string) => `/matching/icebreakers/${userId}`,
+    TOXICITY_CHECK: '/matching/toxicity-check',
+    FAKE_PROFILE_CHECK: (userId: string) => `/matching/fake-profile-check/${userId}`,
+    SCAM_CHECK: (userId: string) => `/matching/scam-check/${userId}`,
   },
   CHAT: {
     CONVERSATIONS: '/chat/conversations',

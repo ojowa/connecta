@@ -13,6 +13,7 @@ import { CompatibilityScore } from './CompatibilityScore';
 
 interface SwipeableCardProps {
   profile: Profile;
+  compatibilityScore?: number;
   onSwipeLeft: () => void;
   onSwipeRight: () => void;
   style?: any;
@@ -27,7 +28,7 @@ const calculateAge = (dateOfBirth: string): number => {
   return age;
 };
 
-export const SwipeableCard: React.FC<SwipeableCardProps> = ({ profile, onSwipeLeft, onSwipeRight, style }) => {
+export const SwipeableCard: React.FC<SwipeableCardProps> = ({ profile, compatibilityScore, onSwipeLeft, onSwipeRight, style }) => {
   const { width: screenWidth } = useWindowDimensions();
   const translateX = useSharedValue(0);
   const translateY = useSharedValue(0);
@@ -59,7 +60,6 @@ export const SwipeableCard: React.FC<SwipeableCardProps> = ({ profile, onSwipeLe
 
   const primaryPhoto = profile.photos.find(p => p.isPrimary) || profile.photos[0];
   const age = profile.dateOfBirth ? calculateAge(profile.dateOfBirth) : null;
-  const compatibilityScore = (profile as any).compatibilityScore;
 
   return (
     <GestureDetector gesture={panGesture}>
