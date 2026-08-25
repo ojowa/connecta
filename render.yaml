@@ -1,51 +1,30 @@
 services:
   - type: web
-    name: connecta-backend
+    name: connecta
     runtime: docker
     dockerfilePath: Dockerfile
-    plan: starter
+    plan: free
     healthCheckPath: /health
     envVars:
       - key: NODE_ENV
         value: production
       - key: PORT
-        value: 3000
+        value: "3000"
       - key: DB_HOST
-        fromDatabase:
-          name: connecta-db
-          property: host
+        value: ep-crimson-recipe-a4vfpflj-pooler.us-east-1.aws.neon.tech
       - key: DB_PORT
-        fromDatabase:
-          name: connecta-db
-          property: port
+        value: "5432"
       - key: DB_USERNAME
-        fromDatabase:
-          name: connecta-db
-          property: user
+        value: neondb_owner
       - key: DB_PASSWORD
-        fromDatabase:
-          name: connecta-db
-          property: password
+        value: npg_Q8BXmCJSbt3i
       - key: DB_NAME
-        fromDatabase:
-          name: connecta-db
-          property: database
+        value: ojchat
+      - key: DB_SCHEMA
+        value: public
       - key: JWT_SECRET
-        generateValue: true
+        value: connecta-prod-jwt-2026-xk9m
       - key: JWT_REFRESH_SECRET
-        generateValue: true
+        value: connecta-prod-refresh-2026-p7zn
       - key: REDIS_URL
-        fromService:
-          name: connecta-redis
-          type: redis
-          property: connectionString
-
-  - type: postgres
-    name: connecta-db
-    plan: starter
-    databaseName: connecta_db
-    ipAllowList: []
-
-  - type: redis
-    name: connecta-redis
-    plan: starter
+        value: redis://localhost:6379
