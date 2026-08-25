@@ -12,6 +12,8 @@ import { BehaviorAnalyzer } from './ai/behavior.analyzer';
 import { ScamDetector } from './ai/scam.detector';
 import { IcebreakerGenerator } from './ai/icebreaker.generator';
 import { MatchmakingEngine } from './ai/matchmaking.engine';
+import { ToxicityDetector } from './ai/toxicity.detector';
+import { FakeProfileDetector } from './ai/fake-profile.detector';
 
 @Module({
   imports: [
@@ -39,6 +41,8 @@ import { MatchmakingEngine } from './ai/matchmaking.engine';
     ScamDetector,
     IcebreakerGenerator,
     MatchmakingEngine,
+    ToxicityDetector,
+    FakeProfileDetector,
   ],
 })
 export class AppModule {}

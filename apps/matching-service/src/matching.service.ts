@@ -8,6 +8,8 @@ import { CompatibilityEngine } from './ai/compatibility.engine';
 import { ScamDetector } from './ai/scam.detector';
 import { IcebreakerGenerator } from './ai/icebreaker.generator';
 import { CandidateGenerator } from './ai/candidate.generator';
+import { ToxicityDetector } from './ai/toxicity.detector';
+import { FakeProfileDetector } from './ai/fake-profile.detector';
 
 @Injectable()
 export class MatchingService {
@@ -33,6 +35,8 @@ export class MatchingService {
     private readonly scamDetector: ScamDetector,
     private readonly icebreakerGenerator: IcebreakerGenerator,
     private readonly candidateGenerator: CandidateGenerator,
+    private readonly toxicityDetector: ToxicityDetector,
+    private readonly fakeProfileDetector: FakeProfileDetector,
   ) {}
 
   private validateUserId(userId: string) {
@@ -612,6 +616,7 @@ export class MatchingService {
   }
 
   async getBehavioralAnalysis(userId: string) {
+    this.validateUserId(userId);
     const user = await this.userRepo.findOne({ where: { id: userId } });
     if (!user) throw new NotFoundException('User not found');
     const profile = await this.profileRepo.findOne({ where: { userId } });
@@ -620,16 +625,12 @@ export class MatchingService {
     const flags: string[] = [];
 
     const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
-    const [messages24h, likesGiven24h, totalReports, photoCount] = await Promise.all([
+    const [likesGiven24h] = await Promise.all([
       this.likeRepo.count({ where: { userId, createdAt: MoreThan(oneDayAgo) } }),
-      this.likeRepo.count({ where: { userId, createdAt: MoreThan(oneDayAgo) } }),
-      0,
-      profile ? 0 : 0,
     ]);
 
-    if (messages24h > 200) { flags.push('mass_messaging'); riskScore += 0.4; }
+    if (likesGiven24h > 200) { flags.push('mass_messaging'); riskScore += 0.4; }
     if (likesGiven24h > 100) { flags.push('like_spam'); riskScore += 0.3; }
-    if (photoCount === 0) { flags.push('no_photos'); riskScore += 0.2; }
     if (profile && !profile.bio) { flags.push('no_bio'); riskScore += 0.1; }
 
     const finalRisk = Math.min(riskScore, 1);
@@ -639,5 +640,14 @@ export class MatchingService {
       isSuspicious: finalRisk > 0.5,
       safetyScore: Math.round((1 - finalRisk) * 100),
     };
+  }
+
+  async checkToxicity(text: string) {
+    return this.toxicityDetector.analyze(text);
+  }
+
+  async checkFakeProfile(userId: string) {
+    this.validateUserId(userId);
+    return this.fakeProfileDetector.analyze(userId);
   }
 }

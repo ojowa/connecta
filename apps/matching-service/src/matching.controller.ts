@@ -151,4 +151,16 @@ export class MatchingController {
   getIcebreakers(@Headers('x-user-id') userId: string, @Param('userId') targetUserId: string) {
     return this.matchingService.getIcebreakers(userId, targetUserId);
   }
+
+  @Post('toxicity-check')
+  @ApiOperation({ summary: 'Check text for toxic content' })
+  checkToxicity(@Body() body: { text: string }) {
+    return this.matchingService.checkToxicity(body.text);
+  }
+
+  @Get('fake-profile-check/:userId')
+  @ApiOperation({ summary: 'Analyze a profile for fake/suspicious signals' })
+  checkFakeProfile(@Param('userId') userId: string) {
+    return this.matchingService.checkFakeProfile(userId);
+  }
 }
