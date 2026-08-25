@@ -163,9 +163,9 @@ export const RegisterScreen: React.FC<RegisterScreenProps> = ({ navigation }) =>
             </View>
             <Text style={styles.termsText}>
               I agree to the{' '}
-              <Text style={styles.termsLink} onPress={() => Linking.openURL('https://connecta.ng/terms')}>Terms of Service</Text>
+              <Text style={styles.termsLink} onPress={() => Linking.openURL('https://ojchat.ng/terms')}>Terms of Service</Text>
               {' '}and{' '}
-              <Text style={styles.termsLink} onPress={() => Linking.openURL('https://connecta.ng/privacy')}>Privacy Policy</Text>
+              <Text style={styles.termsLink} onPress={() => Linking.openURL('https://ojchat.ng/privacy')}>Privacy Policy</Text>
             </Text>
           </TouchableOpacity>
           {errors.terms && <Text style={styles.fieldError}>{errors.terms}</Text>}

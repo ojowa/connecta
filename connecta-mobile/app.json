@@ -1,7 +1,7 @@
 {
   "expo": {
-    "name": "connecta-mobile",
-    "slug": "connecta-mobile",
+    "name": "ojchat-mobile",
+    "slug": "ojchat-mobile",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -12,8 +12,8 @@
         "NSAppTransportSecurity": {
           "NSAllowsArbitraryLoads": true
         },
-        "NSCameraUsageDescription": "Connecta needs camera access for video calls",
-        "NSMicrophoneUsageDescription": "Connecta needs microphone access for voice and video calls"
+        "NSCameraUsageDescription": "OJChat needs camera access for video calls",
+        "NSMicrophoneUsageDescription": "OJChat needs microphone access for voice and video calls"
       }
     },
     "android": {
@@ -25,7 +25,7 @@
         "monochromeImage": "./assets/android-icon-monochrome.png"
       },
       "predictiveBackGestureEnabled": false,
-      "package": "com.anonymous.connectamobile",
+      "package": "com.anonymous.ojchatmobile",
       "permissions": [
         "android.permission.INTERNET",
         "android.permission.ACCESS_NETWORK_STATE",

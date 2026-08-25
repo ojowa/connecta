@@ -14,7 +14,7 @@ export class MediaService {
     let sizeBytes = data.sizeBytes;
 
     if (file) {
-      url = `https://storage.connecta.app/${userId}/${uuid()}.${file.originalname.split('.').pop() || 'jpg'}`;
+      url = `https://storage.ojchat.app/${userId}/${uuid()}.${file.originalname.split('.').pop() || 'jpg'}`;
       mimeType = file.mimetype;
       sizeBytes = file.size;
     } else if (data.url) {
@@ -36,7 +36,7 @@ export class MediaService {
 
   async getPresignedUrl(userId: string, data: any) {
     const key = `uploads/${userId}/${uuid()}.${data.mimeType?.split('/')[1] || 'bin'}`;
-    return { uploadUrl: `https://s3.amazonaws.com/connecta-storage/${key}?X-Amz-Signature=placeholder`, key, expiresAt: new Date(Date.now() + 15 * 60 * 1000) };
+    return { uploadUrl: `https://s3.amazonaws.com/ojchat-storage/${key}?X-Amz-Signature=placeholder`, key, expiresAt: new Date(Date.now() + 15 * 60 * 1000) };
   }
 
   async getMedia(id: string) {

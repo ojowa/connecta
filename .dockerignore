@@ -3,6 +3,7 @@ dist
 .git
 .gitignore
 connecta-mobile
+ojchat-mobile
 apps/admin-web
 docs
 k8s

@@ -1,7 +1,7 @@
 {
-  "name": "connecta-backend",
+  "name": "ojchat-backend",
   "version": "1.0.0",
-  "description": "Connecta Dating Platform — Backend Monolith",
+  "description": "OJChat Dating Platform — Backend Monolith",
   "private": true,
   "license": "UNLICENSED",
   "engines": {

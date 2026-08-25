@@ -24,8 +24,8 @@ RUN npm ci --omit=dev && npm cache clean --force
 
 COPY --from=builder /app/dist/ ./dist/
 
-RUN addgroup -S connecta && adduser -S connecta -G connecta
-USER connecta
+RUN addgroup -S ojchat && adduser -S ojchat -G ojchat
+USER ojchat
 
 ENV NODE_ENV=production
 

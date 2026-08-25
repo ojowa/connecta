@@ -32,7 +32,7 @@ const SplashScreen: React.FC = () => {
             </View>
           </View>
           <Text variant="h1" style={styles.logoText}>
-            Connecta
+            OJChat
           </Text>
         </View>
         <Text variant="body" style={styles.tagline}>

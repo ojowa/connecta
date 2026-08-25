@@ -1,10 +1,11 @@
 services:
   - type: web
-    name: connecta
-    runtime: docker
-    dockerfilePath: Dockerfile
+    name: ojchat
+    runtime: node
     plan: free
-    healthCheckPath: /health
+    healthCheckPath: /v1/health
+    buildCommand: npm install && npm run build:all
+    startCommand: npm run start:monolith
     envVars:
       - key: NODE_ENV
         value: production

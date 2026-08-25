@@ -5,7 +5,7 @@ import { AdminUser, User, Report, Notification, Subscription, Transaction, Plan,
 import * as bcrypt from 'bcryptjs';
 import * as jwt from 'jsonwebtoken';
 
-const JWT_SECRET = process.env.ADMIN_JWT_SECRET || 'connecta_admin_secret_key';
+const JWT_SECRET = process.env.ADMIN_JWT_SECRET || 'ojchat_admin_secret_key';
 
 @Injectable()
 export class AdminService {
@@ -121,7 +121,7 @@ export class AdminService {
 
   private defaultSettings = {
     maintenanceMode: false,
-    welcomeMessage: 'Welcome to Connecta!',
+    welcomeMessage: 'Welcome to OJChat!',
     minAge: 18,
     maxAge: 100,
     enableVideoCalls: true,

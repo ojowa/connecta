@@ -87,7 +87,7 @@ export const useAppStore = create<AppState>()(
         }),
       }),
       {
-        name: 'connecta-auth-storage',
+        name: 'ojchat-auth-storage',
         storage: createJSONStorage(() => ({
           getItem: (name: string) => {
             const value = mmkvStorage.getString(name);
@@ -109,6 +109,6 @@ export const useAppStore = create<AppState>()(
         }),
       }
     ),
-    { name: 'ConnectaStore' }
+    { name: 'OJChatStore' }
   )
 );

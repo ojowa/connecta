@@ -2,8 +2,8 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Connecta Admin",
-  description: "Connecta Dating Platform Admin Panel",
+  title: "OJChat Admin",
+  description: "OJChat Dating Platform Admin Panel",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

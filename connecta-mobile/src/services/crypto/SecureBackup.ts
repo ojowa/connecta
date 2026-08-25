@@ -4,7 +4,7 @@ import { MediaEncryptor } from './MediaEncryptor';
 import { secureStorage } from '../storage/secureStorage';
 import { BackupData } from '../../types/crypto';
 
-const BACKUP_SERVICE = 'com.connecta.backup';
+const BACKUP_SERVICE = 'com.ojchat.backup';
 
 export class SecureBackup {
   async backupKeys(masterPassword: string): Promise<BackupData> {
@@ -29,7 +29,7 @@ export class SecureBackup {
 
     const verificationMac = await Crypto.digestStringAsync(
       Crypto.CryptoDigestAlgorithm.SHA256,
-      'connecta-backup-verify:' + backupKey + ':' + encryptedBundle,
+      'ojchat-backup-verify:' + backupKey + ':' + encryptedBundle,
     );
 
     const backupData: BackupData = {
@@ -76,7 +76,7 @@ export class SecureBackup {
 
     const expectedMac = await Crypto.digestStringAsync(
       Crypto.CryptoDigestAlgorithm.SHA256,
-      'connecta-backup-verify:' + backupKey + ':' + backupData.encryptedBundle,
+      'ojchat-backup-verify:' + backupKey + ':' + backupData.encryptedBundle,
     );
 
     return this.constantTimeCompare(

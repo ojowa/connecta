@@ -8,7 +8,7 @@ export default new DataSource({
   port: parseInt(process.env.DB_PORT || '5432', 10),
   username: process.env.DB_USERNAME || 'postgres',
   password: process.env.DB_PASSWORD || '',
-  database: process.env.DB_NAME || 'connecta_db',
+  database: process.env.DB_NAME || 'ojchat_db',
   migrations: ['migrations/*.ts'],
   synchronize: false,
   logging: true,

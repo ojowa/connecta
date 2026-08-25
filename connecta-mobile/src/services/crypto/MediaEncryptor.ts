@@ -25,7 +25,7 @@ export class MediaEncryptor {
 
     const mac = await Crypto.digestStringAsync(
       Crypto.CryptoDigestAlgorithm.SHA256,
-      'connecta-file-mac:' + fileKey + ':' + encrypted + ':' + iv,
+      'ojchat-file-mac:' + fileKey + ':' + encrypted + ':' + iv,
     );
 
     return {
@@ -53,7 +53,7 @@ export class MediaEncryptor {
 
     const mac = await Crypto.digestStringAsync(
       Crypto.CryptoDigestAlgorithm.SHA256,
-      'connecta-file-mac:' + key + ':' + encryptedData + ':' + iv,
+      'ojchat-file-mac:' + key + ':' + encryptedData + ':' + iv,
     );
 
     if (mac !== expectedMac) {
@@ -164,7 +164,7 @@ export class MediaEncryptor {
     iv: Uint8Array,
     ciphertext: Uint8Array,
   ): Promise<Uint8Array> {
-    const tagInput = 'connecta-file-mac:' + KeyManager.bytesToHex(key) + ':' + KeyManager.bytesToHex(iv) + ':' + KeyManager.bytesToHex(ciphertext);
+    const tagInput = 'ojchat-file-mac:' + KeyManager.bytesToHex(key) + ':' + KeyManager.bytesToHex(iv) + ':' + KeyManager.bytesToHex(ciphertext);
     const tagHash = await Crypto.digestStringAsync(
       Crypto.CryptoDigestAlgorithm.SHA256,
       tagInput,

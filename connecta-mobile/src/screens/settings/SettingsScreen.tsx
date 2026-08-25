@@ -210,16 +210,16 @@ const SettingsScreen: React.FC = () => {
 
         <SectionHeader title="Support" />
         <View style={styles.section}>
-          <SettingsRow label="Help Center" onPress={() => handleOpenUrl('https://connecta.ng/help', 'Help Center')} />
+          <SettingsRow label="Help Center" onPress={() => handleOpenUrl('https://ojchat.ng/help', 'Help Center')} />
           <SettingsRow label="Report a Problem" onPress={() => navigation.navigate('ReportProblem')} />
-          <SettingsRow label="Community Guidelines" onPress={() => handleOpenUrl('https://connecta.ng/guidelines', 'Community Guidelines')} />
+          <SettingsRow label="Community Guidelines" onPress={() => handleOpenUrl('https://ojchat.ng/guidelines', 'Community Guidelines')} />
         </View>
 
         <SectionHeader title="About" />
         <View style={styles.section}>
           <SettingsRow label="App Version" rightElement={<Text style={styles.versionText}>1.0.0</Text>} />
-          <SettingsRow label="Terms of Service" onPress={() => handleOpenUrl('https://connecta.ng/terms', 'Terms of Service')} />
-          <SettingsRow label="Privacy Policy" onPress={() => handleOpenUrl('https://connecta.ng/privacy', 'Privacy Policy')} />
+          <SettingsRow label="Terms of Service" onPress={() => handleOpenUrl('https://ojchat.ng/terms', 'Terms of Service')} />
+          <SettingsRow label="Privacy Policy" onPress={() => handleOpenUrl('https://ojchat.ng/privacy', 'Privacy Policy')} />
         </View>
 
         <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>

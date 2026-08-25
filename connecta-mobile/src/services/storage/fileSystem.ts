@@ -1,6 +1,6 @@
 import { Paths, File, Directory } from 'expo-file-system';
 
-const CACHE_DIR_PATH = `${Paths.cache.uri}connecta/`;
+const CACHE_DIR_PATH = `${Paths.cache.uri}ojchat/`;
 
 async function ensureCacheDir(): Promise<Directory> {
   const dir = new Directory(CACHE_DIR_PATH);

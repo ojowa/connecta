@@ -317,7 +317,7 @@ export class DoubleRatchet {
     iv: Uint8Array,
     ciphertext: Uint8Array,
   ): Promise<Uint8Array> {
-    const tagInput = `connecta-gcm:${KeyManager.bytesToHex(key)}:${KeyManager.bytesToHex(iv)}:${KeyManager.bytesToHex(ciphertext)}`;
+    const tagInput = `ojchat-gcm:${KeyManager.bytesToHex(key)}:${KeyManager.bytesToHex(iv)}:${KeyManager.bytesToHex(ciphertext)}`;
     const tagHash = await Crypto.digestStringAsync(
       Crypto.CryptoDigestAlgorithm.SHA256,
       tagInput,

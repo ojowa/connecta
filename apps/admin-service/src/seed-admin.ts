@@ -12,13 +12,13 @@ async function seed() {
     port: parseInt(process.env.DB_PORT || '5432'),
     username: process.env.DB_USERNAME || 'postgres',
     password: process.env.DB_PASSWORD || 'Aarinola',
-    database: process.env.DB_DATABASE || 'connecta_db',
+    database: process.env.DB_DATABASE || 'ojchat_db',
   });
 
   await ds.initialize();
   console.log('Connected to database');
 
-  const email = process.argv[2] || 'admin@connecta.app';
+  const email = process.argv[2] || 'admin@ojchat.app';
   const password = process.argv[3] || 'AdminSecureP@ss1';
   const name = process.argv[4] || 'System Admin';
   const role = process.argv[5] || 'super_admin';

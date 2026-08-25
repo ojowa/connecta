@@ -68,7 +68,7 @@ export class AppConfigService {
       port: this.get('SMTP_PORT', 587),
       user: this.get('SMTP_USER', ''),
       pass: this.get('SMTP_PASS', ''),
-      from: this.get('SMTP_FROM', 'Connecta <no-reply@connecta.ng>'),
+      from: this.get('SMTP_FROM', 'OJChat <no-reply@ojchat.ng>'),
     };
   }
 
@@ -97,7 +97,7 @@ export class AppConfigService {
 
   get app() {
     return {
-      name: this.get('APP_NAME', 'Connecta'),
+      name: this.get('APP_NAME', 'OJChat'),
       port: this.get('APP_PORT', 3000),
       nodeEnv: this.get('NODE_ENV', 'development'),
       frontendUrl: this.get('FRONTEND_URL'),

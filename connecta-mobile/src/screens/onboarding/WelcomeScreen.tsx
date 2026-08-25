@@ -27,14 +27,14 @@ const WelcomeScreen: React.FC = () => {
               </View>
             </View>
             <Text variant="h1" style={[styles.logoText, { fontSize: Math.min(36, screenWidth * 0.09) }]}>
-              Connecta
+              OJChat
             </Text>
           </View>
         </View>
 
         <View style={styles.textArea}>
           <Text variant="h1" style={styles.heading}>
-            Welcome to Connecta
+            Welcome to OJChat
           </Text>
           <Text variant="body" style={styles.subtitle}>
             Join millions finding meaningful connections

@@ -29,7 +29,7 @@ export class X3DH {
   static async kdf(input: string, info: string): Promise<string> {
     const prk = await Crypto.digestStringAsync(
       Crypto.CryptoDigestAlgorithm.SHA256,
-      'connecta-x3dh-salt:' + input,
+      'ojchat-x3dh-salt:' + input,
     );
     const output = await Crypto.digestStringAsync(
       Crypto.CryptoDigestAlgorithm.SHA256,

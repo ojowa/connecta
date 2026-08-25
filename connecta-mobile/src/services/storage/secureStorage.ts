@@ -1,6 +1,6 @@
 import * as Keychain from 'react-native-keychain';
 
-const SERVICE_NAME = 'com.connecta.secure';
+const SERVICE_NAME = 'com.ojchat.secure';
 
 export const secureStorage = {
   async set(key: string, value: string): Promise<boolean> {

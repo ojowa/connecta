@@ -28,5 +28,6 @@
       "@app/logger/*": ["libs/logger/src/*"]
     }
   },
-  "exclude": ["connecta-mobile", "apps/admin-web", "node_modules", "dist"]
+  "exclude": ["connecta-mobile",
+    "ojchat-mobile", "apps/admin-web", "node_modules", "dist"]
 }

@@ -79,8 +79,8 @@ async function bootstrap() {
   );
 
   const config = new DocumentBuilder()
-    .setTitle('Connecta API Gateway')
-    .setDescription('Connecta Dating Platform — API Gateway (Microservices)')
+    .setTitle('OJChat API Gateway')
+    .setDescription('OJChat Dating Platform — API Gateway (Microservices)')
     .setVersion('2.0')
     .addBearerAuth()
     .addTag('auth', 'Authentication endpoints → auth-service:3001')

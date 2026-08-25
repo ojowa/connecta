@@ -48,7 +48,7 @@ export function Sidebar({ className }: { className?: string }) {
     >
       <div className="flex items-center gap-2 border-b px-6 py-5">
         <Flame className="h-7 w-7 text-primary" />
-        <span className="text-xl font-bold">Connecta</span>
+        <span className="text-xl font-bold">OJChat</span>
         <span className="ml-auto rounded-full bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary">
           Admin
         </span>

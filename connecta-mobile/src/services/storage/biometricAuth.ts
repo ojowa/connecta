@@ -34,7 +34,7 @@ export class BiometricAuthService {
   static async storeCredentials(username: string, password: string): Promise<boolean> {
     try {
       await Keychain.setGenericPassword(username, password, {
-        service: 'com.connecta.auth',
+        service: 'com.ojchat.auth',
         accessible: Keychain.ACCESSIBLE.WHEN_UNLOCKED_THIS_DEVICE_ONLY,
         securityLevel: Keychain.SECURITY_LEVEL.SECURE_HARDWARE,
       });
@@ -45,7 +45,7 @@ export class BiometricAuthService {
   static async retrieveCredentials(): Promise<{ username: string; password: string } | null> {
     try {
       const credentials = await Keychain.getGenericPassword({
-        service: 'com.connecta.auth',
+        service: 'com.ojchat.auth',
         authenticationPrompt: { title: 'Authenticate to sign in', subtitle: 'Verify your identity', cancel: 'Cancel' },
       });
       return credentials ? credentials : null;
@@ -53,7 +53,7 @@ export class BiometricAuthService {
   }
 
   static async deleteCredentials(): Promise<boolean> {
-    try { return await Keychain.resetGenericPassword({ service: 'com.connecta.auth' }); }
+    try { return await Keychain.resetGenericPassword({ service: 'com.ojchat.auth' }); }
     catch { return false; }
   }
 }

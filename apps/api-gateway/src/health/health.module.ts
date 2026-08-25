@@ -12,7 +12,7 @@ import { HealthController } from './health.controller';
       port: parseInt(process.env.DB_PORT || '5432'),
       username: process.env.DB_USERNAME || 'postgres',
       password: process.env.DB_PASSWORD || 'Aarinola',
-      database: process.env.DB_NAME || 'connecta_db',
+      database: process.env.DB_NAME || 'ojchat_db',
       autoLoadEntities: true,
       synchronize: false,
     }),

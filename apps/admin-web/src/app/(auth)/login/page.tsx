@@ -79,7 +79,7 @@ export default function LoginPage() {
             </div>
           </div>
           <div>
-            <CardTitle className="text-2xl">Connecta Admin</CardTitle>
+            <CardTitle className="text-2xl">OJChat Admin</CardTitle>
             <CardDescription>Sign in to the admin panel</CardDescription>
           </div>
         </CardHeader>
@@ -91,7 +91,7 @@ export default function LoginPage() {
                 <Input
                   id="email"
                   type="email"
-                  placeholder="admin@connecta.app"
+                  placeholder="admin@ojchat.app"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   required

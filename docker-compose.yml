@@ -3,12 +3,12 @@ version: '3.8'
 services:
   postgres:
     image: postgres:16-alpine
-    container_name: connecta-postgres
+    container_name: ojchat-postgres
     restart: unless-stopped
     ports:
       - '5432:5432'
     environment:
-      POSTGRES_DB: connecta_db
+      POSTGRES_DB: ojchat_db
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: Aarinola
     volumes:
@@ -16,7 +16,7 @@ services:
 
   redis:
     image: redis:7-alpine
-    container_name: connecta-redis
+    container_name: ojchat-redis
     restart: unless-stopped
     ports:
       - '6379:6379'
@@ -25,17 +25,17 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    container_name: connecta-api
+    container_name: ojchat-api
     restart: unless-stopped
     ports:
       - '3000:3000'
     environment:
       - NODE_ENV=production
       - PORT=3000
-      - DATABASE_URL=postgresql://postgres:Aarinola@postgres:5432/connecta_db
+      - DATABASE_URL=postgresql://postgres:Aarinola@postgres:5432/ojchat_db
       - REDIS_URL=redis://redis:6379
-      - JWT_SECRET=${JWT_SECRET:-connecta-dev-jwt-secret-2026}
-      - JWT_REFRESH_SECRET=${JWT_REFRESH_SECRET:-connecta-dev-refresh-secret-2026}
+      - JWT_SECRET=${JWT_SECRET:-ojchat-dev-jwt-secret-2026}
+      - JWT_REFRESH_SECRET=${JWT_REFRESH_SECRET:-ojchat-dev-refresh-secret-2026}
       - AUTH_SERVICE_URL=http://localhost:3001
       - USERS_SERVICE_URL=http://localhost:3002
       - MATCHING_SERVICE_URL=http://localhost:3003

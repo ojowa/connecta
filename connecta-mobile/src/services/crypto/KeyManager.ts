@@ -4,7 +4,7 @@ import { getDatabase } from '../../database/connection';
 import { secureStorage } from '../storage/secureStorage';
 import { KeyPair, IdentityKeyPair, SignedPreKey, OneTimePreKey } from '../../types/crypto';
 
-const KEY_SERVICE = 'com.connecta.crypto';
+const KEY_SERVICE = 'com.ojchat.crypto';
 
 export class KeyManager {
   static hexToBytes(hex: string): Uint8Array {
@@ -63,7 +63,7 @@ export class KeyManager {
     keyId: number,
   ): Promise<SignedPreKey> {
     const keyPair = await this.generateKeyPair();
-    const signaturePayload = `connecta-spk:${keyPair.publicKey}:${keyId}`;
+    const signaturePayload = `ojchat-spk:${keyPair.publicKey}:${keyId}`;
     const signature = await Crypto.digestStringAsync(
       Crypto.CryptoDigestAlgorithm.SHA256,
       signaturePayload + ':' + identityPrivateKey,
