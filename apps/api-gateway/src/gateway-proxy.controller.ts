@@ -16,7 +16,7 @@ export class GatewayProxyController {
     const path = req.url.replace(/^\/?v1\//, '').replace(/^\/?/, '');
     const service = path.split('/')[0];
     if (!service || !this.proxyService.findService(path)) {
-      return res.status(404).json({ statusCode: 404, message: `No service found for: ${path}` });
+      return next();
     }
     return this.proxyService
       .proxyRequest(req, res, path)
