@@ -2,19 +2,13 @@ import { Module } from '@nestjs/common';
 import { TerminusModule, TypeOrmHealthIndicator, MemoryHealthIndicator } from '@nestjs/terminus';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { HealthController } from './health.controller';
+import { TypeOrmConfigService } from '@app/database/typeorm-config.service';
 
 @Module({
   imports: [
     TerminusModule,
-    TypeOrmModule.forRoot({
-      type: 'postgres',
-      host: process.env.DB_HOST || 'localhost',
-      port: parseInt(process.env.DB_PORT || '5432'),
-      username: process.env.DB_USERNAME || 'postgres',
-      password: process.env.DB_PASSWORD || 'Aarinola',
-      database: process.env.DB_NAME || 'ojchat_db',
-      autoLoadEntities: true,
-      synchronize: false,
+    TypeOrmModule.forRootAsync({
+      useClass: TypeOrmConfigService,
     }),
   ],
   controllers: [HealthController],

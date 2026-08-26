@@ -5,15 +5,32 @@ import { resolve } from 'path';
 
 config({ path: resolve(__dirname, '../../.env') });
 
-async function seed() {
-  const ds = new DataSource({
-    type: 'postgres',
+function getDbConfig() {
+  const url = process.env.DATABASE_URL;
+  if (url) {
+    const parsed = new URL(url);
+    return {
+      type: 'postgres' as const,
+      host: parsed.hostname,
+      port: parseInt(parsed.port, 10) || 5432,
+      username: parsed.username,
+      password: parsed.password,
+      database: parsed.pathname.replace(/^\//, ''),
+      ssl: parsed.searchParams.get('sslmode') === 'require' ? { rejectUnauthorized: false } : false,
+    };
+  }
+  return {
+    type: 'postgres' as const,
     host: process.env.DB_HOST || 'localhost',
     port: parseInt(process.env.DB_PORT || '5432'),
     username: process.env.DB_USERNAME || 'postgres',
     password: process.env.DB_PASSWORD || 'Aarinola',
     database: process.env.DB_DATABASE || 'ojchat_db',
-  });
+  };
+}
+
+async function seed() {
+  const ds = new DataSource(getDbConfig());
 
   await ds.initialize();
   console.log('Connected to database');
