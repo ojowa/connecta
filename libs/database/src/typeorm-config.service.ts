@@ -14,7 +14,8 @@ export class TypeOrmConfigService implements TypeOrmOptionsFactory {
         password: parsed.password,
         database: parsed.pathname.replace(/^\//, ''),
         synchronize: process.env.DB_SYNCHRONIZE === 'true',
-        ssl: parsed.searchParams.get('sslmode') === 'require' ? { rejectUnauthorized: false } : false,
+        ssl:
+          parsed.searchParams.get('sslmode') === 'require' ? { rejectUnauthorized: false } : false,
         autoLoadEntities: true,
         logging: process.env.NODE_ENV === 'development',
         extra: {

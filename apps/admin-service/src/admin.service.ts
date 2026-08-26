@@ -6,7 +6,7 @@ import * as bcrypt from 'bcryptjs';
 import * as jwt from 'jsonwebtoken';
 import { v4 as uuid } from 'uuid';
 
-const JWT_SECRET = process.env.ADMIN_JWT_SECRET;
+const JWT_SECRET = process.env.ADMIN_JWT_SECRET!;
 if (!JWT_SECRET) {
   throw new Error('ADMIN_JWT_SECRET environment variable is not set');
 }
