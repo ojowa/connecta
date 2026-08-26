@@ -1,7 +1,7 @@
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { User, Profile, UserPreference, Block, Report, Photo, UserPrompt, ProfilePrompt } from '@app/common/entities';
+import { User, Profile, UserPreference, Block, Report, Photo, UserPrompt, ProfilePrompt, Appeal } from '@app/common/entities';
 
 @Injectable()
 export class UsersService {
@@ -14,6 +14,7 @@ export class UsersService {
     @InjectRepository(Photo) private photoRepo: Repository<Photo>,
     @InjectRepository(UserPrompt) private userPromptRepo: Repository<UserPrompt>,
     @InjectRepository(ProfilePrompt) private profilePromptRepo: Repository<ProfilePrompt>,
+    @InjectRepository(Appeal) private appealRepo: Repository<Appeal>,
   ) {}
 
   async getMe(userId: string) {
@@ -229,5 +230,30 @@ export class UsersService {
   async getAvailablePrompts() {
     const prompts = await this.profilePromptRepo.find({ where: { isActive: true }, order: { sortOrder: 'ASC' } });
     return { prompts };
+  }
+
+  async submitAppeal(userId: string, data: { reason: string; description?: string; evidenceUrls?: string[] }) {
+    const user = await this.userRepo.findOne({ where: { id: userId } });
+    if (!user) throw new NotFoundException('User not found');
+    if (user.status !== 'suspended' && user.status !== 'banned') {
+      throw new BadRequestException('You can only submit an appeal if your account is suspended or banned');
+    }
+    const existing = await this.appealRepo.findOne({ where: { userId, status: 'pending' } });
+    if (existing) throw new BadRequestException('You already have a pending appeal');
+
+    const appeal = this.appealRepo.create({
+      userId,
+      reason: data.reason,
+      description: data.description,
+      evidenceUrls: data.evidenceUrls,
+      status: 'pending',
+    });
+    const saved = await this.appealRepo.save(appeal);
+    return { appeal: saved };
+  }
+
+  async getMyAppeals(userId: string) {
+    const appeals = await this.appealRepo.find({ where: { userId }, order: { createdAt: 'DESC' } });
+    return { appeals };
   }
 }

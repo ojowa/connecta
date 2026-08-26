@@ -38,6 +38,7 @@ import { ProfilePrompt } from './profile-prompt.entity';
 import { UserPrompt } from './user-prompt.entity';
 import { NotificationDelivery } from './notification-delivery.entity';
 import { PhotoLike } from './photo-like.entity';
+import { Appeal } from './appeal.entity';
 
 export { User, UserRole, UserStatus } from './user.entity';
 export { Session } from './session.entity';
@@ -79,6 +80,7 @@ export { MomentView } from './moment-view.entity';
 export { ProfilePrompt } from './profile-prompt.entity';
 export { UserPrompt } from './user-prompt.entity';
 export { PhotoLike } from './photo-like.entity';
+export { Appeal } from './appeal.entity';
 
 export const allEntities = [
   User,
@@ -121,4 +123,5 @@ export const allEntities = [
   ProfilePrompt,
   UserPrompt,
   PhotoLike,
+  Appeal,
 ];

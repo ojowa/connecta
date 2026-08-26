@@ -250,4 +250,27 @@ export class AdminController {
     this.verifyAuth(auth);
     return this.adminService.grantPremium(body.userId, body.planId, body.durationDays);
   }
+
+  @Get('appeals')
+  @ApiOperation({ summary: 'Get all appeals' })
+  getAppeals(
+    @Headers('authorization') auth: string,
+    @Query('page') page?: string,
+    @Query('limit') limit?: string,
+    @Query('status') status?: string,
+  ) {
+    const payload = this.verifyAuth(auth);
+    return this.adminService.getAppeals(parseInt(page || '1'), parseInt(limit || '20'), status);
+  }
+
+  @Post('appeals/:id/review')
+  @ApiOperation({ summary: 'Review an appeal (approve/reject)' })
+  reviewAppeal(
+    @Headers('authorization') auth: string,
+    @Param('id') id: string,
+    @Body() body: { decision: string; notes?: string },
+  ) {
+    const payload = this.verifyAuth(auth);
+    return this.adminService.reviewAppeal(id, body, payload.sub);
+  }
 }

@@ -1,7 +1,7 @@
 import { Injectable, UnauthorizedException, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, In, MoreThan } from 'typeorm';
-import { AdminUser, User, Report, Notification, Subscription, Transaction, Plan, Like, Match, Message, Session, NotificationDelivery } from '@app/common/entities';
+import { AdminUser, User, Report, Notification, Subscription, Transaction, Plan, Like, Match, Message, Session, NotificationDelivery, Appeal } from '@app/common/entities';
 import * as bcrypt from 'bcryptjs';
 import * as jwt from 'jsonwebtoken';
 import { v4 as uuid } from 'uuid';
@@ -25,6 +25,7 @@ export class AdminService {
     @InjectRepository(Session) private sessionRepo: Repository<Session>,
     @InjectRepository(Plan) private planRepo: Repository<Plan>,
     @InjectRepository(NotificationDelivery) private notifDeliveryRepo: Repository<NotificationDelivery>,
+    @InjectRepository(Appeal) private appealRepo: Repository<Appeal>,
   ) {}
 
   async login(email: string, password: string) {
@@ -667,4 +668,48 @@ export class AdminService {
   async getAllPlans() {
     return this.planRepo.find({ order: { sortOrder: 'ASC' } });
   }
+
+  async getAppeals(page = 1, limit = 20, status?: string) {
+    const qb = this.appealRepo.createQueryBuilder('a');
+    if (status) qb.where('a.status = :status', { status });
+    const [appeals, total] = await qb
+      .orderBy('a.createdAt', 'DESC')
+      .skip((page - 1) * limit)
+      .take(limit)
+      .getManyAndCount();
+
+    const appealsWithUser = await Promise.all(
+      appeals.map(async (a) => {
+        const user = await this.userRepo.findOne({ where: { id: a.userId }, select: ['id', 'email', 'fullName', 'phone', 'status'] });
+        return { ...a, user };
+      }),
+    );
+
+    return {
+      appeals: appealsWithUser,
+      meta: { page, limit, total, hasMore: total > page * limit },
+    };
+  }
+
+  async reviewAppeal(appealId: string, data: { decision: string; notes?: string }, adminId: string) {
+    const appeal = await this.appealRepo.findOne({ where: { id: appealId } });
+    if (!appeal) throw new NotFoundException('Appeal not found');
+    if (appeal.status !== 'pending') throw new Error('This appeal has already been reviewed');
+
+    const { decision, notes } = data;
+    await this.appealRepo.update(appealId, {
+      status: 'reviewed',
+      decision,
+      decisionNotes: notes,
+      reviewedBy: adminId,
+      reviewedAt: new Date(),
+    });
+
+    if (decision === 'approved') {
+      await this.userRepo.update(appeal.userId, { status: 'active' as any });
+    }
+
+    return { reviewed: true, decision, appealId };
+  }
 }
+

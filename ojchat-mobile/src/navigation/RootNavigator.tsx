@@ -15,6 +15,7 @@ import WalletScreen from '../screens/subscription/WalletScreen';
 import ReportScreen from '../screens/safety/ReportScreen';
 import BlockConfirmation from '../screens/safety/BlockConfirmation';
 import SafetyTips from '../screens/safety/SafetyTips';
+import AppealScreen from '../screens/safety/AppealScreen';
 import IncomingCallScreen from '../screens/call/IncomingCallScreen';
 import ActiveVoiceCallScreen from '../screens/call/ActiveVoiceCallScreen';
 import ActiveVideoCallScreen from '../screens/call/ActiveVideoCallScreen';
@@ -85,6 +86,7 @@ export const RootNavigator: React.FC = () => {
             <Stack.Screen name="Report" component={ReportScreen} options={{ headerShown: true, title: 'Report', presentation: 'modal' }} />
             <Stack.Screen name="BlockConfirmation" component={BlockConfirmation} options={{ headerShown: true, title: 'Block User', presentation: 'modal' }} />
             <Stack.Screen name="SafetyTips" component={SafetyTips} options={{ headerShown: true, title: 'Safety Tips' }} />
+            <Stack.Screen name="Appeal" component={AppealScreen} options={{ headerShown: true, title: 'Appeal', presentation: 'modal' }} />
             {/* Calls */}
             <Stack.Screen name="IncomingCall" component={IncomingCallScreen} options={{ headerShown: false, presentation: 'fullScreenModal' }} />
             <Stack.Screen name="ActiveVoiceCall" component={ActiveVoiceCallScreen} options={{ headerShown: false, presentation: 'fullScreenModal' }} />

@@ -20,12 +20,14 @@ import {
   Server,
   Bell,
   CreditCard,
+  Scale,
 } from "lucide-react";
 
 const navItems = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { href: "/users", label: "Users", icon: Users },
   { href: "/reports", label: "Reports", icon: AlertTriangle },
+  { href: "/appeals", label: "Appeals", icon: Scale },
   { href: "/moderation", label: "Moderation", icon: Shield },
   { href: "/activity", label: "Live Activity", icon: Activity },
   { href: "/match-analytics", label: "Match Analytics", icon: TrendingUp },

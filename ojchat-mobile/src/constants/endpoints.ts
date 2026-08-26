@@ -25,6 +25,8 @@ export const ENDPOINTS = {
     UNBLOCK: (userId: string) => `/users/${userId}/block`,
     REPORT: (userId: string) => `/users/${userId}/report`,
     SYNC: '/users/sync',
+    SUBMIT_APPEAL: '/users/me/appeal',
+    MY_APPEALS: '/users/me/appeals',
   },
   PROFILES: {
     PHOTOS: '/users/me/photos',

@@ -133,4 +133,16 @@ export class UsersController {
   getSync(@Headers('x-user-id') userId: string, @Query('since') since?: string) {
     return this.usersService.getSyncDelta(userId, since ? parseInt(since, 10) : 0);
   }
+
+  @Post('me/appeal')
+  @ApiOperation({ summary: 'Submit an appeal' })
+  submitAppeal(@Headers('x-user-id') userId: string, @Body() body: { reason: string; description?: string; evidenceUrls?: string[] }) {
+    return this.usersService.submitAppeal(userId, body);
+  }
+
+  @Get('me/appeals')
+  @ApiOperation({ summary: 'Get my appeals' })
+  getMyAppeals(@Headers('x-user-id') userId: string) {
+    return this.usersService.getMyAppeals(userId);
+  }
 }

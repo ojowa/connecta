@@ -46,6 +46,7 @@ export class AuthService {
     const valid = await bcrypt.compare(password, user.passwordHash);
     if (!valid) { await this.handleFailedLogin(user); throw new UnauthorizedException('Invalid credentials'); }
     if (user.status === UserStatus.SUSPENDED) throw new UnauthorizedException('Account is suspended');
+    if (user.status === UserStatus.BANNED) throw new UnauthorizedException('Account has been banned');
     if (user.status === UserStatus.DEACTIVATED) throw new UnauthorizedException('Account is deactivated');
 
     if (user.twoFactorEnabled) {
@@ -189,6 +190,7 @@ export class AuthService {
     const user = await this.userRepo.findOne({ where: { id: credential.userId } });
     if (!user) throw new UnauthorizedException('User not found');
     if (user.status === UserStatus.SUSPENDED) throw new UnauthorizedException('Account is suspended');
+    if (user.status === UserStatus.BANNED) throw new UnauthorizedException('Account has been banned');
     await this.userRepo.update(user.id, { lastLoginAt: new Date(), lastActiveAt: new Date() });
     const tokens = await this.generateTokens(user);
     return { user: this.sanitizeUser(user), tokens: { ...tokens, expiresIn: 900 } };

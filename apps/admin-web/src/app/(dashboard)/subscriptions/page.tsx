@@ -182,10 +182,10 @@ export default function SubscriptionsPage() {
       )}
 
       <div className="grid gap-4 md:grid-cols-4">
-        <StatCard title="Active Subscriptions" value={analytics?.summary.totalActive ?? 0} icon={CreditCard} />
-        <StatCard title="New This Period" value={analytics?.summary.newSubscriptions ?? 0} icon={TrendingUp} />
-        <StatCard title="Net Revenue" value={formatCurrency(analytics?.summary.netRevenue ?? 0)} icon={DollarSign} />
-        <StatCard title="Refunds" value={analytics?.summary.refunds ?? 0} icon={RotateCcw} description={`${formatCurrency(analytics?.summary.refundAmount ?? 0)} refunded`} />
+        <StatCard title="Active Subscriptions" value={analytics?.summary?.totalActive ?? 0} icon={CreditCard} />
+        <StatCard title="New This Period" value={analytics?.summary?.newSubscriptions ?? 0} icon={TrendingUp} />
+        <StatCard title="Net Revenue" value={formatCurrency(analytics?.summary?.netRevenue ?? 0)} icon={DollarSign} />
+        <StatCard title="Refunds" value={analytics?.summary?.refunds ?? 0} icon={RotateCcw} description={`${formatCurrency(analytics?.summary?.refundAmount ?? 0)} refunded`} />
       </div>
 
       <div className="grid gap-6 md:grid-cols-2">
