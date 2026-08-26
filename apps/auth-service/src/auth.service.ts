@@ -4,6 +4,8 @@ import { Repository } from 'typeorm';
 import { JwtService } from '@nestjs/jwt';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import * as bcrypt from 'bcryptjs';
+import otplib from 'otplib';
+import * as QRCode from 'qrcode';
 import { User, UserRole, UserStatus, Session, OtpCode, BiometricCredential } from '@app/common/entities';
 import { v4 as uuid } from 'uuid';
 
@@ -45,6 +47,15 @@ export class AuthService {
     if (!valid) { await this.handleFailedLogin(user); throw new UnauthorizedException('Invalid credentials'); }
     if (user.status === UserStatus.SUSPENDED) throw new UnauthorizedException('Account is suspended');
     if (user.status === UserStatus.DEACTIVATED) throw new UnauthorizedException('Account is deactivated');
+
+    if (user.twoFactorEnabled) {
+      const tempToken = this.jwtService.sign(
+        { sub: user.id, purpose: '2fa_verify' },
+        { expiresIn: '5m', secret: process.env.JWT_SECRET || '' },
+      );
+      return { requires2fa: true, tempToken, method: user.twoFactorMethod, user: this.sanitizeUser(user) };
+    }
+
     await this.userRepo.update(user.id, { loginAttempts: 0, lockUntil: undefined as any, lastLoginAt: new Date(), lastActiveAt: new Date(), status: user.status === UserStatus.PENDING_VERIFICATION ? user.status : UserStatus.ACTIVE });
     const tokens = await this.generateTokens(user);
     await this.createSession(user.id, tokens.refreshToken, deviceId, platform, osVersion, appVersion);
@@ -194,15 +205,118 @@ export class AuthService {
   async get2FASettings(userId: string) {
     const user = await this.userRepo.findOne({ where: { id: userId } });
     if (!user) throw new NotFoundException('User not found');
-    return { enabled: (user as any).twoFactorEnabled || false, method: (user as any).twoFactorMethod || 'sms', phone: user.phone ? user.phone.replace(/(.{3})(.*)(.{2})/, '$1***$3') : null, email: user.email ? user.email.replace(/(.{2})(.*)(@.*)/, '$1***$3') : null };
+    return {
+      enabled: user.twoFactorEnabled,
+      method: user.twoFactorMethod,
+      phone: user.phone ? user.phone.replace(/(.{3})(.*)(.{2})/, '$1***$3') : null,
+      email: user.email ? user.email.replace(/(.{2})(.*)(@.*)/, '$1***$3') : null,
+    };
   }
 
   async toggle2FA(userId: string, data: any) {
     const { enabled, method } = data;
     const user = await this.userRepo.findOne({ where: { id: userId } });
     if (!user) throw new NotFoundException('User not found');
-    await this.userRepo.update(userId, { twoFactorEnabled: enabled, twoFactorMethod: method || 'sms' } as any);
+
+    if (enabled && method === 'authenticator') {
+      throw new BadRequestException('Use /auth/2fa/setup to enable authenticator app');
+    }
+
+    await this.userRepo.update(userId, {
+      twoFactorEnabled: enabled,
+      twoFactorMethod: method || 'sms',
+      twoFactorSecret: enabled ? user.twoFactorSecret : undefined,
+    });
     return { twoFactorEnabled: enabled, method: method || 'sms' };
+  }
+
+  async setup2FA(userId: string) {
+    const user = await this.userRepo.findOne({ where: { id: userId } });
+    if (!user) throw new NotFoundException('User not found');
+    if (user.twoFactorEnabled && user.twoFactorMethod === 'authenticator') {
+      throw new BadRequestException('Authenticator app is already enabled. Disable it first.');
+    }
+
+    const secret = otplib.generateSecret();
+    const otpauth = otplib.generateURI({ label: user.email, issuer: 'OJChat', secret });
+    const qrCodeUrl = await QRCode.toDataURL(otpauth);
+
+    await this.userRepo.update(userId, {
+      twoFactorSecret: secret,
+      twoFactorMethod: 'authenticator',
+      twoFactorEnabled: false,
+    });
+
+    return { secret, qrCodeUrl, otpauth };
+  }
+
+  async verify2FASetup(userId: string, code: string) {
+    if (!code || code.length !== 6) throw new BadRequestException('Invalid code format');
+    const user = await this.userRepo.findOne({ where: { id: userId } });
+    if (!user) throw new NotFoundException('User not found');
+    if (!user.twoFactorSecret) throw new BadRequestException('No 2FA setup in progress. Call /auth/2fa/setup first.');
+
+    const result = otplib.verifySync({ token: code, secret: user.twoFactorSecret });
+    if (!result.valid) throw new BadRequestException('Invalid verification code. Try again.');
+
+    await this.userRepo.update(userId, {
+      twoFactorEnabled: true,
+      twoFactorMethod: 'authenticator',
+    });
+
+    return { twoFactorEnabled: true, method: 'authenticator', message: 'Authenticator app enabled successfully' };
+  }
+
+  async verify2FALogin(tempToken: string, code: string) {
+    if (!tempToken || !code) throw new BadRequestException('Missing tempToken or code');
+    if (code.length !== 6) throw new BadRequestException('Invalid code format');
+
+    let payload: any;
+    try {
+      payload = this.jwtService.verify(tempToken, { secret: process.env.JWT_SECRET || '' });
+    } catch {
+      throw new UnauthorizedException('Invalid or expired verification token');
+    }
+    if (payload.purpose !== '2fa_verify') throw new UnauthorizedException('Invalid token purpose');
+
+    const user = await this.userRepo.findOne({ where: { id: payload.sub } });
+    if (!user) throw new UnauthorizedException('User not found');
+    if (!user.twoFactorEnabled || !user.twoFactorSecret) throw new BadRequestException('2FA is not enabled');
+
+    const result = otplib.verifySync({ token: code, secret: user.twoFactorSecret });
+    if (!result.valid) throw new BadRequestException('Invalid verification code');
+
+    await this.userRepo.update(user.id, {
+      loginAttempts: 0,
+      lockUntil: undefined as any,
+      lastLoginAt: new Date(),
+      lastActiveAt: new Date(),
+      status: user.status === UserStatus.PENDING_VERIFICATION ? user.status : UserStatus.ACTIVE,
+    });
+
+    const tokens = await this.generateTokens(user);
+    await this.createSession(user.id, tokens.refreshToken);
+    this.eventEmitter.emit('user.logged_in', { userId: user.id, email: user.email });
+    return { user: this.sanitizeUser(user), tokens: { ...tokens, expiresIn: 900 } };
+  }
+
+  async disable2FA(userId: string, code: string) {
+    if (!code || code.length !== 6) throw new BadRequestException('Invalid code format');
+    const user = await this.userRepo.findOne({ where: { id: userId } });
+    if (!user) throw new NotFoundException('User not found');
+    if (!user.twoFactorEnabled) throw new BadRequestException('2FA is not enabled');
+    if (!user.twoFactorSecret) throw new BadRequestException('No 2FA secret found');
+
+    const result = otplib.verifySync({ token: code, secret: user.twoFactorSecret });
+    if (!result.valid) throw new BadRequestException('Invalid verification code');
+
+    await this.userRepo.update(userId, {
+      twoFactorEnabled: false,
+      twoFactorSecret: undefined,
+      twoFactorMethod: undefined,
+    });
+
+    return { twoFactorEnabled: false, message: 'Two-factor authentication disabled' };
   }
 
   private async createSession(userId: string, refreshToken: string, deviceId?: string, platform?: string, osVersion?: string, appVersion?: string) {

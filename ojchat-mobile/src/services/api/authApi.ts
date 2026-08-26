@@ -43,4 +43,29 @@ export const authApi = {
     const response = await apiClient.post(ENDPOINTS.AUTH.RESET_PASSWORD, { token, newPassword });
     return response.data;
   },
+
+  async get2FASettings() {
+    const response = await apiClient.get(ENDPOINTS.AUTH.TWO_FA_SETTINGS);
+    return response.data;
+  },
+
+  async setup2fa() {
+    const response = await apiClient.post(ENDPOINTS.AUTH.TWO_FA_SETUP);
+    return response.data;
+  },
+
+  async verify2faSetup(code: string) {
+    const response = await apiClient.post(ENDPOINTS.AUTH.TWO_FA_VERIFY_SETUP, { code });
+    return response.data;
+  },
+
+  async verify2faLogin(tempToken: string, code: string) {
+    const response = await apiClient.post(ENDPOINTS.AUTH.TWO_FA_VERIFY, { tempToken, code });
+    return response.data;
+  },
+
+  async disable2fa(code: string) {
+    const response = await apiClient.post(ENDPOINTS.AUTH.TWO_FA_DISABLE, { code });
+    return response.data;
+  },
 };

@@ -7,29 +7,53 @@ export function useAuth() {
   const { user, token, isAuthenticated, setUser, setTokens, setAuthenticated, logout: storeLogout } = useAppStore();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [pending2FA, setPending2FA] = useState<{ tempToken: string; method: string } | null>(null);
 
   const login = async (identifier: string, password: string) => {
     setLoading(true);
     setError(null);
+    setPending2FA(null);
     try {
       const response = await authApi.login(identifier, password);
       const data = response as any;
-      // After apiClient unwraps gateway wrapper, response is { user, tokens } directly
-      if (data?.user && data?.tokens) {
-        setUser(data.user);
-        setTokens(data.tokens.accessToken, data.tokens.refreshToken);
-        setAuthenticated(true);
-        return data;
+      const result = data?.success && data?.data ? data.data : data;
+
+      if (result?.requires2fa) {
+        setPending2FA({ tempToken: result.tempToken, method: result.method || 'authenticator' });
+        return { requires2fa: true, method: result.method };
       }
-      // Fallback: check success field if not unwrapped
-      if (data?.success && data?.data) {
-        setUser(data.data.user);
-        setTokens(data.data.tokens.accessToken, data.data.tokens.refreshToken);
+
+      if (result?.user && result?.tokens) {
+        setUser(result.user);
+        setTokens(result.tokens.accessToken, result.tokens.refreshToken);
         setAuthenticated(true);
-        return data.data;
+        return result;
       }
     } catch (err: any) {
       setError(err.response?.data?.error?.message || err.response?.data?.message || err.message || 'Login failed');
+      throw err;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const verify2faLogin = async (code: string) => {
+    if (!pending2FA) throw new Error('No pending 2FA verification');
+    setLoading(true);
+    setError(null);
+    try {
+      const response = await authApi.verify2faLogin(pending2FA.tempToken, code);
+      const data = response as any;
+      const result = data?.success && data?.data ? data.data : data;
+      if (result?.user && result?.tokens) {
+        setPending2FA(null);
+        setUser(result.user);
+        setTokens(result.tokens.accessToken, result.tokens.refreshToken);
+        setAuthenticated(true);
+        return result;
+      }
+    } catch (err: any) {
+      setError(err.response?.data?.error?.message || err.response?.data?.message || err.message || 'Verification failed');
       throw err;
     } finally {
       setLoading(false);
@@ -66,8 +90,9 @@ export function useAuth() {
     if (user) {
       try { await authApi.logout(user.id); } catch { /* local logout still proceeds */ }
     }
+    setPending2FA(null);
     storeLogout();
   };
 
-  return { user, token, isAuthenticated, loading, error, login, register, logout };
+  return { user, token, isAuthenticated, loading, error, login, verify2faLogin, pending2FA, register, logout };
 }

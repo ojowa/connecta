@@ -10,6 +10,10 @@ export const ENDPOINTS = {
     RESET_PASSWORD: '/auth/password/reset',
     TWO_FA_SETTINGS: '/auth/2fa/settings',
     TWO_FA_TOGGLE: '/auth/2fa/toggle',
+    TWO_FA_SETUP: '/auth/2fa/setup',
+    TWO_FA_VERIFY_SETUP: '/auth/2fa/verify-setup',
+    TWO_FA_VERIFY: '/auth/2fa/verify',
+    TWO_FA_DISABLE: '/auth/2fa/disable',
   },
   USERS: {
     ME: '/users/me',

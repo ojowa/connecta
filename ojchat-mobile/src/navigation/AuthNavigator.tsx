@@ -6,6 +6,7 @@ import OnboardingFlow from '../screens/onboarding/OnboardingFlow';
 import { LoginScreen } from '../screens/auth/LoginScreen';
 import { RegisterScreen } from '../screens/auth/RegisterScreen';
 import { OTPVerificationScreen } from '../screens/auth/OTPVerificationScreen';
+import { TwoFactorVerifyScreen } from '../screens/auth/TwoFactorVerifyScreen';
 import { ForgotPasswordScreen } from '../screens/auth/ForgotPasswordScreen';
 
 const Stack = createNativeStackNavigator();
@@ -18,6 +19,7 @@ export const AuthNavigator: React.FC = () => (
     <Stack.Screen name="Login" component={LoginScreen} />
     <Stack.Screen name="Register" component={RegisterScreen} />
     <Stack.Screen name="OTPVerification" component={OTPVerificationScreen} />
+    <Stack.Screen name="TwoFactorVerify" component={TwoFactorVerifyScreen} />
     <Stack.Screen name="ForgotPassword" component={ForgotPasswordScreen} />
   </Stack.Navigator>
 );

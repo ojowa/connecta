@@ -14,13 +14,18 @@ interface LoginScreenProps { navigation: any; }
 export const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
   const [identifier, setIdentifier] = useState('');
   const [password, setPassword] = useState('');
-  const { login, loading, error: authError } = useAuth();
+  const { login, loading, error: authError, pending2FA } = useAuth();
   const [serverError, setServerError] = useState<string | null>(null);
 
   const handleLogin = async () => {
     if (!identifier || !password) return;
     setServerError(null);
-    try { await login(identifier, password); } catch (err: any) {
+    try {
+      const result = await login(identifier, password);
+      if (result?.requires2fa) {
+        navigation.navigate('TwoFactorVerify');
+      }
+    } catch (err: any) {
       const msg = err?.code === 'ECONNABORTED' || err?.code === 'ERR_NETWORK'
         ? `Cannot reach server at ${apiClient.defaults.baseURL}. Check your WiFi.`
         : err?.response?.data?.message || err?.message || 'Login failed';

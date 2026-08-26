@@ -24,6 +24,8 @@ export interface LoginResponse {
   user: User;
   tokens: AuthTokens;
   requires2fa?: boolean;
+  tempToken?: string;
+  method?: string;
   requiresProfileSetup?: boolean;
 }
 

@@ -111,4 +111,31 @@ export class AuthController {
   toggle2FA(@Headers('x-user-id') userId: string, @Body() body: any) {
     return this.authService.toggle2FA(userId, body);
   }
+
+  @Post('2fa/setup')
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Setup authenticator app (generates secret + QR code)' })
+  setup2FA(@Headers('x-user-id') userId: string) {
+    return this.authService.setup2FA(userId);
+  }
+
+  @Post('2fa/verify-setup')
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Verify code to enable authenticator 2FA' })
+  verify2FASetup(@Headers('x-user-id') userId: string, @Body('code') code: string) {
+    return this.authService.verify2FASetup(userId, code);
+  }
+
+  @Post('2fa/verify')
+  @ApiOperation({ summary: 'Verify 2FA code during login' })
+  verify2FALogin(@Body('tempToken') tempToken: string, @Body('code') code: string) {
+    return this.authService.verify2FALogin(tempToken, code);
+  }
+
+  @Post('2fa/disable')
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Disable 2FA' })
+  disable2FA(@Headers('x-user-id') userId: string, @Body('code') code: string) {
+    return this.authService.disable2FA(userId, code);
+  }
 }

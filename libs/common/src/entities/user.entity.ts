@@ -43,6 +43,9 @@ export class User {
   @Column({ default: 0 }) loginAttempts: number;
   @Column({ nullable: true }) lockUntil: Date;
   @Column({ default: false }) incognitoMode: boolean;
+  @Column({ default: false }) twoFactorEnabled: boolean;
+  @Column({ nullable: true }) twoFactorSecret: string;
+  @Column({ nullable: true }) twoFactorMethod: string;
   @CreateDateColumn() createdAt: Date;
   @UpdateDateColumn() updatedAt: Date;
 }
