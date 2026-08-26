@@ -13,18 +13,66 @@ export interface ServiceConfig {
 export class GatewayProxyService {
   private readonly logger = new Logger(GatewayProxyService.name);
   private readonly services: ServiceConfig[] = [
-    { name: 'auth', baseUrl: process.env.AUTH_SERVICE_URL || 'http://localhost:3001', routes: ['auth'] },
-    { name: 'users', baseUrl: process.env.USERS_SERVICE_URL || 'http://localhost:3002', routes: ['users'] },
-    { name: 'matching', baseUrl: process.env.MATCHING_SERVICE_URL || 'http://localhost:3003', routes: ['matching'] },
-    { name: 'chat', baseUrl: process.env.CHAT_SERVICE_URL || 'http://localhost:3004', routes: ['chat'] },
-    { name: 'calls', baseUrl: process.env.CALLS_SERVICE_URL || 'http://localhost:3005', routes: ['calls'] },
-    { name: 'media', baseUrl: process.env.MEDIA_SERVICE_URL || 'http://localhost:3006', routes: ['media', 'upload'] },
-    { name: 'payments', baseUrl: process.env.PAYMENTS_SERVICE_URL || 'http://localhost:3007', routes: ['payments'] },
-    { name: 'notifications', baseUrl: process.env.NOTIFICATIONS_SERVICE_URL || 'http://localhost:3008', routes: ['notifications'] },
-    { name: 'search', baseUrl: process.env.SEARCH_SERVICE_URL || 'http://localhost:3009', routes: ['search'] },
-    { name: 'content', baseUrl: process.env.CONTENT_SERVICE_URL || 'http://localhost:3010', routes: ['content'] },
-    { name: 'support', baseUrl: process.env.SUPPORT_SERVICE_URL || 'http://localhost:3011', routes: ['support'] },
-    { name: 'admin', baseUrl: process.env.ADMIN_SERVICE_URL || 'http://localhost:3012', routes: ['admin'] },
+    {
+      name: 'auth',
+      baseUrl: process.env.AUTH_SERVICE_URL || 'http://localhost:3001',
+      routes: ['auth'],
+    },
+    {
+      name: 'users',
+      baseUrl: process.env.USERS_SERVICE_URL || 'http://localhost:3002',
+      routes: ['users'],
+    },
+    {
+      name: 'matching',
+      baseUrl: process.env.MATCHING_SERVICE_URL || 'http://localhost:3003',
+      routes: ['matching'],
+    },
+    {
+      name: 'chat',
+      baseUrl: process.env.CHAT_SERVICE_URL || 'http://localhost:3004',
+      routes: ['chat'],
+    },
+    {
+      name: 'calls',
+      baseUrl: process.env.CALLS_SERVICE_URL || 'http://localhost:3005',
+      routes: ['calls'],
+    },
+    {
+      name: 'media',
+      baseUrl: process.env.MEDIA_SERVICE_URL || 'http://localhost:3006',
+      routes: ['media', 'upload'],
+    },
+    {
+      name: 'payments',
+      baseUrl: process.env.PAYMENTS_SERVICE_URL || 'http://localhost:3007',
+      routes: ['payments'],
+    },
+    {
+      name: 'notifications',
+      baseUrl: process.env.NOTIFICATIONS_SERVICE_URL || 'http://localhost:3008',
+      routes: ['notifications'],
+    },
+    {
+      name: 'search',
+      baseUrl: process.env.SEARCH_SERVICE_URL || 'http://localhost:3009',
+      routes: ['search'],
+    },
+    {
+      name: 'content',
+      baseUrl: process.env.CONTENT_SERVICE_URL || 'http://localhost:3010',
+      routes: ['content'],
+    },
+    {
+      name: 'support',
+      baseUrl: process.env.SUPPORT_SERVICE_URL || 'http://localhost:3011',
+      routes: ['support'],
+    },
+    {
+      name: 'admin',
+      baseUrl: process.env.ADMIN_SERVICE_URL || 'http://localhost:3012',
+      routes: ['admin'],
+    },
   ];
 
   constructor(private readonly httpService: HttpService) {}
@@ -45,8 +93,8 @@ export class GatewayProxyService {
       'Content-Type': req.headers['content-type'] || 'application/json',
       'x-user-id': (req as any).userId || '',
       'x-request-id': (req as any).requestId || '',
-      'x-platform': req.headers['x-platform'] as string || '',
-      'x-device-id': req.headers['x-device-id'] as string || '',
+      'x-platform': (req.headers['x-platform'] as string) || '',
+      'x-device-id': (req.headers['x-device-id'] as string) || '',
     };
 
     if (req.headers.authorization) {

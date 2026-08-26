@@ -18,6 +18,9 @@ export class GatewayProxyController {
     if (!service || !this.proxyService.findService(path)) {
       return res.status(404).json({ statusCode: 404, message: `No service found for: ${path}` });
     }
-    return this.proxyService.proxyRequest(req, res, path).then((data) => res.json(data)).catch(next);
+    return this.proxyService
+      .proxyRequest(req, res, path)
+      .then((data) => res.json(data))
+      .catch(next);
   }
 }

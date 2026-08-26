@@ -103,6 +103,8 @@ async function bootstrap() {
   const port = process.env.PORT || 3000;
   await app.listen(port, '0.0.0.0');
   new Logger('ApiGateway').log(`API Gateway running on port ${port} (0.0.0.0)`);
-  new Logger('ApiGateway').log(`Microservices: auth:3001, users:3002, matching:3003, chat:3004, calls:3005, media:3006, payments:3007, notifications:3008, search:3009, content:3010, support:3011, admin:3012`);
+  new Logger('ApiGateway').log(
+    `Microservices: auth:3001, users:3002, matching:3003, chat:3004, calls:3005, media:3006, payments:3007, notifications:3008, search:3009, content:3010, support:3011, admin:3012`,
+  );
 }
 bootstrap();
