@@ -36,6 +36,7 @@ import { Moment } from './moment.entity';
 import { MomentView } from './moment-view.entity';
 import { ProfilePrompt } from './profile-prompt.entity';
 import { UserPrompt } from './user-prompt.entity';
+import { NotificationDelivery } from './notification-delivery.entity';
 import { PhotoLike } from './photo-like.entity';
 
 export { User, UserRole, UserStatus } from './user.entity';
@@ -62,6 +63,7 @@ export { Subscription } from './subscription.entity';
 export { Transaction } from './transaction.entity';
 export { Notification } from './notification.entity';
 export { NotificationPreference } from './notification-preference.entity';
+export { NotificationDelivery } from './notification-delivery.entity';
 export { CallSession } from './call-session.entity';
 export { AdminUser } from './admin-user.entity';
 export { AdminSession } from './admin-session.entity';
@@ -103,6 +105,7 @@ export const allEntities = [
   Transaction,
   Notification,
   NotificationPreference,
+  NotificationDelivery,
   CallSession,
   AdminUser,
   AdminSession,

@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Put, Body, Query, Headers } from '@nestjs/common';
+import { Controller, Get, Post, Put, Body, Query, Headers, Param } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { NotificationsService } from './notifications.service';
 
@@ -36,5 +36,35 @@ export class NotificationsController {
   @ApiOperation({ summary: 'Register device token' })
   registerDevice(@Headers('x-user-id') userId: string, @Body() body: any) {
     return this.notificationsService.registerDevice(userId, body);
+  }
+
+  @Post('track')
+  @ApiOperation({ summary: 'Track notification delivery' })
+  trackDelivery(@Body() body: any) {
+    return this.notificationsService.trackDelivery(body);
+  }
+
+  @Put('track/:id/delivered')
+  @ApiOperation({ summary: 'Mark notification as delivered' })
+  markDelivered(@Param('id') id: string) {
+    return this.notificationsService.markDelivered(id);
+  }
+
+  @Put('track/:id/opened')
+  @ApiOperation({ summary: 'Mark notification as opened' })
+  markOpened(@Param('id') id: string) {
+    return this.notificationsService.markOpened(id);
+  }
+
+  @Put('track/:id/clicked')
+  @ApiOperation({ summary: 'Mark notification as clicked' })
+  markClicked(@Param('id') id: string) {
+    return this.notificationsService.markClicked(id);
+  }
+
+  @Put('track/:id/failed')
+  @ApiOperation({ summary: 'Mark notification as failed' })
+  markFailed(@Param('id') id: string, @Body() body: { reason: string }) {
+    return this.notificationsService.markFailed(id, body.reason);
   }
 }

@@ -1,7 +1,7 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { Notification, NotificationPreference, DeviceToken } from '@app/common/entities';
+import { Notification, NotificationPreference, DeviceToken, NotificationDelivery } from '@app/common/entities';
 
 @Injectable()
 export class NotificationsService {
@@ -9,6 +9,7 @@ export class NotificationsService {
     @InjectRepository(Notification) private notifRepo: Repository<Notification>,
     @InjectRepository(NotificationPreference) private prefRepo: Repository<NotificationPreference>,
     @InjectRepository(DeviceToken) private tokenRepo: Repository<DeviceToken>,
+    @InjectRepository(NotificationDelivery) private deliveryRepo: Repository<NotificationDelivery>,
   ) {}
 
   async getNotifications(userId: string, page = 1, limit = 20) {
@@ -45,5 +46,42 @@ export class NotificationsService {
     if (existing) { await this.tokenRepo.update(existing.id, { userId, platform: data.platform }); return existing; }
     const deviceToken = this.tokenRepo.create({ userId, token: data.token, platform: data.platform });
     return this.tokenRepo.save(deviceToken);
+  }
+
+  async trackDelivery(data: { notificationId: string; userId: string; type: string; title: string; body: string; channel?: string; platform?: string; metadata?: any }) {
+    const delivery = this.deliveryRepo.create({
+      notificationId: data.notificationId,
+      userId: data.userId,
+      type: data.type,
+      title: data.title,
+      body: data.body,
+      channel: data.channel || 'push',
+      platform: data.platform,
+      status: 'sent',
+      delivered: true,
+      deliveredAt: new Date(),
+      metadata: data.metadata,
+    });
+    return this.deliveryRepo.save(delivery);
+  }
+
+  async markDelivered(id: string) {
+    await this.deliveryRepo.update(id, { delivered: true, deliveredAt: new Date(), status: 'delivered' });
+    return { updated: true };
+  }
+
+  async markOpened(id: string) {
+    await this.deliveryRepo.update(id, { opened: true, openedAt: new Date() });
+    return { updated: true };
+  }
+
+  async markClicked(id: string) {
+    await this.deliveryRepo.update(id, { clicked: true, clickedAt: new Date() });
+    return { updated: true };
+  }
+
+  async markFailed(id: string, reason: string) {
+    await this.deliveryRepo.update(id, { status: 'failed', failureReason: reason });
+    return { updated: true };
   }
 }

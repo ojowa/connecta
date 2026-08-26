@@ -38,6 +38,12 @@
     },
     "web": {
       "favicon": "./assets/favicon.png"
-    }
+    },
+    "extra": {
+      "eas": {
+        "projectId": "c52a7663-6a7f-4610-a2da-de272234c338"
+      }
+    },
+    "owner": "afolayan"
   }
 }

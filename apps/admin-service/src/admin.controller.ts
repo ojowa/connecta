@@ -160,4 +160,94 @@ export class AdminController {
     this.verifyAuth(auth);
     return this.adminService.getSystemHealth();
   }
+
+  @Get('notification-history')
+  @ApiOperation({ summary: 'Get notification delivery history' })
+  getNotificationHistory(
+    @Headers('authorization') auth: string,
+    @Query('page') page?: string,
+    @Query('limit') limit?: string,
+    @Query('type') type?: string,
+    @Query('status') status?: string,
+    @Query('channel') channel?: string,
+    @Query('startDate') startDate?: string,
+    @Query('endDate') endDate?: string,
+  ) {
+    this.verifyAuth(auth);
+    return this.adminService.getNotificationHistory(
+      parseInt(page || '1'),
+      parseInt(limit || '50'),
+      { type, status, channel, startDate, endDate },
+    );
+  }
+
+  @Get('notification-analytics')
+  @ApiOperation({ summary: 'Get notification analytics' })
+  getNotificationAnalytics(@Headers('authorization') auth: string, @Query('period') period?: string) {
+    this.verifyAuth(auth);
+    return this.adminService.getNotificationAnalytics(period);
+  }
+
+  @Get('notification-history/:id')
+  @ApiOperation({ summary: 'Get notification detail' })
+  getNotificationDetail(@Headers('authorization') auth: string, @Param('id') id: string) {
+    this.verifyAuth(auth);
+    return this.adminService.getNotificationDetail(id);
+  }
+
+  @Get('subscriptions')
+  @ApiOperation({ summary: 'Get all subscriptions' })
+  getSubscriptions(
+    @Headers('authorization') auth: string,
+    @Query('page') page?: string,
+    @Query('limit') limit?: string,
+    @Query('status') status?: string,
+    @Query('planId') planId?: string,
+    @Query('search') search?: string,
+  ) {
+    this.verifyAuth(auth);
+    return this.adminService.getSubscriptions(parseInt(page || '1'), parseInt(limit || '50'), { status, planId, search });
+  }
+
+  @Get('subscriptions/analytics')
+  @ApiOperation({ summary: 'Get subscription analytics' })
+  getSubscriptionAnalytics(@Headers('authorization') auth: string, @Query('period') period?: string) {
+    this.verifyAuth(auth);
+    return this.adminService.getSubscriptionAnalytics(period);
+  }
+
+  @Get('subscriptions/plans')
+  @ApiOperation({ summary: 'Get all plans' })
+  getPlans(@Headers('authorization') auth: string) {
+    this.verifyAuth(auth);
+    return this.adminService.getAllPlans();
+  }
+
+  @Get('subscriptions/:id')
+  @ApiOperation({ summary: 'Get subscription detail' })
+  getSubscriptionDetail(@Headers('authorization') auth: string, @Param('id') id: string) {
+    this.verifyAuth(auth);
+    return this.adminService.getSubscriptionDetail(id);
+  }
+
+  @Post('subscriptions/:id/cancel')
+  @ApiOperation({ summary: 'Cancel subscription' })
+  cancelSubscription(@Headers('authorization') auth: string, @Param('id') id: string, @Body() body: { reason?: string }) {
+    this.verifyAuth(auth);
+    return this.adminService.cancelSubscription(id, body.reason);
+  }
+
+  @Post('subscriptions/:id/refund')
+  @ApiOperation({ summary: 'Refund subscription' })
+  refundSubscription(@Headers('authorization') auth: string, @Param('id') id: string, @Body() body: { reason?: string }) {
+    this.verifyAuth(auth);
+    return this.adminService.refundSubscription(id, body.reason);
+  }
+
+  @Post('subscriptions/grant')
+  @ApiOperation({ summary: 'Grant premium to user' })
+  grantPremium(@Headers('authorization') auth: string, @Body() body: { userId: string; planId: string; durationDays?: number }) {
+    this.verifyAuth(auth);
+    return this.adminService.grantPremium(body.userId, body.planId, body.durationDays);
+  }
 }

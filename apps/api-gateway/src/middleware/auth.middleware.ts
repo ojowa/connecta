@@ -31,8 +31,12 @@ export class AuthMiddleware implements NestMiddleware {
     }
 
     const token = authHeader.split(' ')[1];
+    const jwtSecret = process.env.JWT_SECRET;
+    if (!jwtSecret) {
+      throw new Error('JWT_SECRET environment variable is not set');
+    }
     try {
-      const payload: any = jwt.verify(token, process.env.JWT_SECRET || 'your-secret-key');
+      const payload: any = jwt.verify(token, jwtSecret);
       if (payload && payload.sub) {
         (req as any).userId = payload.sub;
       }

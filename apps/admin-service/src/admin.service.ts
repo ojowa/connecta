@@ -1,11 +1,15 @@
 import { Injectable, UnauthorizedException, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, In, MoreThan } from 'typeorm';
-import { AdminUser, User, Report, Notification, Subscription, Transaction, Plan, Like, Match, Message, Session } from '@app/common/entities';
+import { AdminUser, User, Report, Notification, Subscription, Transaction, Plan, Like, Match, Message, Session, NotificationDelivery } from '@app/common/entities';
 import * as bcrypt from 'bcryptjs';
 import * as jwt from 'jsonwebtoken';
+import { v4 as uuid } from 'uuid';
 
-const JWT_SECRET = process.env.ADMIN_JWT_SECRET || 'ojchat_admin_secret_key';
+const JWT_SECRET = process.env.ADMIN_JWT_SECRET;
+if (!JWT_SECRET) {
+  throw new Error('ADMIN_JWT_SECRET environment variable is not set');
+}
 
 @Injectable()
 export class AdminService {
@@ -19,6 +23,8 @@ export class AdminService {
     @InjectRepository(Match) private matchRepo: Repository<Match>,
     @InjectRepository(Message) private msgRepo: Repository<Message>,
     @InjectRepository(Session) private sessionRepo: Repository<Session>,
+    @InjectRepository(Plan) private planRepo: Repository<Plan>,
+    @InjectRepository(NotificationDelivery) private notifDeliveryRepo: Repository<NotificationDelivery>,
   ) {}
 
   async login(email: string, password: string) {
@@ -371,5 +377,294 @@ export class AdminService {
     const down = checks.filter(c => c.status === 'down').length;
 
     return { services: checks, summary: { total: checks.length, healthy, degraded, down } };
+  }
+
+  async getNotificationHistory(page = 1, limit = 50, filters?: { type?: string; status?: string; channel?: string; startDate?: string; endDate?: string }) {
+    const qb = this.notifDeliveryRepo.createQueryBuilder('nd');
+
+    if (filters?.type) qb.andWhere('nd.type = :type', { type: filters.type });
+    if (filters?.status) qb.andWhere('nd.status = :status', { status: filters.status });
+    if (filters?.channel) qb.andWhere('nd.channel = :channel', { channel: filters.channel });
+    if (filters?.startDate) qb.andWhere('nd.createdAt >= :startDate', { startDate: new Date(filters.startDate) });
+    if (filters?.endDate) qb.andWhere('nd.createdAt <= :endDate', { endDate: new Date(filters.endDate) });
+
+    const [notifications, total] = await qb
+      .orderBy('nd.createdAt', 'DESC')
+      .skip((page - 1) * limit)
+      .take(limit)
+      .getManyAndCount();
+
+    return {
+      notifications,
+      meta: { page, limit, total, hasMore: total > page * limit },
+    };
+  }
+
+  async getNotificationAnalytics(period = '30d') {
+    const days = period === '24h' ? 1 : period === '7d' ? 7 : period === '90d' ? 90 : 30;
+    const since = new Date(Date.now() - days * 24 * 60 * 60 * 1000);
+
+    const total = await this.notifDeliveryRepo.createQueryBuilder('nd')
+      .where('nd.createdAt >= :since', { since }).getCount();
+
+    const delivered = await this.notifDeliveryRepo.createQueryBuilder('nd')
+      .where('nd.createdAt >= :since AND nd.delivered = true', { since }).getCount();
+
+    const opened = await this.notifDeliveryRepo.createQueryBuilder('nd')
+      .where('nd.createdAt >= :since AND nd.opened = true', { since }).getCount();
+
+    const clicked = await this.notifDeliveryRepo.createQueryBuilder('nd')
+      .where('nd.createdAt >= :since AND nd.clicked = true', { since }).getCount();
+
+    const failed = await this.notifDeliveryRepo.createQueryBuilder('nd')
+      .where('nd.createdAt >= :since AND nd.status = :status', { since, status: 'failed' }).getCount();
+
+    const byType = await this.notifDeliveryRepo.createQueryBuilder('nd')
+      .select('nd.type', 'type')
+      .addSelect('COUNT(*)', 'count')
+      .addSelect('SUM(CASE WHEN nd.delivered = true THEN 1 ELSE 0 END)', 'delivered')
+      .addSelect('SUM(CASE WHEN nd.opened = true THEN 1 ELSE 0 END)', 'opened')
+      .addSelect('SUM(CASE WHEN nd.clicked = true THEN 1 ELSE 0 END)', 'clicked')
+      .where('nd.createdAt >= :since', { since })
+      .groupBy('nd.type')
+      .getRawMany();
+
+    const byChannel = await this.notifDeliveryRepo.createQueryBuilder('nd')
+      .select('nd.channel', 'channel')
+      .addSelect('COUNT(*)', 'count')
+      .addSelect('SUM(CASE WHEN nd.delivered = true THEN 1 ELSE 0 END)', 'delivered')
+      .where('nd.createdAt >= :since', { since })
+      .groupBy('nd.channel')
+      .getRawMany();
+
+    const byPlatform = await this.notifDeliveryRepo.createQueryBuilder('nd')
+      .select('nd.platform', 'platform')
+      .addSelect('COUNT(*)', 'count')
+      .addSelect('SUM(CASE WHEN nd.delivered = true THEN 1 ELSE 0 END)', 'delivered')
+      .where('nd.createdAt >= :since', { since })
+      .groupBy('nd.platform')
+      .getRawMany();
+
+    const daily = await this.notifDeliveryRepo.createQueryBuilder('nd')
+      .select("DATE(nd.createdAt)", 'date')
+      .addSelect('COUNT(*)', 'total')
+      .addSelect('SUM(CASE WHEN nd.delivered = true THEN 1 ELSE 0 END)', 'delivered')
+      .addSelect('SUM(CASE WHEN nd.opened = true THEN 1 ELSE 0 END)', 'opened')
+      .addSelect('SUM(CASE WHEN nd.clicked = true THEN 1 ELSE 0 END)', 'clicked')
+      .addSelect('SUM(CASE WHEN nd.status = \'failed\' THEN 1 ELSE 0 END)', 'failed')
+      .where('nd.createdAt >= :since', { since })
+      .groupBy("DATE(nd.createdAt)")
+      .orderBy("DATE(nd.createdAt)", 'ASC')
+      .getRawMany();
+
+    return {
+      period,
+      summary: {
+        total,
+        delivered,
+        opened,
+        clicked,
+        failed,
+        deliveryRate: total ? ((delivered / total) * 100).toFixed(1) : '0',
+        openRate: delivered ? ((opened / delivered) * 100).toFixed(1) : '0',
+        clickRate: opened ? ((clicked / opened) * 100).toFixed(1) : '0',
+      },
+      byType,
+      byChannel,
+      byPlatform,
+      daily,
+    };
+  }
+
+  async getNotificationDetail(id: string) {
+    const notification = await this.notifDeliveryRepo.findOne({ where: { id } });
+    if (!notification) throw new NotFoundException('Notification not found');
+    return notification;
+  }
+
+  async getSubscriptions(page = 1, limit = 50, filters?: { status?: string; planId?: string; search?: string }) {
+    const qb = this.subRepo.createQueryBuilder('s')
+      .leftJoinAndSelect('s.plan', 'plan');
+
+    if (filters?.status) qb.andWhere('s.status = :status', { status: filters.status });
+    if (filters?.planId) qb.andWhere('s.planId = :planId', { planId: filters.planId });
+    if (filters?.search) {
+      qb.andWhere('s.userId IN (SELECT id FROM users WHERE email ILIKE :search OR fullName ILIKE :search)', { search: `%${filters.search}%` });
+    }
+
+    const [subscriptions, total] = await qb
+      .orderBy('s.createdAt', 'DESC')
+      .skip((page - 1) * limit)
+      .take(limit)
+      .getManyAndCount();
+
+    const subsWithUser = await Promise.all(
+      subscriptions.map(async (s) => {
+        const user = await this.userRepo.findOne({ where: { id: s.userId }, select: ['id', 'email', 'fullName'] });
+        return { ...s, user };
+      }),
+    );
+
+    return {
+      subscriptions: subsWithUser,
+      meta: { page, limit, total, hasMore: total > page * limit },
+    };
+  }
+
+  async getSubscriptionDetail(id: string) {
+    const sub = await this.subRepo.findOne({ where: { id }, relations: ['plan'] });
+    if (!sub) throw new NotFoundException('Subscription not found');
+    const user = await this.userRepo.findOne({ where: { id: sub.userId }, select: ['id', 'email', 'fullName', 'phone'] });
+    const transactions = await this.txnRepo.find({ where: { subscriptionId: id }, order: { createdAt: 'DESC' }, take: 20 });
+    return { subscription: sub, user, transactions };
+  }
+
+  async cancelSubscription(id: string, reason?: string) {
+    const sub = await this.subRepo.findOne({ where: { id } });
+    if (!sub) throw new NotFoundException('Subscription not found');
+    sub.status = 'cancelled';
+    sub.cancelledAt = new Date();
+    sub.autoRenew = false;
+    await this.subRepo.save(sub);
+
+    const txn = this.txnRepo.create({
+      userId: sub.userId,
+      subscriptionId: sub.id,
+      type: 'cancellation',
+      amount: 0,
+      status: 'completed',
+      metadata: { reason: reason || 'Cancelled by admin' },
+      completedAt: new Date(),
+    });
+    await this.txnRepo.save(txn);
+
+    return { cancelled: true, subscription: sub };
+  }
+
+  async refundSubscription(id: string, reason?: string) {
+    const sub = await this.subRepo.findOne({ where: { id } });
+    if (!sub) throw new NotFoundException('Subscription not found');
+
+    const lastPayment = await this.txnRepo.findOne({
+      where: { subscriptionId: id, type: 'subscription', status: 'completed' },
+      order: { createdAt: 'DESC' },
+    });
+
+    sub.status = 'refunded';
+    sub.cancelledAt = new Date();
+    sub.autoRenew = false;
+    await this.subRepo.save(sub);
+
+    const refundTxn = this.txnRepo.create({
+      userId: sub.userId,
+      subscriptionId: sub.id,
+      type: 'refund',
+      amount: lastPayment ? lastPayment.amount : 0,
+      currency: lastPayment ? lastPayment.currency : 'NGN',
+      status: 'completed',
+      metadata: { reason: reason || 'Refunded by admin', originalPaymentId: lastPayment?.id },
+      completedAt: new Date(),
+    });
+    await this.txnRepo.save(refundTxn);
+
+    return { refunded: true, subscription: sub, refundAmount: refundTxn.amount };
+  }
+
+  async grantPremium(userId: string, planId: string, durationDays = 30) {
+    const user = await this.userRepo.findOne({ where: { id: userId } });
+    if (!user) throw new NotFoundException('User not found');
+
+    const plan = await this.planRepo.findOne({ where: { id: planId } });
+    if (!plan) throw new NotFoundException('Plan not found');
+
+    const now = new Date();
+    const sub = this.subRepo.create({
+      userId,
+      planId,
+      status: 'active',
+      billingPeriod: 'monthly',
+      startedAt: now,
+      currentPeriodStart: now,
+      currentPeriodEnd: new Date(now.getTime() + durationDays * 24 * 60 * 60 * 1000),
+      autoRenew: false,
+    });
+    await this.subRepo.save(sub);
+
+    const txn = this.txnRepo.create({
+      userId,
+      subscriptionId: sub.id,
+      type: 'admin_grant',
+      amount: 0,
+      status: 'completed',
+      metadata: { grantedBy: 'admin', planName: plan.displayName, durationDays },
+      completedAt: new Date(),
+    });
+    await this.txnRepo.save(txn);
+
+    return { granted: true, subscription: sub, plan: plan.displayName, expiresAt: sub.currentPeriodEnd };
+  }
+
+  async getSubscriptionAnalytics(period = '30d') {
+    const days = period === '24h' ? 1 : period === '7d' ? 7 : period === '90d' ? 90 : 30;
+    const since = new Date(Date.now() - days * 24 * 60 * 60 * 1000);
+
+    const totalActive = await this.subRepo.count({ where: { status: 'active' } });
+    const totalCancelled = await this.subRepo.count({ where: { status: 'cancelled' } });
+    const totalRefunded = await this.subRepo.count({ where: { status: 'refunded' } });
+
+    const newSubscriptions = await this.subRepo.createQueryBuilder('s')
+      .where('s.createdAt >= :since', { since }).getCount();
+
+    const cancellations = await this.subRepo.createQueryBuilder('s')
+      .where('s.cancelledAt >= :since AND s.status = :status', { since, status: 'cancelled' }).getCount();
+
+    const refunds = await this.txnRepo.createQueryBuilder('t')
+      .where('t.createdAt >= :since AND t.type = :type', { since, type: 'refund' }).getCount();
+
+    const revenue = await this.txnRepo.createQueryBuilder('t')
+      .where('t.createdAt >= :since AND t.type = :type AND t.status = :status', { since, type: 'subscription', status: 'completed' })
+      .select('SUM(t.amount)', 'total')
+      .getRawOne();
+
+    const refundAmount = await this.txnRepo.createQueryBuilder('t')
+      .where('t.createdAt >= :since AND t.type = :type', { since, type: 'refund' })
+      .select('SUM(t.amount)', 'total')
+      .getRawOne();
+
+    const byPlan = await this.subRepo.createQueryBuilder('s')
+      .leftJoin('s.plan', 'plan')
+      .select('plan.displayName', 'planName')
+      .addSelect('COUNT(*)', 'count')
+      .addSelect("SUM(CASE WHEN s.status = 'active' THEN 1 ELSE 0 END)", 'active')
+      .groupBy('plan.displayName')
+      .getRawMany();
+
+    const daily = await this.subRepo.createQueryBuilder('s')
+      .select("DATE(s.createdAt)", 'date')
+      .addSelect('COUNT(*)', 'new')
+      .where('s.createdAt >= :since', { since })
+      .groupBy("DATE(s.createdAt)")
+      .orderBy("DATE(s.createdAt)", 'ASC')
+      .getRawMany();
+
+    return {
+      period,
+      summary: {
+        totalActive,
+        totalCancelled,
+        totalRefunded,
+        newSubscriptions,
+        cancellations,
+        refunds,
+        netRevenue: Number(revenue?.total || 0) - Number(refundAmount?.total || 0),
+        refundAmount: Number(refundAmount?.total || 0),
+      },
+      byPlan,
+      daily,
+    };
+  }
+
+  async getAllPlans() {
+    return this.planRepo.find({ order: { sortOrder: 'ASC' } });
   }
 }

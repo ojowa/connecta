@@ -18,6 +18,8 @@ import {
   DollarSign,
   Globe,
   Server,
+  Bell,
+  CreditCard,
 } from "lucide-react";
 
 const navItems = [
@@ -30,6 +32,8 @@ const navItems = [
   { href: "/revenue", label: "Revenue", icon: DollarSign },
   { href: "/geographic", label: "Geographic", icon: Globe },
   { href: "/analytics", label: "Growth Analytics", icon: BarChart3 },
+  { href: "/subscriptions", label: "Subscriptions", icon: CreditCard },
+  { href: "/notifications", label: "Notifications", icon: Bell },
   { href: "/system", label: "System Health", icon: Server },
   { href: "/broadcast", label: "Broadcast", icon: Radio },
   { href: "/settings", label: "Settings", icon: Settings },

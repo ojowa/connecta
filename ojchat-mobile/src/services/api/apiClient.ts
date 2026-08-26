@@ -1,17 +1,27 @@
 import axios, { AxiosError, InternalAxiosRequestConfig } from 'axios';
 import { useAppStore } from '../../store';
 import { API_CONFIG } from '../../constants/api';
+import { resolveApiUrl } from '../../lib/network';
 
-const baseURL = process.env.EXPO_PUBLIC_LOCAL_API_URL || 'http://localhost:3000/v1';
+let resolvedBaseURL: string | null = null;
+
+async function getBaseURL(): Promise<string> {
+  if (!resolvedBaseURL) {
+    resolvedBaseURL = await resolveApiUrl();
+  }
+  return resolvedBaseURL;
+}
 
 export const apiClient = axios.create({
-  baseURL,
   timeout: API_CONFIG.timeout,
   headers: { 'Content-Type': 'application/json' },
 });
 
 apiClient.interceptors.request.use(
   async (config: InternalAxiosRequestConfig) => {
+    if (!config.baseURL) {
+      config.baseURL = await getBaseURL();
+    }
     const { token } = useAppStore.getState();
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
@@ -38,6 +48,7 @@ apiClient.interceptors.response.use(
       try {
         const { refreshToken } = useAppStore.getState();
         if (!refreshToken) throw new Error('No refresh token');
+        const baseURL = await getBaseURL();
         const response = await axios.post(
           `${baseURL}/auth/refresh`,
           { refreshToken }
