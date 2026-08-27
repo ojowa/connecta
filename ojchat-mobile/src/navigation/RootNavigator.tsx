@@ -36,7 +36,7 @@ import ReportProblemScreen from '../screens/settings/ReportProblemScreen';
 import IncognitoScreen from '../screens/settings/IncognitoScreen';
 import { BiometricSetupScreen } from '../screens/auth/BiometricSetupScreen';
 import { InterestSelectorScreen } from '../screens/profile/InterestSelectorScreen';
-import VerificationScreen from '../screens/profile/VerificationScreen';
+import { VerificationScreen } from '../screens/profile/VerificationScreen';
 import { WhoViewedScreen } from '../screens/matches/WhoViewedScreen';
 import { UserProfileScreen } from '../screens/profile/UserProfileScreen';
 import { DailyStreakScreen } from '../screens/gamification/DailyStreakScreen';
