@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, Switch, Alert, ActivityIndicator, TextInput, Im
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiClient } from '../../services/api/apiClient';
+import { Button } from '../../components/common/Button';
 import { authApi } from '../../services/api/authApi';
 import { colors } from '../../theme/colors';
 import { typography } from '../../theme/typography';
