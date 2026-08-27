@@ -23,6 +23,7 @@ import { borderRadius } from '../../theme/borderRadius';
 import { LoadingSpinner } from '../../components/common/LoadingSpinner';
 import { useAppStore } from '../../store';
 import * as ImagePicker from 'expo-image-picker';
+import { Platform } from 'react-native';
 
 interface Moment {
   id: string;
@@ -193,17 +194,36 @@ const CreateMomentModal: React.FC<{
   };
 
   const takePhoto = async () => {
-    const { status } = await ImagePicker.requestCameraPermissionsAsync();
-    if (status !== 'granted') {
-      Alert.alert('Permission needed', 'Please grant camera access to take a photo.');
+    if (Platform.OS === 'web') {
+      const input = document.createElement('input');
+      input.type = 'file';
+      input.accept = 'image/*';
+      input.capture = 'environment';
+      input.onchange = (e: any) => {
+        const file = e.target.files?.[0];
+        if (file) {
+          const uri = URL.createObjectURL(file);
+          setMediaUri(uri);
+        }
+      };
+      input.click();
       return;
     }
-    const result = await ImagePicker.launchCameraAsync({
-      quality: 0.8,
-      allowsEditing: true,
-    });
-    if (!result.canceled && result.assets[0]) {
-      setMediaUri(result.assets[0].uri);
+    try {
+      const { status } = await ImagePicker.requestCameraPermissionsAsync();
+      if (status !== 'granted') {
+        Alert.alert('Permission needed', 'Please grant camera access to take a photo.');
+        return;
+      }
+      const result = await ImagePicker.launchCameraAsync({
+        quality: 0.8,
+        allowsEditing: true,
+      });
+      if (!result.canceled && result.assets[0]) {
+        setMediaUri(result.assets[0].uri);
+      }
+    } catch (err) {
+      Alert.alert('Camera unavailable', 'Could not open camera. Try picking from gallery instead.');
     }
   };
 
@@ -344,7 +364,13 @@ const MomentsScreen: React.FC = () => {
       if (mediaUri) {
         try {
           const formData = new FormData();
-          formData.append('photo', { uri: mediaUri, type: 'image/jpeg', name: 'moment.jpg' } as any);
+          if (Platform.OS === 'web' && mediaUri.startsWith('blob:')) {
+            const res = await fetch(mediaUri);
+            const blob = await res.blob();
+            formData.append('photo', blob, 'moment.jpg');
+          } else {
+            formData.append('photo', { uri: mediaUri, type: 'image/jpeg', name: 'moment.jpg' } as any);
+          }
           const uploadRes = await apiClient.post('/media/upload', formData, {
             headers: { 'Content-Type': 'multipart/form-data' },
           });
