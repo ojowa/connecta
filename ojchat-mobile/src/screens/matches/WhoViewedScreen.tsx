@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, FlatList, Image, TouchableOpacity, Alert } from 'react-native';
+import { View, Text, StyleSheet, FlatList, Image, TouchableOpacity } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useQuery } from '@tanstack/react-query';
 import { apiClient } from '../../services/api/apiClient';
+import { ENDPOINTS } from '../../constants/endpoints';
 import { colors } from '../../theme/colors';
 import { typography } from '../../theme/typography';
 import { spacing } from '../../theme/spacing';
@@ -30,16 +31,16 @@ export const WhoViewedScreen: React.FC<{ navigation: any }> = ({ navigation }) =
   const isPremium = me?.plan && me.plan !== 'free';
 
   useEffect(() => {
-    apiClient.get('/matching/liked-you?limit=50')
+    apiClient.get(ENDPOINTS.MATCHING.PROFILE_VIEWERS)
       .then((res: any) => {
         const data = res?.data || res;
-        const likes = data?.likes || [];
-        setViewers(likes.map((l: any) => ({
-          id: l.id,
-          userId: l.userId,
-          fullName: l.user?.fullName || 'Anonymous',
-          avatar: l.user?.photos?.[0]?.url,
-          viewedAt: l.createdAt,
+        const list = data?.viewers || [];
+        setViewers(list.map((v: any) => ({
+          id: v.id,
+          userId: v.userId,
+          fullName: v.user?.fullName || 'Anonymous',
+          avatar: v.user?.photos?.[0]?.url,
+          viewedAt: v.viewedAt,
         })));
       })
       .catch(() => {})
@@ -81,7 +82,7 @@ export const WhoViewedScreen: React.FC<{ navigation: any }> = ({ navigation }) =
             </View>
           </View>
 
-          <Text style={styles.premiumTitle}>See Who Liked You</Text>
+          <Text style={styles.premiumTitle}>See Who Viewed You</Text>
           <Text style={styles.premiumSubtitle}>
             {viewers.length > 0
               ? `${viewers.length} ${viewers.length === 1 ? 'person' : 'people'} viewed your profile`

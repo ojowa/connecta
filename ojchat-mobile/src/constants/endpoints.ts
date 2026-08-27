@@ -52,6 +52,8 @@ export const ENDPOINTS = {
     PASSPORT: '/matching/passport',
     PHOTO_LIKE: (photoId: string) => `/matching/photos/${photoId}/like`,
     PHOTO_STATS: '/matching/photos/stats',
+    PROFILE_VIEW: (userId: string) => `/matching/profile-view/${userId}`,
+    PROFILE_VIEWERS: '/matching/profile-viewers',
     MOMENTS: '/matching/moments',
     MOMENTS_MINE: '/matching/moments/mine',
     MOMENT_VIEW: (id: string) => `/matching/moments/${id}/view`,

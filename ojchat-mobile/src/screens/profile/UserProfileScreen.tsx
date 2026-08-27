@@ -1,9 +1,10 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, Image, TouchableOpacity, useWindowDimensions } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiClient } from '../../services/api/apiClient';
+import { ENDPOINTS } from '../../constants/endpoints';
 import { colors } from '../../theme/colors';
 import { typography } from '../../theme/typography';
 import { spacing } from '../../theme/spacing';
@@ -28,6 +29,12 @@ export const UserProfileScreen: React.FC<{ navigation: any; route: any }> = ({ n
     queryKey: ['userProfile', userId],
     queryFn: () => apiClient.get(`/users/${userId}`).then((r) => r.data),
   });
+
+  useEffect(() => {
+    if (userId) {
+      apiClient.post(ENDPOINTS.MATCHING.PROFILE_VIEW(userId)).catch(() => {});
+    }
+  }, [userId]);
 
   const likeMutation = useMutation({
     mutationFn: () => apiClient.post(`/matching/like/${userId}`),

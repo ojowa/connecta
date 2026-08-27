@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { View, Text, StyleSheet, ScrollView, RefreshControl, TouchableOpacity } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -6,6 +6,8 @@ import { useQueryClient } from '@tanstack/react-query';
 import { useMatchFeed, useLike, usePass, useSuperLike, useUndo } from '../../hooks/useMatch';
 import { SwipeableCard } from '../../components/dating/SwipeableCard';
 import { LoadingSpinner } from '../../components/common/LoadingSpinner';
+import { apiClient } from '../../services/api/apiClient';
+import { ENDPOINTS } from '../../constants/endpoints';
 import { colors } from '../../theme/colors';
 import { typography } from '../../theme/typography';
 import { spacing } from '../../theme/spacing';
@@ -26,6 +28,19 @@ export const DiscoverScreen: React.FC = () => {
 
   if (isLoading) return <LoadingSpinner />;
   const profiles = data?.candidates || [];
+
+  const viewedIds = useRef(new Set<string>());
+
+  useEffect(() => {
+    if (profiles.length > 0) {
+      const topProfile = profiles[0];
+      const uid = topProfile.user.id;
+      if (!viewedIds.current.has(uid)) {
+        viewedIds.current.add(uid);
+        apiClient.post(ENDPOINTS.MATCHING.PROFILE_VIEW(uid)).catch(() => {});
+      }
+    }
+  }, [profiles]);
 
   if (profiles.length === 0) {
     return (
