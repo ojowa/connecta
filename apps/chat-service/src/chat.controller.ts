@@ -8,6 +8,12 @@ import { ChatService } from './chat.service';
 export class ChatController {
   constructor(private readonly chatService: ChatService) {}
 
+  @Post('conversations')
+  @ApiOperation({ summary: 'Create or find conversation' })
+  createConversation(@Headers('x-user-id') userId: string, @Body('otherUserId') otherUserId: string) {
+    return this.chatService.createConversation(userId, otherUserId);
+  }
+
   @Get('conversations')
   @ApiOperation({ summary: 'Get conversations' })
   getConversations(@Headers('x-user-id') userId: string, @Query('page') page?: string, @Query('limit') limit?: string) {

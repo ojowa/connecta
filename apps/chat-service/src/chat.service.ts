@@ -16,6 +16,24 @@ export class ChatService {
     private readonly eventEmitter: EventEmitter2,
   ) {}
 
+  async createConversation(userId: string, otherUserId: string) {
+    const allParts = await this.partRepo.find({ where: { userId } });
+    for (const p of allParts) {
+      const other = await this.partRepo.findOne({ where: { conversationId: p.conversationId, userId: otherUserId } });
+      if (other) {
+        const conv = await this.convRepo.findOne({ where: { id: p.conversationId } });
+        if (conv) return { id: conv.id, alreadyExisted: true };
+      }
+    }
+
+    const conv = this.convRepo.create({ type: 'direct' });
+    const saved = await this.convRepo.save(conv);
+    const p1 = this.partRepo.create({ conversationId: saved.id, userId });
+    const p2 = this.partRepo.create({ conversationId: saved.id, userId: otherUserId });
+    await this.partRepo.save([p1, p2]);
+    return { id: saved.id, alreadyExisted: false };
+  }
+
   async getConversations(userId: string, page = 1, limit = 20) {
     const participations = await this.partRepo.find({ where: { userId }, order: { lastReadAt: 'DESC' }, skip: (page - 1) * limit, take: limit });
     const convIds = participations.map((p) => p.conversationId);
