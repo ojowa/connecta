@@ -25,9 +25,7 @@ class MockRTCPeerConnection {
   getSenders() { return []; }
   close() {}
   restartIce() {}
-  async getStats() {
-    return { forEach() {} };
-  }
+  async getStats() { return { forEach() {} }; }
 }
 
 export const RTCPeerConnection = MockRTCPeerConnection as any;
@@ -39,13 +37,6 @@ export const mediaDevices = {
   enumerateDevices: async () => [],
 };
 
-export default {
-  RTCPeerConnection: MockRTCPeerConnection,
-  RTCSessionDescription: class {} as any,
-  RTCIceCandidate: class {} as any,
-  MediaStream: MockMediaStream,
-  mediaDevices: {
-    getUserMedia: async () => new MockMediaStream(),
-    enumerateDevices: async () => [],
-  },
-};
+export function RTCView(props: any) {
+  return null;
+}

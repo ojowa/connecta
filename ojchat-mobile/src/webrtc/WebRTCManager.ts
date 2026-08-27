@@ -1,4 +1,4 @@
-import { RTCPeerConnection, mediaDevices, MediaStream } from 'react-native-webrtc';
+import { RTCPeerConnection, mediaDevices, MediaStream } from './bindings';
 import * as Crypto from 'expo-crypto';
 import SocketManager from '../socket/SocketManager';
 import { WEBRTC_CONFIG, CALL_QUALITY, CALL_QUALITY_CHECK_INTERVAL_MS } from '../constants/webrtc';

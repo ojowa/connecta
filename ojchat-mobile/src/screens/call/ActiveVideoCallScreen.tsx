@@ -1,7 +1,7 @@
 import React, { useEffect, useCallback, useState } from 'react';
 import { View, Text, StyleSheet, Alert, useWindowDimensions } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { RTCView } from 'react-native-webrtc';
+import { RTCView } from '../../webrtc/bindings';
 import { useWebRTC } from '../../hooks/useWebRTC';
 import { CallControls } from '../../components/call/CallControls';
 import { colors } from '../../theme/colors';
