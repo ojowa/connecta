@@ -33,9 +33,13 @@ export const VerificationScreen: React.FC<{ navigation: any }> = ({ navigation }
     try {
       const formData = new FormData();
       formData.append('photo', { uri: selfie, type: 'image/jpeg', name: 'verification.jpg' } as any);
-      await apiClient.post(ENDPOINTS.PROFILES.VERIFY, formData, {
+      const uploadRes = await apiClient.post(ENDPOINTS.MEDIA.UPLOAD, formData, {
         headers: { 'Content-Type': 'multipart/form-data' },
       });
+      const uploaded = uploadRes.data?.data || uploadRes.data;
+      const selfieUrl = uploaded?.url;
+      if (!selfieUrl) throw new Error('Upload failed');
+      await apiClient.post(ENDPOINTS.PROFILES.VERIFY, { selfieUrl });
       setSubmitted(true);
     } catch (err) {
       Alert.alert('Error', 'Failed to submit verification. Please try again.');
