@@ -32,6 +32,7 @@ export const UserProfileScreen: React.FC<{ navigation: any; route: any }> = ({ n
   const conversation = conversations.find((c: any) =>
     c.participantIds?.includes(userId) && c.participantIds?.includes(currentUserId)
   );
+  const isMatched = !!conversation;
   const conversationId = conversation?.id;
 
   const { data: profile, isLoading } = useQuery({
@@ -205,6 +206,7 @@ export const UserProfileScreen: React.FC<{ navigation: any; route: any }> = ({ n
           </View>
         ) : null}
 
+        {!isMatched && (
         <View style={styles.actions}>
           <TouchableOpacity
             style={[styles.actionButton, styles.passButton]}
@@ -221,6 +223,7 @@ export const UserProfileScreen: React.FC<{ navigation: any; route: any }> = ({ n
             <Ionicons name="heart" size={28} color="#22c55e" />
           </TouchableOpacity>
         </View>
+        )}
 
         <View style={styles.bottomSpacer} />
       </ScrollView>
