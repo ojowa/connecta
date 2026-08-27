@@ -106,8 +106,18 @@ export class MatchingController {
 
   @Get('profile-viewers')
   @ApiOperation({ summary: 'Get users who viewed your profile' })
-  getProfileViewers(@Headers('x-user-id') userId: string, @Query('page') page?: string, @Query('limit') limit?: string) {
-    return this.matchingService.getProfileViewers(userId, page ? parseInt(page, 10) : 1, limit ? parseInt(limit, 10) : 20);
+  getProfileViewers(
+    @Headers('x-user-id') userId: string,
+    @Query('page') page?: string,
+    @Query('limit') limit?: string,
+    @Query('filter') filter?: string,
+  ) {
+    return this.matchingService.getProfileViewers(
+      userId,
+      page ? parseInt(page, 10) : 1,
+      limit ? parseInt(limit, 10) : 20,
+      filter as 'all' | 'discovery' | 'matched' | undefined,
+    );
   }
 
   @Get('compatibility/:userId')

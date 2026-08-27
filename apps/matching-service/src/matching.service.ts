@@ -483,7 +483,7 @@ export class MatchingService {
     return { recorded: true };
   }
 
-  async getProfileViewers(userId: string, page = 1, limit = 20) {
+  async getProfileViewers(userId: string, page = 1, limit = 20, filter?: 'all' | 'discovery' | 'matched') {
     this.validateUserId(userId);
 
     const [views, total] = await this.profileViewRepo.findAndCount({
@@ -493,7 +493,28 @@ export class MatchingService {
       take: limit,
     });
 
-    const viewerIds = views.map((v) => v.viewerId);
+    let viewerIds = views.map((v) => v.viewerId);
+
+    if (filter === 'discovery' || filter === 'matched') {
+      const matchedUsers = await this.matchRepo.find({
+        where: [
+          { user1Id: userId },
+          { user2Id: userId },
+        ],
+      });
+      const matchedIds = new Set<string>();
+      matchedUsers.forEach((m) => {
+        matchedIds.add(m.user1Id);
+        matchedIds.add(m.user2Id);
+      });
+      matchedIds.delete(userId);
+
+      if (filter === 'discovery') {
+        viewerIds = viewerIds.filter((id) => !matchedIds.has(id));
+      } else {
+        viewerIds = viewerIds.filter((id) => matchedIds.has(id));
+      }
+    }
     const viewers = viewerIds.length > 0 ? await this.userRepo.find({ where: { id: In(viewerIds) } }) : [];
     const userMap = new Map(viewers.map((u) => [u.id, u]));
     const profiles = viewerIds.length > 0 ? await this.profileRepo.find({ where: { userId: In(viewerIds) } }) : [];
