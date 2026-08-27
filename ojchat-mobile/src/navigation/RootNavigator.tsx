@@ -38,6 +38,7 @@ import { BiometricSetupScreen } from '../screens/auth/BiometricSetupScreen';
 import { InterestSelectorScreen } from '../screens/profile/InterestSelectorScreen';
 import { VerificationScreen } from '../screens/profile/VerificationScreen';
 import { WhoViewedScreen } from '../screens/matches/WhoViewedScreen';
+import { MyLikesScreen } from '../screens/matches/MyLikesScreen';
 import { UserProfileScreen } from '../screens/profile/UserProfileScreen';
 import { DailyStreakScreen } from '../screens/gamification/DailyStreakScreen';
 
@@ -83,6 +84,7 @@ export const RootNavigator: React.FC = () => {
             <Stack.Screen name="Boost" component={BoostScreen} options={{ headerShown: true, title: 'Boost' }} />
             {/* Matches & Social */}
             <Stack.Screen name="LikesYou" component={LikesYouScreen} options={{ headerShown: true, title: 'Likes You' }} />
+            <Stack.Screen name="MyLikes" component={MyLikesScreen} options={{ headerShown: false }} />
             <Stack.Screen name="WhoViewed" component={WhoViewedScreen} options={{ headerShown: false }} />
             <Stack.Screen name="Moments" component={MomentsScreen} options={{ headerShown: true, title: 'Moments' }} />
             <Stack.Screen name="DailyStreak" component={DailyStreakScreen} options={{ headerShown: false }} />

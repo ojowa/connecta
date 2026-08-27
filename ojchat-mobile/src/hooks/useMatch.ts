@@ -72,3 +72,11 @@ export function useEloScore() {
     staleTime: 60000,
   });
 }
+
+export function useMyLikes(page = 1) {
+  return useQuery({
+    queryKey: ['myLikes', page],
+    queryFn: () => matchApi.getMyLikes(page),
+    staleTime: 30000,
+  });
+}

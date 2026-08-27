@@ -47,6 +47,7 @@ export const ENDPOINTS = {
     MATCHES: '/matching/matches',
     UNMATCH: (matchId: string) => `/matching/matches/${matchId}`,
     LIKED_YOU: '/matching/liked-you',
+    MY_LIKES: '/matching/my-likes',
     COMPATIBILITY: (userId: string) => `/matching/compatibility/${userId}`,
     BOOST: '/matching/boost',
     INCOGNITO: '/matching/incognito/toggle',

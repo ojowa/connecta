@@ -113,9 +113,14 @@ export const MatchesScreen: React.FC = () => {
         )
       ) : (
         <>
-      <TouchableOpacity style={styles.likesButton} onPress={() => (navigation as any).navigate('LikesYou')}>
-        <Text style={styles.likesButtonText}>See Who Likes You</Text>
-      </TouchableOpacity>
+      <View style={styles.actionButtons}>
+        <TouchableOpacity style={styles.likesButton} onPress={() => (navigation as any).navigate('LikesYou')}>
+          <Text style={styles.likesButtonText}>See Who Likes You</Text>
+        </TouchableOpacity>
+        <TouchableOpacity style={styles.myLikesButton} onPress={() => (navigation as any).navigate('MyLikes')}>
+          <Text style={styles.myLikesButtonText}>Your Likes</Text>
+        </TouchableOpacity>
+      </View>
       {matches.length === 0 ? (
         <View style={styles.empty}>
           <Text style={styles.emptyIcon}>💫</Text>
@@ -188,9 +193,9 @@ const styles = StyleSheet.create({
   searchInfo: { flex: 1 },
   searchName: { ...typography.body, fontWeight: '600', color: colors.textPrimary },
   searchUsername: { ...typography.caption, color: colors.textSecondary },
+  actionButtons: { flexDirection: 'row', paddingHorizontal: spacing.md, marginBottom: spacing.md, gap: spacing.sm },
   likesButton: {
-    marginHorizontal: spacing.md,
-    marginBottom: spacing.md,
+    flex: 1,
     paddingVertical: spacing.md,
     backgroundColor: colors.primary,
     borderRadius: borderRadius.button,
@@ -199,6 +204,21 @@ const styles = StyleSheet.create({
   likesButtonText: {
     ...typography.button,
     color: colors.white,
+    fontSize: 13,
+  },
+  myLikesButton: {
+    flex: 1,
+    paddingVertical: spacing.md,
+    backgroundColor: colors.surface,
+    borderRadius: borderRadius.button,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  myLikesButtonText: {
+    ...typography.button,
+    color: colors.primary,
+    fontSize: 13,
   },
   list: { padding: spacing.sm },
   empty: { flex: 1, justifyContent: 'center', alignItems: 'center' },

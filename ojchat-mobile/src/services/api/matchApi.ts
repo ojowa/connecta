@@ -53,6 +53,11 @@ export const matchApi = {
     return response.data;
   },
 
+  async getMyLikes(page = 1, limit = 20) {
+    const response = await apiClient.get(ENDPOINTS.MATCHING.MY_LIKES, { params: { page, limit } });
+    return response.data;
+  },
+
   async getCompatibility(userId: string) {
     const response = await apiClient.get(ENDPOINTS.MATCHING.COMPATIBILITY(userId));
     return response.data;
