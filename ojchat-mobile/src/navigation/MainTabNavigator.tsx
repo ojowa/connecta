@@ -5,6 +5,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { DiscoverScreen } from '../screens/main/DiscoverScreen';
 import { MatchesScreen } from '../screens/main/MatchesScreen';
 import { ChatsScreen } from '../screens/main/ChatsScreen';
+import MomentsScreen from '../screens/main/MomentsScreen';
 import { ProfileScreen } from '../screens/main/ProfileScreen';
 import { useAppStore } from '../store';
 import { colors } from '../theme/colors';
@@ -50,6 +51,14 @@ export const MainTabNavigator: React.FC = () => {
           tabBarLabel: 'Chats',
           tabBarIcon: ({ focused, color }) => <TabIcon emoji="💬" focused={focused} color={color} />,
           tabBarBadge: totalUnread > 0 ? totalUnread : undefined,
+        }}
+      />
+      <Tab.Screen
+        name="Moments"
+        component={MomentsScreen}
+        options={{
+          tabBarLabel: 'Moments',
+          tabBarIcon: ({ focused, color }) => <TabIcon emoji="✨" focused={focused} color={color} />,
         }}
       />
       <Tab.Screen
