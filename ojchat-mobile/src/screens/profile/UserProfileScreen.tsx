@@ -12,6 +12,7 @@ import { borderRadius } from '../../theme/borderRadius';
 import { LoadingSpinner } from '../../components/common/LoadingSpinner';
 import { useConversations } from '../../hooks/useChat';
 import { useAppStore } from '../../store';
+import { ENDPOINTS } from '../../constants/endpoints';
 
 function calculateAge(dob: string): number {
   const birth = new Date(dob);
@@ -62,6 +63,30 @@ export const UserProfileScreen: React.FC<{ navigation: any; route: any }> = ({ n
     },
   });
 
+  const handleChatPress = async () => {
+    if (conversationId) {
+      navigation.navigate('Conversation', {
+        conversationId,
+        otherUserId: userId,
+        otherName: p.firstName,
+        otherAvatar: photos[0]?.url,
+      });
+    } else {
+      try {
+        const res = await apiClient.post(ENDPOINTS.CHAT.CONVERSATIONS, { otherUserId: userId });
+        const data = res.data as any;
+        const newConvId = data?.id || data;
+        queryClient.invalidateQueries({ queryKey: ['conversations'] });
+        navigation.navigate('Conversation', {
+          conversationId: newConvId,
+          otherUserId: userId,
+          otherName: p.firstName,
+          otherAvatar: photos[0]?.url,
+        });
+      } catch {}
+    }
+  };
+
   if (isLoading) return <LoadingSpinner />;
 
   if (!profile) {
@@ -97,34 +122,47 @@ export const UserProfileScreen: React.FC<{ navigation: any; route: any }> = ({ n
         <View style={styles.headerActions}>
               <TouchableOpacity
                 style={styles.headerIcon}
-                onPress={() => navigation.navigate('Conversation', {
-                  conversationId,
-                  otherUserId: userId,
-                  otherName: p.firstName,
-                  otherAvatar: photos[0]?.url,
-                })}
+                onPress={handleChatPress}
               >
                 <Ionicons name="chatbubble-outline" size={22} color={colors.primary} />
               </TouchableOpacity>
               <TouchableOpacity
                 style={styles.headerIcon}
-                onPress={() => navigation.navigate('Call', {
-                  conversationId,
-                  otherUserId: userId,
-                  otherName: p.firstName,
-                  callType: 'voice',
-                })}
+                onPress={async () => {
+                  const convId = conversationId || await (async () => {
+                    try {
+                      const res = await apiClient.post(ENDPOINTS.CHAT.CONVERSATIONS, { otherUserId: userId });
+                      const data = res.data as any;
+                      return data?.id || data;
+                    } catch { return null; }
+                  })();
+                  if (convId) navigation.navigate('Call', {
+                    conversationId: convId,
+                    otherUserId: userId,
+                    otherName: p.firstName,
+                    callType: 'voice',
+                  });
+                }}
               >
                 <Ionicons name="call-outline" size={22} color={colors.primary} />
               </TouchableOpacity>
               <TouchableOpacity
                 style={styles.headerIcon}
-                onPress={() => navigation.navigate('Call', {
-                  conversationId,
-                  otherUserId: userId,
-                  otherName: p.firstName,
-                  callType: 'video',
-                })}
+                onPress={async () => {
+                  const convId = conversationId || await (async () => {
+                    try {
+                      const res = await apiClient.post(ENDPOINTS.CHAT.CONVERSATIONS, { otherUserId: userId });
+                      const data = res.data as any;
+                      return data?.id || data;
+                    } catch { return null; }
+                  })();
+                  if (convId) navigation.navigate('Call', {
+                    conversationId: convId,
+                    otherUserId: userId,
+                    otherName: p.firstName,
+                    callType: 'video',
+                  });
+                }}
               >
                 <Ionicons name="videocam-outline" size={22} color={colors.primary} />
               </TouchableOpacity>
