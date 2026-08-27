@@ -1,12 +1,16 @@
 import { Controller, Get, Post, Delete, Body, Param, Query, Headers } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { MatchingService } from './matching.service';
+import { MatchingEnhancementService } from './matching-enhancement.service';
 
 @ApiTags('Matching')
 @ApiBearerAuth()
 @Controller()
 export class MatchingController {
-  constructor(private readonly matchingService: MatchingService) {}
+  constructor(
+    private readonly matchingService: MatchingService,
+    private readonly enhancementService: MatchingEnhancementService,
+  ) {}
 
   @Get('feed')
   @ApiOperation({ summary: 'Get discovery feed' })
@@ -184,5 +188,17 @@ export class MatchingController {
   @ApiOperation({ summary: 'Analyze a profile for fake/suspicious signals' })
   checkFakeProfile(@Param('userId') userId: string) {
     return this.matchingService.checkFakeProfile(userId);
+  }
+
+  @Get('preference-model')
+  @ApiOperation({ summary: 'Get your behavioral preference model' })
+  getPreferenceModel(@Headers('x-user-id') userId: string) {
+    return this.enhancementService.getUserPreferenceModel(userId);
+  }
+
+  @Get('elo-score')
+  @ApiOperation({ summary: 'Get your Elo score' })
+  getEloScore(@Headers('x-user-id') userId: string) {
+    return this.enhancementService.calculateEloScore(userId);
   }
 }
