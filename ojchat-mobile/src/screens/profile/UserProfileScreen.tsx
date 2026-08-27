@@ -139,7 +139,7 @@ export const UserProfileScreen: React.FC<{ navigation: any; route: any }> = ({ n
                     conversationId: convId,
                     callerId: userId,
                     callerName: p.firstName,
-                    callType: 'voice',
+                    callType: 'audio',
                   });
                 }}
               >

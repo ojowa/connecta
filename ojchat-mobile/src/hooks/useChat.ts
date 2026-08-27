@@ -90,11 +90,11 @@ export function useTypingIndicator(conversationId: string) {
 
     const socket = (socketManager as any).chatSocket;
     if (socket) {
-      socket.on('typing.start', handleTypingStart);
-      socket.on('typing.stop', handleTypingStop);
+      socket.on('user.typing', handleTypingStart);
+      socket.on('user.typing.stop', handleTypingStop);
       return () => {
-        socket.off('typing.start', handleTypingStart);
-        socket.off('typing.stop', handleTypingStop);
+        socket.off('user.typing', handleTypingStart);
+        socket.off('user.typing.stop', handleTypingStop);
       };
     }
   }, [conversationId]);

@@ -116,18 +116,20 @@ export const ConversationScreen: React.FC<{ route: any; navigation: any }> = ({ 
       callerId: otherUserId,
       callerName: otherName,
       callerAvatar: otherAvatar,
+      conversationId,
       callType: 'voice',
     });
-  }, [navigation, otherUserId, otherName, otherAvatar]);
+  }, [navigation, otherUserId, otherName, otherAvatar, conversationId]);
 
   const handleVideoCall = useCallback(() => {
     navigation.navigate('ActiveVideoCall', {
       callerId: otherUserId,
       callerName: otherName,
       callerAvatar: otherAvatar,
+      conversationId,
       callType: 'video',
     });
-  }, [navigation, otherUserId, otherName, otherAvatar]);
+  }, [navigation, otherUserId, otherName, otherAvatar, conversationId]);
 
   const messages = data?.messages || [];
 
@@ -140,10 +142,12 @@ export const ConversationScreen: React.FC<{ route: any; navigation: any }> = ({ 
   );
 
   const handleSend = useCallback((content: string) => {
+    if (!conversationId) return;
     sendMessage.mutate({ conversationId, content });
   }, [conversationId, sendMessage]);
 
   const handleSendVoice = useCallback(async (uri: string) => {
+    if (!conversationId) return;
     try {
       const formData = new FormData();
       formData.append('file', { uri, type: 'audio/m4a', name: 'voice.m4a' } as any);
@@ -152,7 +156,7 @@ export const ConversationScreen: React.FC<{ route: any; navigation: any }> = ({ 
       });
       const audioUrl = uploadRes?.data?.url || uploadRes?.data?.data?.url;
       if (audioUrl) {
-        await sendMessage.mutate({ conversationId, content: audioUrl, type: 'voice' });
+        await sendMessage.mutateAsync({ conversationId, content: audioUrl, type: 'voice' });
       }
     } catch (err) {
       console.error('Failed to send voice message', err);
@@ -232,7 +236,7 @@ export const ConversationScreen: React.FC<{ route: any; navigation: any }> = ({ 
           onSend={handleSend}
           onSendImage={handleSendImage}
           onSendVoice={handleSendVoice}
-          onTyping={() => chatApi.sendTyping(conversationId)}
+          onTyping={() => conversationId && chatApi.sendTyping(conversationId)}
           replyTo={replyTo}
           onCancelReply={handleCancelReply}
         />

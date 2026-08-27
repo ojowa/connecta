@@ -18,7 +18,7 @@ interface ActiveVideoCallScreenProps {
       callerId: string;
       callerName: string;
       callerAvatar?: string;
-      callType: 'voice' | 'video';
+      callType: 'audio' | 'video';
       conversationId?: string;
     };
   };

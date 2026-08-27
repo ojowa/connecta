@@ -65,60 +65,69 @@ export const SwipeableCard: React.FC<SwipeableCardProps> = ({ profile, compatibi
   const age = profile.dateOfBirth ? calculateAge(profile.dateOfBirth) : null;
 
   return (
-    <GestureDetector gesture={panGesture}>
-      <Animated.View style={[styles.card, style, animatedStyle]}>
-        {primaryPhoto && <Image source={{ uri: primaryPhoto.url }} style={styles.image} />}
-        <View style={styles.info}>
-          <View style={styles.topRow}>
-            <View style={styles.nameRow}>
-              <Text style={styles.name}>{profile.firstName}{age ? `, ${age}` : ''}</Text>
-              {profile.verified && <Ionicons name="checkmark-circle" size={18} color={colors.primary} style={{ marginLeft: 4 }} />}
-              {profile.city && <Text style={styles.city}> | {profile.city}</Text>}
+    <View style={[styles.wrapper, style]}>
+      <GestureDetector gesture={panGesture}>
+        <Animated.View style={[styles.card, animatedStyle]}>
+          {primaryPhoto && <Image source={{ uri: primaryPhoto.url }} style={styles.image} />}
+          {!primaryPhoto && (
+            <View style={styles.imagePlaceholder}>
+              <Ionicons name="person" size={80} color={colors.gray400} />
             </View>
-            {typeof compatibilityScore === 'number' && (
-              <View style={styles.scoreContainer}>
-                <CompatibilityScore score={compatibilityScore} />
-                <Text style={styles.scoreLabel}>Match</Text>
+          )}
+          <View style={styles.info}>
+            <View style={styles.topRow}>
+              <View style={styles.nameRow}>
+                <Text style={styles.name}>{profile.firstName}{age ? `, ${age}` : ''}</Text>
+                {profile.verified && <Ionicons name="checkmark-circle" size={18} color={colors.primary} style={{ marginLeft: 4 }} />}
+                {profile.city && <Text style={styles.city}> | {profile.city}</Text>}
+              </View>
+              {typeof compatibilityScore === 'number' && (
+                <View style={styles.scoreContainer}>
+                  <CompatibilityScore score={compatibilityScore} />
+                  <Text style={styles.scoreLabel}>Match</Text>
+                </View>
+              )}
+            </View>
+            {profile.bio ? (
+              <Text style={styles.bio} numberOfLines={2}>{profile.bio}</Text>
+            ) : null}
+            {profile.interests && profile.interests.length > 0 && (
+              <View style={styles.interestsRow}>
+                {profile.interests.slice(0, 4).map((interest, i) => (
+                  <InterestTag key={i} label={interest.name} />
+                ))}
+                {profile.interests.length > 4 && (
+                  <Text style={styles.moreInterests}>+{profile.interests.length - 4}</Text>
+                )}
               </View>
             )}
           </View>
-          {profile.bio ? (
-            <Text style={styles.bio} numberOfLines={2}>{profile.bio}</Text>
-          ) : null}
-          {profile.interests && profile.interests.length > 0 && (
-            <View style={styles.interestsRow}>
-              {profile.interests.slice(0, 4).map((interest, i) => (
-                <InterestTag key={i} label={interest.name} />
-              ))}
-              {profile.interests.length > 4 && (
-                <Text style={styles.moreInterests}>+{profile.interests.length - 4}</Text>
-              )}
-            </View>
-          )}
-        </View>
-        <View style={styles.actionButtons}>
-          <TouchableOpacity style={[styles.actionButton, styles.undoButton]} onPress={onUndo} activeOpacity={0.7}>
-            <Text style={styles.undoIcon}>↩</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={[styles.actionButton, styles.passButton]} onPress={onSwipeLeft} activeOpacity={0.7}>
-            <Text style={styles.passIcon}>✕</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={[styles.actionButton, styles.superLikeButton]} onPress={onSuperLike} activeOpacity={0.7}>
-            <Text style={styles.superLikeIcon}>⭐</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={[styles.actionButton, styles.likeButton]} onPress={onSwipeRight} activeOpacity={0.7}>
-            <Text style={styles.likeIcon}>♥</Text>
-          </TouchableOpacity>
-        </View>
-      </Animated.View>
-    </GestureDetector>
+        </Animated.View>
+      </GestureDetector>
+      <View style={styles.actionButtons}>
+        <TouchableOpacity style={[styles.actionButton, styles.undoButton]} onPress={onUndo} activeOpacity={0.7}>
+          <Ionicons name="arrow-undo" size={22} color={colors.warning} />
+        </TouchableOpacity>
+        <TouchableOpacity style={[styles.actionButton, styles.passButton]} onPress={onSwipeLeft} activeOpacity={0.7}>
+          <Ionicons name="close" size={28} color={colors.error} />
+        </TouchableOpacity>
+        <TouchableOpacity style={[styles.actionButton, styles.superLikeButton]} onPress={onSuperLike} activeOpacity={0.7}>
+          <Ionicons name="star" size={24} color={colors.primary} />
+        </TouchableOpacity>
+        <TouchableOpacity style={[styles.actionButton, styles.likeButton]} onPress={onSwipeRight} activeOpacity={0.7}>
+          <Ionicons name="heart" size={24} color={colors.white} />
+        </TouchableOpacity>
+      </View>
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
+  wrapper: { flex: 1 },
   card: { flex: 1, borderRadius: borderRadius.card, overflow: 'hidden', backgroundColor: colors.white, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.1, shadowRadius: 8, elevation: 5 },
-  image: { width: '100%', height: '100%', resizeMode: 'cover' },
-  info: { position: 'absolute', bottom: 0, left: 0, right: 0, padding: spacing.md, backgroundColor: colors.overlayHeavy },
+  image: { ...StyleSheet.absoluteFillObject, width: '100%', height: '100%', resizeMode: 'cover' },
+  imagePlaceholder: { ...StyleSheet.absoluteFillObject, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.gray100 },
+  info: { position: 'absolute', bottom: 0, left: 0, right: 0, padding: spacing.md, paddingBottom: spacing.lg, backgroundColor: 'rgba(0,0,0,0.6)' },
   topRow: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: spacing.xs },
   nameRow: { flexDirection: 'row', alignItems: 'center', flex: 1 },
   name: { ...typography.h3, color: colors.white },
@@ -133,7 +142,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     gap: spacing.lg,
-    paddingVertical: spacing.md,
+    paddingTop: spacing.md,
   },
   actionButton: {
     width: 56,
@@ -142,37 +151,24 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 2,
+    backgroundColor: colors.white,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
   },
   undoButton: {
     borderColor: colors.warning,
-    backgroundColor: 'transparent',
-  },
-  undoIcon: {
-    fontSize: 22,
-    color: colors.warning,
   },
   passButton: {
     borderColor: colors.error,
-    backgroundColor: 'transparent',
-  },
-  passIcon: {
-    fontSize: 24,
-    color: colors.error,
-    fontWeight: 'bold',
   },
   superLikeButton: {
     borderColor: colors.primary,
-    backgroundColor: 'transparent',
-  },
-  superLikeIcon: {
-    fontSize: 22,
   },
   likeButton: {
     borderColor: colors.primary,
     backgroundColor: colors.primary,
-  },
-  likeIcon: {
-    fontSize: 24,
-    color: colors.white,
   },
 });

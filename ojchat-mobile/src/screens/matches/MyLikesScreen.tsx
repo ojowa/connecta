@@ -39,7 +39,7 @@ export const MyLikesScreen: React.FC<{ navigation: any }> = ({ navigation }) => 
 
       <FlatList
         data={likes}
-        keyExtractor={(item: LikedUser) => item.user?.id || Math.random().toString()}
+        keyExtractor={(item: LikedUser, index: number) => item.user?.id || item.likedUserId || `like-${index}`}
         contentContainerStyle={styles.list}
         ListEmptyComponent={
           <View style={styles.empty}>

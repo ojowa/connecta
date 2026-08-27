@@ -15,14 +15,14 @@ interface IncomingCallScreenProps {
       callerId: string;
       callerName: string;
       callerAvatar?: string;
-      callType: 'voice' | 'video';
+      callType: 'audio' | 'video';
       conversationId?: string;
     };
   };
 }
 
 export const IncomingCallScreen: React.FC<IncomingCallScreenProps> = ({ navigation, route }) => {
-  const { callerName = '', callerAvatar, callType = 'voice', conversationId } = route?.params || {};
+  const { callerName = '', callerAvatar, callType = 'audio', conversationId } = route?.params || {};
   const { width: screenWidth } = useWindowDimensions();
   const avatarSize = Math.min(120, screenWidth * 0.3);
   const buttonSize = Math.min(70, screenWidth * 0.18);
