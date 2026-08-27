@@ -136,10 +136,10 @@ export const UserProfileScreen: React.FC<{ navigation: any; route: any }> = ({ n
                       return data?.id || data;
                     } catch { return null; }
                   })();
-                  if (convId) navigation.navigate('Call', {
+                  if (convId) navigation.navigate('ActiveVoiceCall', {
                     conversationId: convId,
-                    otherUserId: userId,
-                    otherName: p.firstName,
+                    callerId: userId,
+                    callerName: p.firstName,
                     callType: 'voice',
                   });
                 }}
@@ -156,10 +156,10 @@ export const UserProfileScreen: React.FC<{ navigation: any; route: any }> = ({ n
                       return data?.id || data;
                     } catch { return null; }
                   })();
-                  if (convId) navigation.navigate('Call', {
+                  if (convId) navigation.navigate('ActiveVideoCall', {
                     conversationId: convId,
-                    otherUserId: userId,
-                    otherName: p.firstName,
+                    callerId: userId,
+                    callerName: p.firstName,
                     callType: 'video',
                   });
                 }}

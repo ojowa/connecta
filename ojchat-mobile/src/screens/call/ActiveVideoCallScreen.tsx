@@ -8,6 +8,8 @@ import { colors } from '../../theme/colors';
 import { typography } from '../../theme/typography';
 import { spacing } from '../../theme/spacing';
 import { borderRadius } from '../../theme/borderRadius';
+import { apiClient } from '../../services/api/apiClient';
+import { ENDPOINTS } from '../../constants/endpoints';
 
 interface ActiveVideoCallScreenProps {
   navigation?: any;
@@ -17,12 +19,13 @@ interface ActiveVideoCallScreenProps {
       callerName: string;
       callerAvatar?: string;
       callType: 'voice' | 'video';
+      conversationId?: string;
     };
   };
 }
 
 export const ActiveVideoCallScreen: React.FC<ActiveVideoCallScreenProps> = ({ navigation, route }) => {
-  const { callerId = '', callerName = '' } = route?.params || {};
+  const { callerId = '', callerName = '', conversationId } = route?.params || {};
   const { width: screenWidth, height: screenHeight } = useWindowDimensions();
   const [callError, setCallError] = useState<string | null>(null);
   const pipWidth = Math.min(120, screenWidth * 0.3);
@@ -46,13 +49,18 @@ export const ActiveVideoCallScreen: React.FC<ActiveVideoCallScreenProps> = ({ na
 
   const handleEndCall = useCallback(() => {
     endCall();
+    if (conversationId) {
+      const duration = formattedDuration || '0:00';
+      const content = `Video call - ${duration}`;
+      apiClient.post(ENDPOINTS.CHAT.SEND(conversationId), { content, type: 'video_call' }).catch(() => {});
+    }
     navigation.goBack();
-  }, [endCall, navigation]);
+  }, [endCall, navigation, conversationId, formattedDuration]);
 
   const handleSwitchToAudio = useCallback(() => {
     toggleVideo();
-    navigation.replace('ActiveVoiceCall', route?.params || {});
-  }, [toggleVideo, navigation, route?.params]);
+    navigation.replace('ActiveVoiceCall', { ...route?.params, callerId, callerName, conversationId });
+  }, [toggleVideo, navigation, route?.params, callerId, callerName, conversationId]);
 
   return (
     <SafeAreaView style={styles.container}>

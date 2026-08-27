@@ -5,6 +5,8 @@ import WebRTCManager from '../../webrtc/WebRTCManager';
 import { colors } from '../../theme/colors';
 import { typography } from '../../theme/typography';
 import { spacing } from '../../theme/spacing';
+import { apiClient } from '../../services/api/apiClient';
+import { ENDPOINTS } from '../../constants/endpoints';
 
 interface IncomingCallScreenProps {
   navigation?: any;
@@ -14,18 +16,23 @@ interface IncomingCallScreenProps {
       callerName: string;
       callerAvatar?: string;
       callType: 'voice' | 'video';
+      conversationId?: string;
     };
   };
 }
 
 export const IncomingCallScreen: React.FC<IncomingCallScreenProps> = ({ navigation, route }) => {
-  const { callerName = '', callerAvatar, callType = 'voice' } = route?.params || {};
+  const { callerName = '', callerAvatar, callType = 'voice', conversationId } = route?.params || {};
   const { width: screenWidth } = useWindowDimensions();
   const avatarSize = Math.min(120, screenWidth * 0.3);
   const buttonSize = Math.min(70, screenWidth * 0.18);
 
   const handleDecline = () => {
     WebRTCManager.getInstance().endCall();
+    if (conversationId) {
+      const label = callType === 'video' ? 'Missed video call' : 'Missed voice call';
+      apiClient.post(ENDPOINTS.CHAT.SEND(conversationId), { content: label, type: 'missed_call' }).catch(() => {});
+    }
     navigation.goBack();
   };
 
