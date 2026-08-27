@@ -21,7 +21,7 @@ export class GatewayProxyService {
     {
       name: 'users',
       baseUrl: process.env.USERS_SERVICE_URL || 'http://localhost:3002',
-      routes: ['users'],
+      routes: ['users', 'profile'],
     },
     {
       name: 'matching',

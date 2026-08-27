@@ -1,7 +1,7 @@
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { User, Profile, UserPreference, Block, Report, Photo, UserPrompt, ProfilePrompt, Appeal } from '@app/common/entities';
+import { User, Profile, UserPreference, Block, Report, Photo, UserPrompt, ProfilePrompt, Appeal, VerificationRequest } from '@app/common/entities';
 
 @Injectable()
 export class UsersService {
@@ -15,6 +15,7 @@ export class UsersService {
     @InjectRepository(UserPrompt) private userPromptRepo: Repository<UserPrompt>,
     @InjectRepository(ProfilePrompt) private profilePromptRepo: Repository<ProfilePrompt>,
     @InjectRepository(Appeal) private appealRepo: Repository<Appeal>,
+    @InjectRepository(VerificationRequest) private verificationRepo: Repository<VerificationRequest>,
   ) {}
 
   async getMe(userId: string) {
@@ -255,5 +256,29 @@ export class UsersService {
   async getMyAppeals(userId: string) {
     const appeals = await this.appealRepo.find({ where: { userId }, order: { createdAt: 'DESC' } });
     return { appeals };
+  }
+
+  async requestVerification(userId: string, selfieUrl: string) {
+    const existing = await this.verificationRepo.findOne({
+      where: { userId, status: 'pending' },
+    });
+    if (existing) {
+      return { request: existing, message: 'Verification already pending' };
+    }
+
+    const request = this.verificationRepo.create({ userId, selfieUrl });
+    const saved = await this.verificationRepo.save(request);
+    return { request: saved };
+  }
+
+  async getVerificationStatus(userId: string) {
+    const request = await this.verificationRepo.findOne({
+      where: { userId },
+      order: { createdAt: 'DESC' },
+    });
+    return {
+      status: request?.status || 'none',
+      request: request || null,
+    };
   }
 }

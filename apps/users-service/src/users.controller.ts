@@ -145,4 +145,16 @@ export class UsersController {
   getMyAppeals(@Headers('x-user-id') userId: string) {
     return this.usersService.getMyAppeals(userId);
   }
+
+  @Post('verification/request')
+  @ApiOperation({ summary: 'Submit verification request' })
+  requestVerification(@Headers('x-user-id') userId: string, @Body() body: { selfieUrl: string }) {
+    return this.usersService.requestVerification(userId, body.selfieUrl);
+  }
+
+  @Get('verification')
+  @ApiOperation({ summary: 'Get verification status' })
+  getVerificationStatus(@Headers('x-user-id') userId: string) {
+    return this.usersService.getVerificationStatus(userId);
+  }
 }

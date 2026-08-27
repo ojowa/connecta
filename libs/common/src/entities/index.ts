@@ -40,6 +40,7 @@ import { NotificationDelivery } from './notification-delivery.entity';
 import { PhotoLike } from './photo-like.entity';
 import { Appeal } from './appeal.entity';
 import { ProfileView } from './profile-view.entity';
+import { VerificationRequest } from './verification-request.entity';
 
 export { User, UserRole, UserStatus } from './user.entity';
 export { Session } from './session.entity';
@@ -83,6 +84,7 @@ export { UserPrompt } from './user-prompt.entity';
 export { PhotoLike } from './photo-like.entity';
 export { Appeal } from './appeal.entity';
 export { ProfileView } from './profile-view.entity';
+export { VerificationRequest } from './verification-request.entity';
 
 export const allEntities = [
   User,
@@ -127,4 +129,5 @@ export const allEntities = [
   PhotoLike,
   Appeal,
   ProfileView,
+  VerificationRequest,
 ];
