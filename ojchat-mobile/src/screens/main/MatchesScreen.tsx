@@ -1,5 +1,5 @@
 import React, { useState, useCallback } from 'react';
-import { View, Text, StyleSheet, FlatList, RefreshControl, TouchableOpacity, TextInput } from 'react-native';
+import { View, Text, StyleSheet, FlatList, RefreshControl, TouchableOpacity } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { useMatches } from '../../hooks/useMatch';
@@ -10,22 +10,11 @@ import { typography } from '../../theme/typography';
 import { spacing } from '../../theme/spacing';
 import { borderRadius } from '../../theme/borderRadius';
 import { Match } from '../../types/match';
-import { apiClient } from '../../services/api/apiClient';
-import { ENDPOINTS } from '../../constants/endpoints';
-
-interface SearchUser {
-  id: string;
-  username: string;
-  fullName: string;
-}
 
 export const MatchesScreen: React.FC = () => {
   const navigation = useNavigation();
   const { data, isLoading, refetch } = useMatches();
   const [refreshing, setRefreshing] = useState(false);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [searchResults, setSearchResults] = useState<SearchUser[]>([]);
-  const [searching, setSearching] = useState(false);
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
@@ -33,73 +22,14 @@ export const MatchesScreen: React.FC = () => {
     setRefreshing(false);
   }, [refetch]);
 
-  const handleSearch = useCallback(async (query: string) => {
-    setSearchQuery(query);
-    if (query.trim().length < 2) {
-      setSearchResults([]);
-      return;
-    }
-    setSearching(true);
-    try {
-      const { data } = await apiClient.get(ENDPOINTS.USERS.SEARCH, { params: { q: query.trim(), limit: 20 } });
-      setSearchResults(data?.users || data?.data?.users || []);
-    } catch {
-      setSearchResults([]);
-    } finally {
-      setSearching(false);
-    }
-  }, []);
-
   if (isLoading) return <LoadingSpinner />;
   const matches = data?.matches || [];
-  const isSearching = searchQuery.trim().length >= 2;
 
   return (
     <SafeAreaView style={styles.safeArea}>
       <View style={styles.container}>
       <Text style={styles.title}>Matches</Text>
 
-      <View style={styles.searchContainer}>
-        <TextInput
-          style={styles.searchInput}
-          placeholder="Search by username..."
-          placeholderTextColor={colors.gray400}
-          value={searchQuery}
-          onChangeText={handleSearch}
-          autoCapitalize="none"
-          autoCorrect={false}
-        />
-      </View>
-
-      {isSearching ? (
-        searchResults.length === 0 ? (
-          <View style={styles.empty}>
-            <Text style={styles.emptyIcon}>🔍</Text>
-            <Text style={styles.emptyText}>{searching ? 'Searching...' : 'No users found'}</Text>
-          </View>
-        ) : (
-          <FlatList
-            data={searchResults}
-            keyExtractor={(item) => item.id}
-            contentContainerStyle={styles.list}
-            renderItem={({ item }) => (
-              <TouchableOpacity
-                style={styles.searchResult}
-                onPress={() => (navigation as any).navigate('UserProfile', { userId: item.id })}
-              >
-                <View style={styles.searchAvatar}>
-                  <Text style={styles.searchAvatarText}>{item.fullName?.charAt(0)?.toUpperCase() || '?'}</Text>
-                </View>
-                <View style={styles.searchInfo}>
-                  <Text style={styles.searchName}>{item.fullName}</Text>
-                  <Text style={styles.searchUsername}>@{item.username}</Text>
-                </View>
-              </TouchableOpacity>
-            )}
-          />
-        )
-      ) : (
-        <>
       <View style={styles.actionButtons}>
         <TouchableOpacity style={styles.likesButton} onPress={() => (navigation as any).navigate('LikesYou')}>
           <Text style={styles.likesButtonText}>See Who Likes You</Text>
@@ -127,8 +57,6 @@ export const MatchesScreen: React.FC = () => {
           }} />}
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />}
         />
-      )}
-        </>
       )}
       </View>
     </SafeAreaView>

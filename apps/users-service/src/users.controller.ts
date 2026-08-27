@@ -104,12 +104,6 @@ export class UsersController {
     return this.usersService.setPrimaryPhoto(userId, photoId);
   }
 
-  @Get('search')
-  @ApiOperation({ summary: 'Search users by username' })
-  searchByUsername(@Headers('x-user-id') userId: string, @Query('q') query: string, @Query('limit') limit?: number) {
-    return this.usersService.searchByUsername(userId, query, limit);
-  }
-
   @Get(':id')
   @ApiOperation({ summary: 'Get public profile' })
   getUser(@Param('id') id: string, @Headers('x-user-id') viewerId: string) {
