@@ -83,7 +83,7 @@ export const RootNavigator: React.FC = () => {
             <Stack.Screen name="Wallet" component={WalletScreen} options={{ headerShown: true, title: 'Wallet' }} />
             <Stack.Screen name="Boost" component={BoostScreen} options={{ headerShown: true, title: 'Boost' }} />
             {/* Matches & Social */}
-            <Stack.Screen name="LikesYou" component={LikesYouScreen} options={{ headerShown: true, title: 'Likes You' }} />
+            <Stack.Screen name="LikesYou" component={LikesYouScreen} options={{ headerShown: false }} />
             <Stack.Screen name="MyLikes" component={MyLikesScreen} options={{ headerShown: false }} />
             <Stack.Screen name="WhoViewed" component={WhoViewedScreen} options={{ headerShown: false }} />
             <Stack.Screen name="Moments" component={MomentsScreen} options={{ headerShown: true, title: 'Moments' }} />

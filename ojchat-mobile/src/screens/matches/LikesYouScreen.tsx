@@ -9,6 +9,7 @@ import {
   Image,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { Ionicons } from '@expo/vector-icons';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { matchApi } from '../../services/api/matchApi';
 import { colors } from '../../theme/colors';
@@ -44,7 +45,7 @@ interface LikesYouResponse {
 
 const CARD_WIDTH_ARGS = '(100% - 16*3) / 2';
 
-const LikesYouScreen: React.FC = () => {
+const LikesYouScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
   const queryClient = useQueryClient();
   const [page, setPage] = useState(1);
   const [likedUserIds, setLikedUserIds] = useState<Set<string>>(new Set());
@@ -146,7 +147,13 @@ const LikesYouScreen: React.FC = () => {
 
   return (
     <SafeAreaView style={styles.container}>
-      <Text style={styles.title}>Likes You</Text>
+      <View style={styles.header}>
+        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
+          <Ionicons name="arrow-back" size={24} color={colors.textPrimary} />
+        </TouchableOpacity>
+        <Text style={styles.title}>Likes You</Text>
+        <View style={{ width: 24 }} />
+      </View>
       {likes.length === 0 ? (
         <View style={styles.empty}>
           <Text style={styles.emptyIcon}>💝</Text>
@@ -183,9 +190,17 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: colors.white,
   },
-  title: {
-    ...typography.h2,
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
     padding: spacing.md,
+  },
+  backButton: {
+    padding: spacing.xs,
+  },
+  title: {
+    ...typography.h3,
   },
   list: {
     padding: spacing.sm,
