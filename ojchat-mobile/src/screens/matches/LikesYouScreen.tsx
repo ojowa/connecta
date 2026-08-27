@@ -61,6 +61,7 @@ const LikesYouScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
       setLikedUserIds((prev) => new Set(prev).add(userId));
       queryClient.invalidateQueries({ queryKey: ['likedYou'] });
       queryClient.invalidateQueries({ queryKey: ['matches'] });
+      queryClient.invalidateQueries({ queryKey: ['matchFeed'] });
     },
   });
 
