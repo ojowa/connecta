@@ -536,13 +536,6 @@ export class MatchingService {
       photoMap.set(photo.profileId, list);
     }
 
-    const matchedIds = (await this.matchRepo.find({
-      where: [
-        { user1Id: userId },
-        { user2Id: userId },
-      ],
-    })).flatMap((m) => [m.user1Id, m.user2Id].filter((id) => id !== userId));
-
     return {
       likes: paginatedIds.map((id) => {
         const user = userMap.get(id);
@@ -556,7 +549,6 @@ export class MatchingService {
             photos: profilePhotos.map((p) => ({ id: p.id, url: p.url, isPrimary: p.isPrimary, order: p.order })),
           } : null,
           likedAt: likeRecord?.createdAt,
-          isMatched: matchedIds.includes(id),
         };
       }),
       meta: { page, limit, total, hasMore: total > page * limit },
