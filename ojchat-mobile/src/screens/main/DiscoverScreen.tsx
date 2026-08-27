@@ -30,7 +30,7 @@ export const DiscoverScreen: React.FC = () => {
   if (profiles.length === 0) {
     return (
       <SafeAreaView style={styles.safeArea}>
-        <ScrollView style={styles.empty} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />}>
+        <ScrollView contentContainerStyle={styles.empty} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />}>
           <Text style={styles.emptyText}>No more profiles to show</Text>
           <Text style={styles.emptySubtext}>Pull to refresh or check back later</Text>
         </ScrollView>

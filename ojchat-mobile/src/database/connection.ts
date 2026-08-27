@@ -1,8 +1,12 @@
+import { Platform } from 'react-native';
 import * as SQLite from 'expo-sqlite';
 
 let db: SQLite.SQLiteDatabase | null = null;
 
 export async function getDatabase(): Promise<SQLite.SQLiteDatabase> {
+  if (Platform.OS === 'web') {
+    throw new Error('SQLite is not supported on web. Use API instead.');
+  }
   if (db) return db;
   db = await SQLite.openDatabaseAsync('ojchat.db');
   await db.execAsync('PRAGMA journal_mode=WAL;');
