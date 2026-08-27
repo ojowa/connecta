@@ -98,6 +98,18 @@ export class MatchingController {
     return this.matchingService.getLikedYou(userId, page ? parseInt(page, 10) : 1, limit ? parseInt(limit, 10) : 20);
   }
 
+  @Post('profile-view/:profileId')
+  @ApiOperation({ summary: 'Record a profile view' })
+  recordProfileView(@Headers('x-user-id') viewerId: string, @Param('profileId') profileId: string) {
+    return this.matchingService.recordProfileView(viewerId, profileId);
+  }
+
+  @Get('profile-viewers')
+  @ApiOperation({ summary: 'Get users who viewed your profile' })
+  getProfileViewers(@Headers('x-user-id') userId: string, @Query('page') page?: string, @Query('limit') limit?: string) {
+    return this.matchingService.getProfileViewers(userId, page ? parseInt(page, 10) : 1, limit ? parseInt(limit, 10) : 20);
+  }
+
   @Get('compatibility/:userId')
   @ApiOperation({ summary: 'Get compatibility score' })
   getCompatibility(@Headers('x-user-id') userId: string, @Param('userId') targetUserId: string) {

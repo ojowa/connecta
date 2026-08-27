@@ -2,7 +2,7 @@ import { Injectable, NotFoundException, BadRequestException } from '@nestjs/comm
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, In, MoreThan } from 'typeorm';
 import { EventEmitter2 } from '@nestjs/event-emitter';
-import { User, Profile, Like, Pass, Match, DailyLike, Photo, UserPreference, Block, Interest, ProfileInterest, Boost, PhotoLike, Moment, MomentView } from '@app/common/entities';
+import { User, Profile, Like, Pass, Match, DailyLike, Photo, UserPreference, Block, Interest, ProfileInterest, Boost, PhotoLike, Moment, MomentView, ProfileView } from '@app/common/entities';
 import { MatchmakingEngine } from './ai/matchmaking.engine';
 import { CompatibilityEngine } from './ai/compatibility.engine';
 import { ScamDetector } from './ai/scam.detector';
@@ -29,6 +29,7 @@ export class MatchingService {
     @InjectRepository(PhotoLike) private photoLikeRepo: Repository<PhotoLike>,
     @InjectRepository(Moment) private momentRepo: Repository<Moment>,
     @InjectRepository(MomentView) private momentViewRepo: Repository<MomentView>,
+    @InjectRepository(ProfileView) private profileViewRepo: Repository<ProfileView>,
     private readonly eventEmitter: EventEmitter2,
     private readonly matchmakingEngine: MatchmakingEngine,
     private readonly compatibilityEngine: CompatibilityEngine,
@@ -462,6 +463,63 @@ export class MatchingService {
             id: user.id,
             fullName: user.fullName,
             photos: profilePhotos.map((p) => ({ id: p.id, url: p.url, isPrimary: p.isPrimary, order: p.order })),
+          } : null,
+        };
+      }),
+      meta: { page, limit, total, hasMore: total > page * limit },
+    };
+  }
+
+  async recordProfileView(viewerId: string, profileId: string) {
+    if (viewerId === profileId) return { recorded: false };
+    this.validateUserId(viewerId);
+    this.validateUserId(profileId);
+
+    const existing = await this.profileViewRepo.findOne({ where: { viewerId, profileId } });
+    if (existing) return { recorded: false };
+
+    const view = this.profileViewRepo.create({ viewerId, profileId });
+    await this.profileViewRepo.save(view);
+    return { recorded: true };
+  }
+
+  async getProfileViewers(userId: string, page = 1, limit = 20) {
+    this.validateUserId(userId);
+
+    const [views, total] = await this.profileViewRepo.findAndCount({
+      where: { profileId: userId },
+      order: { viewedAt: 'DESC' },
+      skip: (page - 1) * limit,
+      take: limit,
+    });
+
+    const viewerIds = views.map((v) => v.viewerId);
+    const viewers = viewerIds.length > 0 ? await this.userRepo.find({ where: { id: In(viewerIds) } }) : [];
+    const userMap = new Map(viewers.map((u) => [u.id, u]));
+    const profiles = viewerIds.length > 0 ? await this.profileRepo.find({ where: { userId: In(viewerIds) } }) : [];
+    const profileMap = new Map(profiles.map((p) => [p.userId, p]));
+    const profileIds = profiles.map((p) => p.id);
+    const photos = profileIds.length > 0 ? await this.photoRepo.find({ where: { profileId: In(profileIds) }, order: { order: 'ASC' } }) : [];
+    const photoMap = new Map<string, Photo[]>();
+    for (const photo of photos) {
+      const list = photoMap.get(photo.profileId) || [];
+      list.push(photo);
+      photoMap.set(photo.profileId, list);
+    }
+
+    return {
+      viewers: views.map((v) => {
+        const user = userMap.get(v.viewerId);
+        const profile = profileMap.get(v.viewerId);
+        const viewerPhotos = profile ? (photoMap.get(profile.id) || []) : [];
+        return {
+          id: v.id,
+          userId: v.viewerId,
+          viewedAt: v.viewedAt,
+          user: user ? {
+            id: user.id,
+            fullName: user.fullName,
+            photos: viewerPhotos.map((p) => ({ id: p.id, url: p.url, isPrimary: p.isPrimary, order: p.order })),
           } : null,
         };
       }),
