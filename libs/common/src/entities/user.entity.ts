@@ -48,6 +48,7 @@ export class User {
   @Column({ default: false }) twoFactorEnabled: boolean;
   @Column({ nullable: true }) twoFactorSecret: string;
   @Column({ nullable: true }) twoFactorMethod: string;
+  @Column({ default: 'free' }) plan: string;
   @CreateDateColumn() createdAt: Date;
   @UpdateDateColumn() updatedAt: Date;
 }
