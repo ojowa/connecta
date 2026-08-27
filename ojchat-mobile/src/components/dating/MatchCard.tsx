@@ -13,7 +13,7 @@ interface MatchCardProps {
 }
 
 export const MatchCard: React.FC<MatchCardProps> = ({ match, onPress }) => {
-  const photo = match.otherUser?.avatarUrl;
+  const photo = match.otherUser?.avatarUrl || match.otherUser?.photos?.[0]?.url;
   const compatibilityScore = (match as any).compatibilityScore;
 
   return (

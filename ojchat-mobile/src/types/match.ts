@@ -44,8 +44,15 @@ export interface Match {
   user1Id: string;
   user2Id: string;
   matchedAt: string;
+  matchedVia?: string;
+  conversationId?: string;
   compatibilityScore?: number;
-  otherUser: User;
+  otherUser: {
+    id: string;
+    fullName: string;
+    avatarUrl?: string;
+    photos?: Photo[];
+  };
 }
 
 export interface CompatibilityBreakdown {
