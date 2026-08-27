@@ -45,7 +45,7 @@ export function useMatches(page = 1) {
   return useQuery({
     queryKey: ['matches', page],
     queryFn: () => matchApi.getMatches(page),
-    staleTime: 30000,
+    refetchOnMount: true,
   });
 }
 
