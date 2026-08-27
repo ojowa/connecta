@@ -10,8 +10,22 @@ function isHttps(url: string): boolean {
   return url.startsWith('https://') || url.startsWith('wss://');
 }
 
+function isLocalDevUrl(url: string): boolean {
+  if (!__DEV__) return false;
+  try {
+    const parsed = new URL(url);
+    return parsed.hostname === 'localhost' || parsed.hostname === '127.0.0.1';
+  } catch {
+    return false;
+  }
+}
+
+function isAllowedUrl(url: string): boolean {
+  return isHttps(url) || isLocalDevUrl(url);
+}
+
 async function isLocalReachable(): Promise<boolean> {
-  if (!LOCAL_API || !isHttps(LOCAL_API)) return false;
+  if (!LOCAL_API || !isAllowedUrl(LOCAL_API)) return false;
   try {
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 2000);
@@ -29,7 +43,7 @@ async function isLocalReachable(): Promise<boolean> {
 export async function resolveApiUrl(): Promise<string> {
   if (cachedApiUrl) return cachedApiUrl;
 
-  if (LOCAL_API && isHttps(LOCAL_API) && (await isLocalReachable())) {
+  if (LOCAL_API && isAllowedUrl(LOCAL_API) && (await isLocalReachable())) {
     cachedApiUrl = LOCAL_API;
   } else if (PUBLIC_API && isHttps(PUBLIC_API)) {
     cachedApiUrl = PUBLIC_API;
@@ -42,7 +56,7 @@ export async function resolveApiUrl(): Promise<string> {
 export async function resolveWsUrl(): Promise<string> {
   if (cachedWsUrl) return cachedWsUrl;
 
-  if (LOCAL_WS && isHttps(LOCAL_WS) && (await isLocalReachable())) {
+  if (LOCAL_WS && isAllowedUrl(LOCAL_WS) && (await isLocalReachable())) {
     cachedWsUrl = LOCAL_WS;
   } else if (PUBLIC_WS && isHttps(PUBLIC_WS)) {
     cachedWsUrl = PUBLIC_WS;
