@@ -102,6 +102,12 @@ export class MatchingController {
     return this.matchingService.getLikedYou(userId, page ? parseInt(page, 10) : 1, limit ? parseInt(limit, 10) : 20);
   }
 
+  @Get('my-likes')
+  @ApiOperation({ summary: 'Get users you liked who haven\'t liked you back' })
+  getMyLikes(@Headers('x-user-id') userId: string, @Query('page') page?: string, @Query('limit') limit?: string) {
+    return this.matchingService.getMyLikes(userId, page ? parseInt(page, 10) : 1, limit ? parseInt(limit, 10) : 20);
+  }
+
   @Post('profile-view/:profileId')
   @ApiOperation({ summary: 'Record a profile view' })
   recordProfileView(@Headers('x-user-id') viewerId: string, @Param('profileId') profileId: string) {

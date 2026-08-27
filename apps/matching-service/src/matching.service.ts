@@ -504,6 +504,65 @@ export class MatchingService {
     };
   }
 
+  async getMyLikes(userId: string, page = 1, limit = 20) {
+    const myLikes = await this.likeRepo.find({
+      where: { userId },
+      order: { createdAt: 'DESC' },
+    });
+
+    const myLikedIds = myLikes.map((l) => l.likedUserId);
+
+    const mutualLikes = await this.likeRepo.find({
+      where: myLikedIds.map((id) => ({ userId: id, likedUserId: userId })),
+    });
+    const mutualIds = new Set(mutualLikes.map((l) => l.userId));
+
+    const pendingIds = myLikedIds.filter((id) => !mutualIds.has(id));
+    const uniquePendingIds = [...new Set(pendingIds)];
+
+    const paginatedIds = uniquePendingIds.slice((page - 1) * limit, page * limit);
+    const total = uniquePendingIds.length;
+
+    const users = paginatedIds.length > 0 ? await this.userRepo.find({ where: { id: In(paginatedIds) } }) : [];
+    const userMap = new Map(users.map((u) => [u.id, u]));
+    const profiles = paginatedIds.length > 0 ? await this.profileRepo.find({ where: { userId: In(paginatedIds) } }) : [];
+    const profileMap = new Map(profiles.map((p) => [p.userId, p]));
+    const profileIds = profiles.map((p) => p.id);
+    const photos = profileIds.length > 0 ? await this.photoRepo.find({ where: { profileId: In(profileIds) }, order: { order: 'ASC' } }) : [];
+    const photoMap = new Map<string, Photo[]>();
+    for (const photo of photos) {
+      const list = photoMap.get(photo.profileId) || [];
+      list.push(photo);
+      photoMap.set(photo.profileId, list);
+    }
+
+    const matchedIds = (await this.matchRepo.find({
+      where: [
+        { user1Id: userId },
+        { user2Id: userId },
+      ],
+    })).flatMap((m) => [m.user1Id, m.user2Id].filter((id) => id !== userId));
+
+    return {
+      likes: paginatedIds.map((id) => {
+        const user = userMap.get(id);
+        const profile = profileMap.get(id);
+        const profilePhotos = profile ? (photoMap.get(profile.id) || []) : [];
+        const likeRecord = myLikes.find((l) => l.likedUserId === id);
+        return {
+          user: user ? {
+            id: user.id,
+            fullName: user.fullName,
+            photos: profilePhotos.map((p) => ({ id: p.id, url: p.url, isPrimary: p.isPrimary, order: p.order })),
+          } : null,
+          likedAt: likeRecord?.createdAt,
+          isMatched: matchedIds.includes(id),
+        };
+      }),
+      meta: { page, limit, total, hasMore: total > page * limit },
+    };
+  }
+
   async recordProfileView(viewerId: string, profileId: string) {
     if (viewerId === profileId) return { recorded: false };
     this.validateUserId(viewerId);
