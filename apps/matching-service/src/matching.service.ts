@@ -465,14 +465,16 @@ export class MatchingService {
   }
 
   async getLikedYou(userId: string, page = 1, limit = 20) {
-    const [likes, total] = await this.likeRepo.findAndCount({
+    const allLikes = await this.likeRepo.find({
       where: { likedUserId: userId },
       order: { createdAt: 'DESC' },
-      skip: (page - 1) * limit,
-      take: limit,
     });
 
-    const likerIds = likes.map((l) => l.userId);
+    if (allLikes.length === 0) {
+      return { likes: [], meta: { page, limit, total: 0, hasMore: false } };
+    }
+
+    const allLikerIds = [...new Set(allLikes.map((l) => l.userId))];
 
     const matchedLikes = await this.matchRepo.find({
       where: [
@@ -482,12 +484,14 @@ export class MatchingService {
     });
     const matchedIds = new Set(matchedLikes.flatMap((m) => [m.user1Id, m.user2Id]));
 
-    const filteredLikes = likes.filter((l) => !matchedIds.has(l.userId));
-    const filteredLikerIds = filteredLikes.map((l) => l.userId);
+    const pendingLikes = allLikes.filter((l) => !matchedIds.has(l.userId));
+    const total = pendingLikes.length;
+    const paginatedLikes = pendingLikes.slice((page - 1) * limit, page * limit);
+    const paginatedLikerIds = paginatedLikes.map((l) => l.userId);
 
-    const likers = filteredLikerIds.length > 0 ? await this.userRepo.find({ where: { id: In(filteredLikerIds) } }) : [];
+    const likers = paginatedLikerIds.length > 0 ? await this.userRepo.find({ where: { id: In(paginatedLikerIds) } }) : [];
     const userMap = new Map(likers.map((u) => [u.id, u]));
-    const profiles = filteredLikerIds.length > 0 ? await this.profileRepo.find({ where: { userId: In(filteredLikerIds) } }) : [];
+    const profiles = paginatedLikerIds.length > 0 ? await this.profileRepo.find({ where: { userId: In(paginatedLikerIds) } }) : [];
     const profileMap = new Map(profiles.map((p) => [p.userId, p]));
     const profileIds = profiles.map((p) => p.id);
     const photos = profileIds.length > 0 ? await this.photoRepo.find({ where: { profileId: In(profileIds) }, order: { order: 'ASC' } }) : [];
@@ -499,7 +503,7 @@ export class MatchingService {
     }
 
     return {
-      likes: filteredLikes.map((l) => {
+      likes: paginatedLikes.map((l) => {
         const user = userMap.get(l.userId);
         const profile = profileMap.get(l.userId);
         const profilePhotos = profile ? (photoMap.get(profile.id) || []) : [];
@@ -512,7 +516,7 @@ export class MatchingService {
           } : null,
         };
       }),
-      meta: { page, limit, total: filteredLikes.length, hasMore: total > page * limit },
+      meta: { page, limit, total, hasMore: total > page * limit },
     };
   }
 
