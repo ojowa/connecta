@@ -339,9 +339,24 @@ const MomentsScreen: React.FC = () => {
   }, [refetch]);
 
   const handleCreateMoment = useCallback(
-    (caption: string, mediaUrl?: string) => {
+    async (caption: string, mediaUri?: string) => {
+      let uploadedUrl: string | undefined;
+      if (mediaUri) {
+        try {
+          const formData = new FormData();
+          formData.append('photo', { uri: mediaUri, type: 'image/jpeg', name: 'moment.jpg' } as any);
+          const uploadRes = await apiClient.post('/media/upload', formData, {
+            headers: { 'Content-Type': 'multipart/form-data' },
+          });
+          const uploaded = uploadRes.data?.data || uploadRes.data;
+          uploadedUrl = uploaded?.url;
+        } catch {
+          Alert.alert('Error', 'Failed to upload image. Please try again.');
+          return;
+        }
+      }
       createMoment.mutate(
-        { caption: caption || undefined, mediaUrl },
+        { caption: caption || undefined, mediaUrl: uploadedUrl },
         {
           onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['moments'] });
