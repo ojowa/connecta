@@ -9,15 +9,11 @@
     "ios": {
       "supportsTablet": true,
       "infoPlist": {
-        "NSAppTransportSecurity": {
-          "NSAllowsArbitraryLoads": true
-        },
         "NSCameraUsageDescription": "OJChat needs camera access for video calls",
         "NSMicrophoneUsageDescription": "OJChat needs microphone access for voice and video calls"
       }
     },
     "android": {
-      "usesCleartextTraffic": true,
       "adaptiveIcon": {
         "backgroundColor": "#E6F4FE",
         "foregroundImage": "./assets/android-icon-foreground.png",
@@ -39,6 +35,15 @@
     "web": {
       "favicon": "./assets/favicon.png"
     },
+    "plugins": [
+      [
+        "@config-plugins/react-native-webrtc",
+        {
+          "cameraPermission": "Allow $(PRODUCT_NAME) to access your camera for video calls",
+          "microphonePermission": "Allow $(PRODUCT_NAME) to access your microphone for voice and video calls"
+        }
+      ]
+    ],
     "extra": {
       "eas": {
         "projectId": "c52a7663-6a7f-4610-a2da-de272234c338"

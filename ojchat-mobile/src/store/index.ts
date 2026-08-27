@@ -1,8 +1,32 @@
 import { create } from 'zustand';
 import { devtools, persist, createJSONStorage } from 'zustand/middleware';
 import { mmkvStorage } from '../services/storage/mmkvStorage';
+import { secureStorage } from '../services/storage/secureStorage';
 import { User } from '../types/auth';
 import { Message } from '../types/chat';
+
+const TOKEN_KEY = 'com.ojchat.tokens';
+
+interface TokenData {
+  token: string | null;
+  refreshToken: string | null;
+}
+
+async function loadTokens(): Promise<TokenData> {
+  try {
+    const data = await secureStorage.get(TOKEN_KEY);
+    if (data) return JSON.parse(data);
+  } catch {}
+  return { token: null, refreshToken: null };
+}
+
+async function saveTokens(token: string | null, refreshToken: string | null): Promise<void> {
+  if (token || refreshToken) {
+    await secureStorage.set(TOKEN_KEY, JSON.stringify({ token, refreshToken }));
+  } else {
+    await secureStorage.remove(TOKEN_KEY);
+  }
+}
 
 interface AppState {
   user: User | null;
@@ -45,7 +69,10 @@ export const useAppStore = create<AppState>()(
         totalUnread: 0,
 
         setUser: (user) => set({ user }),
-        setTokens: (token, refreshToken) => set({ token, refreshToken }),
+        setTokens: (token, refreshToken) => {
+          saveTokens(token, refreshToken);
+          set({ token, refreshToken });
+        },
         setAuthenticated: (isAuthenticated) => set({ isAuthenticated }),
         setBiometricEnabled: (isBiometricEnabled) => set({ isBiometricEnabled }),
         setOnline: (isOnline) => set({ isOnline }),
@@ -67,12 +94,8 @@ export const useAppStore = create<AppState>()(
           }
           return {};
         }),
-        updateMessage: (id, data) => {
-          // no-op: messages are managed by react-query
-        },
-        removeMessage: (id) => {
-          // no-op: messages are managed by react-query
-        },
+        updateMessage: (id, data) => {},
+        removeMessage: (id) => {},
         markMessagesRead: (conversationId) => set((state) => {
           const unreadCounts = { ...state.unreadCounts, [conversationId]: 0 };
           return { unreadCounts, totalUnread: Object.values(unreadCounts).reduce((a, b) => a + b, 0) };
@@ -82,21 +105,51 @@ export const useAppStore = create<AppState>()(
           if (matches.some((m: any) => m.id === match.id)) return {};
           return { matches: [match, ...matches] } as any;
         }),
-        logout: () => set({
-          user: null, token: null, refreshToken: null, isAuthenticated: false,
-        }),
+        logout: () => {
+          saveTokens(null, null);
+          set({
+            user: null, token: null, refreshToken: null, isAuthenticated: false,
+          });
+        },
       }),
       {
         name: 'ojchat-auth-storage',
         storage: createJSONStorage(() => ({
-          getItem: (name: string) => {
+          getItem: async (name: string) => {
+            await mmkvStorage.waitForInit();
             const value = mmkvStorage.getString(name);
-            return value ? JSON.parse(value) : null;
+            if (!value) return null;
+            const parsed = JSON.parse(value);
+            const tokens = await loadTokens();
+            return {
+              ...parsed,
+              state: {
+                ...parsed.state,
+                token: tokens.token,
+                refreshToken: tokens.refreshToken,
+              },
+            };
           },
-          setItem: (name: string, value: unknown) => {
-            mmkvStorage.set(name, JSON.stringify(value));
+          setItem: async (name: string, value: unknown) => {
+            await mmkvStorage.waitForInit();
+            const data = value as any;
+            const tokens: TokenData = {
+              token: data.state?.token || null,
+              refreshToken: data.state?.refreshToken || null,
+            };
+            await saveTokens(tokens.token, tokens.refreshToken);
+            const sanitized = {
+              ...data,
+              state: {
+                ...data.state,
+                token: null,
+                refreshToken: null,
+              },
+            };
+            mmkvStorage.set(name, JSON.stringify(sanitized));
           },
-          removeItem: (name: string) => {
+          removeItem: async (name: string) => {
+            await mmkvStorage.waitForInit();
             mmkvStorage.remove(name);
           },
         })),

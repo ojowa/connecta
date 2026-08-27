@@ -1,6 +1,34 @@
 import * as Crypto from 'expo-crypto';
+import { AESEncryptionKey, AESSealedData, aesEncryptAsync, aesDecryptAsync, AESKeySize } from 'expo-crypto';
+import { hkdf } from '@stablelib/hkdf';
 import { RatchetState } from '../../types/crypto';
 import { KeyManager } from './KeyManager';
+
+function hexToBytes(hex: string): Uint8Array {
+  const bytes = new Uint8Array(hex.length / 2);
+  for (let i = 0; i < hex.length; i += 2) {
+    bytes[i / 2] = parseInt(hex.substring(i, i + 2), 16);
+  }
+  return bytes;
+}
+
+function bytesToHex(bytes: Uint8Array): string {
+  return Array.from(bytes)
+    .map((b) => b.toString(16).padStart(2, '0'))
+    .join('');
+}
+
+function stringToBytes(str: string): Uint8Array {
+  return new TextEncoder().encode(str);
+}
+
+async function hkdfDerive(ikm: string, salt: string, info: string, length: number = 32): Promise<string> {
+  const ikmBytes = hexToBytes(ikm);
+  const saltBytes = stringToBytes(salt);
+  const infoBytes = stringToBytes(info);
+  const okm = hkdf(ikmBytes, saltBytes, infoBytes, length);
+  return bytesToHex(new Uint8Array(okm));
+}
 
 export class DoubleRatchet {
   static async initializeAsSender(
@@ -15,10 +43,7 @@ export class DoubleRatchet {
       await KeyManager.computeDH(localEphemeralKeyPair.privateKey, remoteSignedPreKey),
     );
 
-    const receivingChainKey = await Crypto.digestStringAsync(
-      Crypto.CryptoDigestAlgorithm.SHA256,
-      newRootKey + ':init-receiving-chain',
-    );
+    const receivingChainKey = await hkdfDerive(newRootKey, 'ojchat-rk', 'init-receiving-chain');
 
     return {
       rootKey: newRootKey,
@@ -48,10 +73,7 @@ export class DoubleRatchet {
       await KeyManager.computeDH(localSignedPreKeyPair.privateKey, remoteEphemeralKey),
     );
 
-    const sendingChainKey = await Crypto.digestStringAsync(
-      Crypto.CryptoDigestAlgorithm.SHA256,
-      newRootKey + ':init-sending-chain',
-    );
+    const sendingChainKey = await hkdfDerive(newRootKey, 'ojchat-rk', 'init-sending-chain');
 
     return {
       rootKey: newRootKey,
@@ -76,12 +98,19 @@ export class DoubleRatchet {
     const { messageKey, chainKey: newSendingChainKey } = await this.kdfCK(
       state.sendingChainKey,
     );
-    const iv = await KeyManager.generateRandomBytes(16);
-    const cipherText = await this.aesEncrypt(plaintext, messageKey, iv);
-    const mac = await Crypto.digestStringAsync(
-      Crypto.CryptoDigestAlgorithm.SHA256,
-      messageKey + ':mac:' + cipherText + ':' + iv,
-    );
+
+    const key = await AESEncryptionKey.fromHex(messageKey);
+    const ivBytes = Crypto.getRandomValues(new Uint8Array(12));
+    const plaintextBytes = new TextEncoder().encode(plaintext);
+
+    const sealed = await aesEncryptAsync(plaintextBytes, key, {
+      nonce: { bytes: ivBytes },
+    });
+
+    const ciphertext = bytesToHex(new Uint8Array(await sealed.ciphertext()));
+    const tag = bytesToHex(new Uint8Array(await sealed.tag()));
+    const iv = bytesToHex(ivBytes);
+    const mac = tag;
 
     const newState: RatchetState = {
       ...state,
@@ -90,7 +119,7 @@ export class DoubleRatchet {
       timestamp: Date.now(),
     };
 
-    return { ciphertext: cipherText, iv, mac, newState };
+    return { ciphertext, iv, mac, newState };
   }
 
   static async decryptMessage(
@@ -148,16 +177,7 @@ export class DoubleRatchet {
       );
       workingState.skippedMessageKeys.splice(skippedKeyIndex, 1);
 
-      const expectedMac = await Crypto.digestStringAsync(
-        Crypto.CryptoDigestAlgorithm.SHA256,
-        skippedMessageKey + ':mac:' + ciphertext + ':' + iv,
-      );
-
-      if (mac !== expectedMac) {
-        throw new Error('MAC verification failed');
-      }
-
-      const plaintext = await this.aesDecrypt(ciphertext, skippedMessageKey, iv);
+      const plaintext = await this.aesDecryptWithKey(ciphertext, iv, mac, skippedMessageKey);
       return {
         plaintext,
         newState: { ...workingState, timestamp: Date.now() },
@@ -183,16 +203,7 @@ export class DoubleRatchet {
 
     const { messageKey, chainKey: newReceivingChainKey } = await this.kdfCK(currentChainKey);
 
-    const expectedMac = await Crypto.digestStringAsync(
-      Crypto.CryptoDigestAlgorithm.SHA256,
-      messageKey + ':mac:' + ciphertext + ':' + iv,
-    );
-
-    if (mac !== expectedMac) {
-      throw new Error('MAC verification failed');
-    }
-
-    const plaintext = await this.aesDecrypt(ciphertext, messageKey, iv);
+    const plaintext = await this.aesDecryptWithKey(ciphertext, iv, mac, messageKey);
 
     const newState: RatchetState = {
       ...workingState,
@@ -208,129 +219,32 @@ export class DoubleRatchet {
     rootKey: string,
     dhOutput: string,
   ): Promise<{ rootKey: string; chainKey: string }> {
-    const input = rootKey + ':rkdh:' + dhOutput;
-    const newRootKey = await Crypto.digestStringAsync(
-      Crypto.CryptoDigestAlgorithm.SHA256,
-      input + ':rk',
-    );
-    const chainKey = await Crypto.digestStringAsync(
-      Crypto.CryptoDigestAlgorithm.SHA256,
-      input + ':ck',
-    );
+    const newRootKey = await hkdfDerive(dhOutput, rootKey, 'ojchat-rk-root', 32);
+    const chainKey = await hkdfDerive(dhOutput, rootKey, 'ojchat-rk-chain', 32);
     return { rootKey: newRootKey, chainKey };
   }
 
   static async kdfCK(
     chainKey: string,
   ): Promise<{ messageKey: string; chainKey: string }> {
-    const messageKey = await Crypto.digestStringAsync(
-      Crypto.CryptoDigestAlgorithm.SHA256,
-      chainKey + ':mk',
-    );
-    const newChainKey = await Crypto.digestStringAsync(
-      Crypto.CryptoDigestAlgorithm.SHA256,
-      chainKey + ':ck',
-    );
+    const messageKey = await hkdfDerive('01', chainKey, 'ojchat-ck-mk', 32);
+    const newChainKey = await hkdfDerive('02', chainKey, 'ojchat-ck-ck', 32);
     return { messageKey, chainKey: newChainKey };
   }
 
-  static async aesEncrypt(plaintext: string, key: string, iv: string): Promise<string> {
-    const data = new TextEncoder().encode(plaintext);
-    const keyBytes = KeyManager.hexToBytes(key);
-    const ivBytes = KeyManager.hexToBytes(iv);
+  private static async aesDecryptWithKey(
+    ciphertext: string,
+    iv: string,
+    mac: string,
+    messageKey: string,
+  ): Promise<string> {
+    const key = await AESEncryptionKey.fromHex(messageKey);
+    const ivBytes = hexToBytes(iv);
+    const ciphertextBytes = hexToBytes(ciphertext);
+    const tagBytes = hexToBytes(mac);
 
-    const keyStream = await this.generateKeyStream(keyBytes, ivBytes, data.length);
-    const encrypted = new Uint8Array(data.length);
-    for (let i = 0; i < data.length; i++) {
-      encrypted[i] = data[i] ^ keyStream[i];
-    }
-
-    const tag = await this.computeGCMTag(keyBytes, ivBytes, encrypted);
-    const result = new Uint8Array(encrypted.length + 16);
-    result.set(encrypted);
-    result.set(tag, encrypted.length);
-
-    return KeyManager.bytesToHex(result);
-  }
-
-  static async aesDecrypt(cipherText: string, key: string, iv: string): Promise<string> {
-    const allBytes = KeyManager.hexToBytes(cipherText);
-    const keyBytes = KeyManager.hexToBytes(key);
-    const ivBytes = KeyManager.hexToBytes(iv);
-
-    if (allBytes.length < 16) {
-      throw new Error('Ciphertext too short');
-    }
-
-    const encrypted = new Uint8Array(allBytes.slice(0, allBytes.length - 16));
-    const receivedTag = new Uint8Array(allBytes.slice(allBytes.length - 16));
-
-    const expectedTag = await this.computeGCMTag(keyBytes, ivBytes, encrypted);
-    if (!this.constantTimeCompare(receivedTag, expectedTag)) {
-      throw new Error('Authentication tag verification failed');
-    }
-
-    const keyStream = await this.generateKeyStream(keyBytes, ivBytes, encrypted.length);
-    const decrypted = new Uint8Array(encrypted.length);
-    for (let i = 0; i < encrypted.length; i++) {
-      decrypted[i] = encrypted[i] ^ keyStream[i];
-    }
-
-    return new TextDecoder().decode(decrypted);
-  }
-
-  private static async generateKeyStream(
-    key: Uint8Array,
-    iv: Uint8Array,
-    length: number,
-  ): Promise<Uint8Array> {
-    const stream = new Uint8Array(length);
-    const blocksNeeded = Math.ceil(length / 32);
-
-    for (let block = 0; block < blocksNeeded; block++) {
-      const counter = new Uint8Array(16);
-      counter.set(iv.slice(0, 12));
-      counter[12] = (block >> 24) & 0xff;
-      counter[13] = (block >> 16) & 0xff;
-      counter[14] = (block >> 8) & 0xff;
-      counter[15] = block & 0xff;
-
-      const hashInput = KeyManager.bytesToHex(new Uint8Array([...key, ...counter]));
-      const hash = await Crypto.digestStringAsync(
-        Crypto.CryptoDigestAlgorithm.SHA256,
-        hashInput,
-      );
-
-      const hashBytes = KeyManager.hexToBytes(hash);
-      const offset = block * 32;
-      const toCopy = Math.min(32, length - offset);
-      for (let i = 0; i < toCopy; i++) {
-        stream[offset + i] = hashBytes[i];
-      }
-    }
-
-    return stream;
-  }
-
-  private static async computeGCMTag(
-    key: Uint8Array,
-    iv: Uint8Array,
-    ciphertext: Uint8Array,
-  ): Promise<Uint8Array> {
-    const tagInput = `ojchat-gcm:${KeyManager.bytesToHex(key)}:${KeyManager.bytesToHex(iv)}:${KeyManager.bytesToHex(ciphertext)}`;
-    const tagHash = await Crypto.digestStringAsync(
-      Crypto.CryptoDigestAlgorithm.SHA256,
-      tagInput,
-    );
-    return new Uint8Array(KeyManager.hexToBytes(tagHash).slice(0, 16));
-  }
-
-  private static constantTimeCompare(a: Uint8Array, b: Uint8Array): boolean {
-    if (a.length !== b.length) return false;
-    let result = 0;
-    for (let i = 0; i < a.length; i++) {
-      result |= a[i] ^ b[i];
-    }
-    return result === 0;
+    const sealed = AESSealedData.fromParts(ivBytes, ciphertextBytes, tagBytes);
+    const decrypted = await aesDecryptAsync(sealed, key, { output: 'bytes' });
+    return new TextDecoder().decode(new Uint8Array(decrypted));
   }
 }

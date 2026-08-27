@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, KeyboardAvoidingView, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Input } from '../../components/common/Input';
@@ -16,9 +16,11 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
   const [password, setPassword] = useState('');
   const { login, loading, error: authError, pending2FA } = useAuth();
   const [serverError, setServerError] = useState<string | null>(null);
+  const [cooldown, setCooldown] = useState(0);
+  const cooldownRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const handleLogin = async () => {
-    if (!identifier || !password) return;
+    if (!identifier || !password || cooldown > 0) return;
     setServerError(null);
     try {
       const result = await login(identifier, password);
@@ -30,6 +32,17 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
         ? `Cannot reach server at ${apiClient.defaults.baseURL}. Check your WiFi.`
         : err?.response?.data?.message || err?.message || 'Login failed';
       setServerError(msg);
+      setCooldown(5);
+      if (cooldownRef.current) clearInterval(cooldownRef.current);
+      cooldownRef.current = setInterval(() => {
+        setCooldown((prev) => {
+          if (prev <= 1) {
+            if (cooldownRef.current) clearInterval(cooldownRef.current);
+            return 0;
+          }
+          return prev - 1;
+        });
+      }, 1000);
     }
   };
 
@@ -41,8 +54,8 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
           <Text style={styles.subtitle}>Sign in to continue</Text>
           <Input label="Email or Phone" placeholder="Enter your email or phone" value={identifier} onChangeText={setIdentifier} keyboardType="email-address" autoCapitalize="none" />
           <Input label="Password" placeholder="Enter your password" value={password} onChangeText={setPassword} secureTextEntry />
-          {(authError || serverError) && <Text style={styles.error}>{authError || serverError}</Text>}
-          <Button title="Sign In" onPress={handleLogin} loading={loading} style={styles.button} />
+          {(authError || serverError) && <Text style={styles.error}>{authError || serverError}{cooldown > 0 ? ` (${cooldown}s)` : ''}</Text>}
+          <Button title={cooldown > 0 ? `Try again in ${cooldown}s` : "Sign In"} onPress={handleLogin} loading={loading} disabled={cooldown > 0} style={styles.button} />
           <TouchableOpacity onPress={() => navigation.navigate('ForgotPassword')}>
             <Text style={styles.forgot}>Forgot Password?</Text>
           </TouchableOpacity>

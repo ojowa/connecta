@@ -1,6 +1,24 @@
-import * as Crypto from 'expo-crypto';
+import { hkdf } from '@stablelib/hkdf';
 import { KeyManager } from './KeyManager';
 import { PreKeyBundle, X3DHResult } from '../../types/crypto';
+
+function hexToBytes(hex: string): Uint8Array {
+  const bytes = new Uint8Array(hex.length / 2);
+  for (let i = 0; i < hex.length; i += 2) {
+    bytes[i / 2] = parseInt(hex.substring(i, i + 2), 16);
+  }
+  return bytes;
+}
+
+function bytesToHex(bytes: Uint8Array): string {
+  return Array.from(bytes)
+    .map((b) => b.toString(16).padStart(2, '0'))
+    .join('');
+}
+
+function stringToBytes(str: string): Uint8Array {
+  return new TextEncoder().encode(str);
+}
 
 export class X3DH {
   static async performKeyExchange(
@@ -27,15 +45,11 @@ export class X3DH {
   }
 
   static async kdf(input: string, info: string): Promise<string> {
-    const prk = await Crypto.digestStringAsync(
-      Crypto.CryptoDigestAlgorithm.SHA256,
-      'ojchat-x3dh-salt:' + input,
-    );
-    const output = await Crypto.digestStringAsync(
-      Crypto.CryptoDigestAlgorithm.SHA256,
-      prk + ':' + info + ':01',
-    );
-    return output;
+    const ikmBytes = hexToBytes(input);
+    const salt = stringToBytes('ojchat-x3dh-salt');
+    const infoBytes = stringToBytes(info);
+    const okm = hkdf(ikmBytes, salt, infoBytes, 32);
+    return bytesToHex(new Uint8Array(okm));
   }
 
   static async processPreKeyBundle(

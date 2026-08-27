@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { View, Text, StyleSheet, ScrollView, KeyboardAvoidingView, Platform, TouchableOpacity, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Input } from '../../components/common/Input';
@@ -87,6 +87,8 @@ export const RegisterScreen: React.FC<RegisterScreenProps> = ({ navigation }) =>
   const [submitted, setSubmitted] = useState(false);
   const { register, loading, error: authError } = useAuth();
   const [serverError, setServerError] = useState<string | null>(null);
+  const [cooldown, setCooldown] = useState(0);
+  const cooldownRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const passwordStrength = password ? getPasswordStrength(password) : null;
 
@@ -94,7 +96,7 @@ export const RegisterScreen: React.FC<RegisterScreenProps> = ({ navigation }) =>
     const fieldErrors = validate({ fullName, email, dateOfBirth, gender, password, confirmPassword, termsAccepted });
     setErrors(fieldErrors);
     setSubmitted(true);
-    if (Object.keys(fieldErrors).length > 0) return;
+    if (Object.keys(fieldErrors).length > 0 || cooldown > 0) return;
 
     setServerError(null);
     try {
@@ -102,6 +104,17 @@ export const RegisterScreen: React.FC<RegisterScreenProps> = ({ navigation }) =>
     } catch (err: any) {
       const msg = err?.response?.data?.error?.message || err?.response?.data?.message || err?.message || 'Registration failed';
       setServerError(msg);
+      setCooldown(5);
+      if (cooldownRef.current) clearInterval(cooldownRef.current);
+      cooldownRef.current = setInterval(() => {
+        setCooldown((prev) => {
+          if (prev <= 1) {
+            if (cooldownRef.current) clearInterval(cooldownRef.current);
+            return 0;
+          }
+          return prev - 1;
+        });
+      }, 1000);
     }
   };
 
@@ -170,8 +183,8 @@ export const RegisterScreen: React.FC<RegisterScreenProps> = ({ navigation }) =>
           </TouchableOpacity>
           {errors.terms && <Text style={styles.fieldError}>{errors.terms}</Text>}
 
-          {(authError || serverError) && <Text style={styles.error}>{authError || serverError}</Text>}
-          <Button title="Create Account" onPress={handleRegister} loading={loading} style={styles.button} />
+          {(authError || serverError) && <Text style={styles.error}>{authError || serverError}{cooldown > 0 ? ` (${cooldown}s)` : ''}</Text>}
+          <Button title={cooldown > 0 ? `Try again in ${cooldown}s` : "Create Account"} onPress={handleRegister} loading={loading} disabled={cooldown > 0} style={styles.button} />
           <Button title="Already have an account? Sign In" variant="ghost" onPress={() => navigation.goBack()} />
         </ScrollView>
       </KeyboardAvoidingView>

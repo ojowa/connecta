@@ -6,10 +6,101 @@ import { BackupData } from '../../types/crypto';
 
 const BACKUP_SERVICE = 'com.ojchat.backup';
 
+function bytesToHex(bytes: Uint8Array): string {
+  return Array.from(bytes)
+    .map((b) => b.toString(16).padStart(2, '0'))
+    .join('');
+}
+
+function hexToBytes(hex: string): Uint8Array {
+  const bytes = new Uint8Array(hex.length / 2);
+  for (let i = 0; i < hex.length; i += 2) {
+    bytes[i / 2] = parseInt(hex.substring(i, i + 2), 16);
+  }
+  return bytes;
+}
+
+function stringToBytes(str: string): Uint8Array {
+  return new TextEncoder().encode(str);
+}
+
+function xorBytes(a: Uint8Array, b: Uint8Array): Uint8Array {
+  const result = new Uint8Array(a.length);
+  for (let i = 0; i < a.length; i++) {
+    result[i] = a[i] ^ b[i];
+  }
+  return result;
+}
+
+function hexStringToBytes(hex: string): Uint8Array {
+  return hexToBytes(hex);
+}
+
+async function hmacSha256(key: string, data: string): Promise<Uint8Array> {
+  const keyBytes = typeof key === 'string' && key.match(/^[0-9a-f]+$/i)
+    ? hexToBytes(key)
+    : stringToBytes(key);
+  const ipad = new Uint8Array(64);
+  const opad = new Uint8Array(64);
+  for (let i = 0; i < 64; i++) {
+    ipad[i] = i < keyBytes.length ? keyBytes[i] ^ 0x36 : 0x36;
+    opad[i] = i < keyBytes.length ? keyBytes[i] ^ 0x5c : 0x5c;
+  }
+
+  const dataBytes = stringToBytes(data);
+  const innerData = new Uint8Array(ipad.length + dataBytes.length);
+  innerData.set(ipad);
+  innerData.set(dataBytes, ipad.length);
+  const innerHex = bytesToHex(innerData);
+  const innerHash = await Crypto.digestStringAsync(Crypto.CryptoDigestAlgorithm.SHA256, innerHex);
+
+  const outerData = new Uint8Array(opad.length + 32);
+  outerData.set(opad);
+  outerData.set(hexToBytes(innerHash), opad.length);
+  const outerHex = bytesToHex(outerData);
+  const outerHash = await Crypto.digestStringAsync(Crypto.CryptoDigestAlgorithm.SHA256, outerHex);
+  return hexToBytes(outerHash);
+}
+
+async function pbkdf2HmacSha256(
+  password: string,
+  salt: Uint8Array,
+  iterations: number,
+  keyLength: number = 32,
+): Promise<string> {
+  const hLen = 32;
+  const l = Math.ceil(keyLength / hLen);
+  const dk = new Uint8Array(keyLength);
+
+  for (let i = 1; i <= l; i++) {
+    const I = new Uint8Array(salt.length + 4);
+    I.set(salt);
+    I[salt.length] = (i >> 24) & 0xff;
+    I[salt.length + 1] = (i >> 16) & 0xff;
+    I[salt.length + 2] = (i >> 8) & 0xff;
+    I[salt.length + 3] = i & 0xff;
+
+    let U = await hmacSha256(password, bytesToHex(I));
+    let T = new Uint8Array(U);
+    for (let j = 1; j < iterations; j++) {
+      U = await hmacSha256(password, bytesToHex(U));
+      const xored = xorBytes(T, U);
+      T = xored;
+    }
+
+    const offset = (i - 1) * hLen;
+    const toCopy = Math.min(hLen, keyLength - offset);
+    dk.set(T.slice(0, toCopy), offset);
+  }
+
+  return bytesToHex(dk);
+}
+
 export class SecureBackup {
   async backupKeys(masterPassword: string): Promise<BackupData> {
-    const salt = await KeyManager.generateRandomBytes(32);
-    const backupKey = await this.deriveBackupKey(masterPassword, salt);
+    const saltBytes = Crypto.getRandomValues(new Uint8Array(32));
+    const salt = bytesToHex(saltBytes);
+    const backupKey = await this.deriveBackupKey(masterPassword, saltBytes);
 
     const identityKeyPair = await KeyManager.getIdentityKeyPair();
     const latestSPK = await KeyManager.getLatestSignedPreKey();
@@ -47,7 +138,8 @@ export class SecureBackup {
   }
 
   async restoreKeys(backupData: BackupData, masterPassword: string): Promise<void> {
-    const backupKey = await this.deriveBackupKey(masterPassword, backupData.salt);
+    const saltBytes = hexToBytes(backupData.salt);
+    const backupKey = await this.deriveBackupKey(masterPassword, saltBytes);
 
     const iv = await KeyManager.generateRandomBytes(16);
     const decrypted = await MediaEncryptor.aesDecrypt(
@@ -72,7 +164,8 @@ export class SecureBackup {
     if (!lastBackup) return false;
 
     const backupData: BackupData = JSON.parse(lastBackup);
-    const backupKey = await this.deriveBackupKey(masterPassword, backupData.salt);
+    const saltBytes = hexToBytes(backupData.salt);
+    const backupKey = await this.deriveBackupKey(masterPassword, saltBytes);
 
     const expectedMac = await Crypto.digestStringAsync(
       Crypto.CryptoDigestAlgorithm.SHA256,
@@ -112,24 +205,9 @@ export class SecureBackup {
 
   private async deriveBackupKey(
     password: string,
-    salt: string,
+    salt: Uint8Array,
   ): Promise<string> {
-    const iterations = 600000;
-
-    let derived = await Crypto.digestStringAsync(
-      Crypto.CryptoDigestAlgorithm.SHA256,
-      password + ':' + salt + ':0',
-    );
-
-    for (let i = 1; i < iterations; i++) {
-      const hmac = await Crypto.digestStringAsync(
-        Crypto.CryptoDigestAlgorithm.SHA256,
-        derived + ':' + password + ':' + salt + ':' + i,
-      );
-      derived = hmac;
-    }
-
-    return derived;
+    return pbkdf2HmacSha256(password, salt, 600000, 32);
   }
 
   private async getDeviceId(): Promise<string> {

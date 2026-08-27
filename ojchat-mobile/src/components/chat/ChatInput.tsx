@@ -7,7 +7,7 @@ import { colors } from '../../theme/colors';
 import { typography } from '../../theme/typography';
 import { spacing } from '../../theme/spacing';
 import { borderRadius } from '../../theme/borderRadius';
-import { apiClient } from '../../services/api/apiClient';
+import { CONFIG } from '../../constants/config';
 
 interface ChatInputProps {
   onSend: (text: string) => void;
@@ -114,6 +114,7 @@ export const ChatInput: React.FC<ChatInputProps> = ({ onSend, onSendImage, onSen
         placeholder="Type a message..."
         placeholderTextColor={colors.gray400}
         multiline
+        maxLength={CONFIG.MAX_MESSAGE_LENGTH}
       />
       <TouchableOpacity
         style={[styles.sendButton, !text.trim() && styles.sendDisabled]}

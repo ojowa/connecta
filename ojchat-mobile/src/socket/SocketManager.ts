@@ -37,8 +37,10 @@ class SocketManager {
     const { token } = useAppStore.getState();
     if (!token) return;
 
-    const wsUrl = await resolveWsUrl();
+    let wsUrl = await resolveWsUrl();
     if (!wsUrl) return;
+
+    wsUrl = wsUrl.replace(/^ws:\/\//, 'wss://').replace(/^http:\/\//, 'https://');
 
     if (!this.chatSocket?.connected) {
       this.chatSocket = io(`${wsUrl}/chat`, {

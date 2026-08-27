@@ -1,12 +1,17 @@
-const LOCAL_API = process.env.EXPO_PUBLIC_LOCAL_API_URL || 'http://192.168.0.116:3000/v1';
-const LOCAL_WS = process.env.EXPO_PUBLIC_LOCAL_WS_URL || 'http://192.168.0.116:3000';
+const LOCAL_API = process.env.EXPO_PUBLIC_LOCAL_API_URL || '';
+const LOCAL_WS = process.env.EXPO_PUBLIC_LOCAL_WS_URL || '';
 const PUBLIC_API = process.env.EXPO_PUBLIC_API_URL || '';
 const PUBLIC_WS = process.env.EXPO_PUBLIC_WS_URL || '';
 
 let cachedApiUrl: string | null = null;
 let cachedWsUrl: string | null = null;
 
+function isHttps(url: string): boolean {
+  return url.startsWith('https://') || url.startsWith('wss://');
+}
+
 async function isLocalReachable(): Promise<boolean> {
+  if (!LOCAL_API || !isHttps(LOCAL_API)) return false;
   try {
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 2000);
@@ -24,12 +29,12 @@ async function isLocalReachable(): Promise<boolean> {
 export async function resolveApiUrl(): Promise<string> {
   if (cachedApiUrl) return cachedApiUrl;
 
-  if (LOCAL_API && (await isLocalReachable())) {
+  if (LOCAL_API && isHttps(LOCAL_API) && (await isLocalReachable())) {
     cachedApiUrl = LOCAL_API;
-  } else if (PUBLIC_API) {
+  } else if (PUBLIC_API && isHttps(PUBLIC_API)) {
     cachedApiUrl = PUBLIC_API;
   } else {
-    cachedApiUrl = LOCAL_API;
+    throw new Error('No valid HTTPS API URL configured. Set EXPO_PUBLIC_API_URL or EXPO_PUBLIC_LOCAL_API_URL.');
   }
   return cachedApiUrl!;
 }
@@ -37,12 +42,12 @@ export async function resolveApiUrl(): Promise<string> {
 export async function resolveWsUrl(): Promise<string> {
   if (cachedWsUrl) return cachedWsUrl;
 
-  if (LOCAL_WS && (await isLocalReachable())) {
+  if (LOCAL_WS && isHttps(LOCAL_WS) && (await isLocalReachable())) {
     cachedWsUrl = LOCAL_WS;
-  } else if (PUBLIC_WS) {
+  } else if (PUBLIC_WS && isHttps(PUBLIC_WS)) {
     cachedWsUrl = PUBLIC_WS;
   } else {
-    cachedWsUrl = LOCAL_WS;
+    throw new Error('No valid WSS URL configured. Set EXPO_PUBLIC_WS_URL or EXPO_PUBLIC_LOCAL_WS_URL.');
   }
   return cachedWsUrl!;
 }

@@ -407,8 +407,8 @@ export class SyncEngine {
     );
   }
 
-  enqueue(operation: SyncOperation): void {
-    Outbox.enqueue(operation);
+  async enqueue(operation: SyncOperation): Promise<void> {
+    await Outbox.enqueue(operation);
   }
 
   getConflictResolver(): ConflictResolver {

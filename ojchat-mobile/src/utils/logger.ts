@@ -19,3 +19,10 @@ export const logger = {
     currentLevel = LOG_LEVELS[level];
   },
 };
+
+if (!__DEV__) {
+  const origError = console.error;
+  console.error = (...args: unknown[]) => {
+    if (currentLevel <= LOG_LEVELS.error) origError('[ERROR]', ...args);
+  };
+}

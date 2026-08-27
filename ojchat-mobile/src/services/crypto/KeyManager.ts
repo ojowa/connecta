@@ -1,10 +1,97 @@
 import * as Crypto from 'expo-crypto';
+import { AESEncryptionKey, AESSealedData, aesEncryptAsync, aesDecryptAsync } from 'expo-crypto';
 import { generateKeyPair, scalarMultBase, sharedKey } from '@stablelib/x25519';
 import { getDatabase } from '../../database/connection';
 import { secureStorage } from '../storage/secureStorage';
 import { KeyPair, IdentityKeyPair, SignedPreKey, OneTimePreKey } from '../../types/crypto';
 
 const KEY_SERVICE = 'com.ojchat.crypto';
+const DB_KEY_NAME = 'com.ojchat.crypto.db-key';
+
+function bytesToHex(bytes: Uint8Array): string {
+  return Array.from(bytes)
+    .map((b) => b.toString(16).padStart(2, '0'))
+    .join('');
+}
+
+function hexToBytes(hex: string): Uint8Array {
+  const bytes = new Uint8Array(hex.length / 2);
+  for (let i = 0; i < hex.length; i += 2) {
+    bytes[i / 2] = parseInt(hex.substring(i, i + 2), 16);
+  }
+  return bytes;
+}
+
+function stringToBytes(str: string): Uint8Array {
+  return new TextEncoder().encode(str);
+}
+
+let dbEncryptionKey: string | null = null;
+
+async function getDbEncryptionKey(): Promise<string> {
+  if (dbEncryptionKey) return dbEncryptionKey;
+  const existing = await secureStorage.get(DB_KEY_NAME);
+  if (existing) {
+    dbEncryptionKey = existing;
+    return existing;
+  }
+  const keyBytes = Crypto.getRandomValues(new Uint8Array(32));
+  const key = bytesToHex(keyBytes);
+  await secureStorage.set(DB_KEY_NAME, key);
+  dbEncryptionKey = key;
+  return key;
+}
+
+async function encryptForDb(plaintext: string): Promise<string> {
+  const key = await getDbEncryptionKey();
+  const aesKey = await AESEncryptionKey.fromHex(key);
+  const ivBytes = Crypto.getRandomValues(new Uint8Array(12));
+  const plaintextBytes = new TextEncoder().encode(plaintext);
+  const sealed = await aesEncryptAsync(plaintextBytes, aesKey, {
+    nonce: { bytes: ivBytes },
+  });
+  const ciphertext = bytesToHex(new Uint8Array(await sealed.ciphertext()));
+  const tag = bytesToHex(new Uint8Array(await sealed.tag()));
+  const iv = bytesToHex(ivBytes);
+  return `${iv}:${ciphertext}:${tag}`;
+}
+
+async function decryptFromDb(encrypted: string): Promise<string> {
+  const key = await getDbEncryptionKey();
+  const parts = encrypted.split(':');
+  if (parts.length !== 3) return encrypted;
+  const [iv, ciphertext, tag] = parts;
+  const aesKey = await AESEncryptionKey.fromHex(key);
+  const ivBytes = hexToBytes(iv);
+  const ciphertextBytes = hexToBytes(ciphertext);
+  const tagBytes = hexToBytes(tag);
+  const sealed = AESSealedData.fromParts(ivBytes, ciphertextBytes, tagBytes);
+  const decrypted = await aesDecryptAsync(sealed, aesKey, { output: 'bytes' });
+  return new TextDecoder().decode(new Uint8Array(decrypted));
+}
+
+async function hmacSha256(keyHex: string, data: string): Promise<string> {
+  const keyBytes = hexToBytes(keyHex);
+  const ipad = new Uint8Array(64);
+  const opad = new Uint8Array(64);
+  for (let i = 0; i < 64; i++) {
+    ipad[i] = i < keyBytes.length ? keyBytes[i] ^ 0x36 : 0x36;
+    opad[i] = i < keyBytes.length ? keyBytes[i] ^ 0x5c : 0x5c;
+  }
+
+  const dataBytes = stringToBytes(data);
+  const innerData = new Uint8Array(ipad.length + dataBytes.length);
+  innerData.set(ipad);
+  innerData.set(dataBytes, ipad.length);
+  const innerHex = bytesToHex(innerData);
+  const innerHash = await Crypto.digestStringAsync(Crypto.CryptoDigestAlgorithm.SHA256, innerHex);
+
+  const outerData = new Uint8Array(opad.length + 32);
+  outerData.set(opad);
+  outerData.set(hexToBytes(innerHash), opad.length);
+  const outerHex = bytesToHex(outerData);
+  return Crypto.digestStringAsync(Crypto.CryptoDigestAlgorithm.SHA256, outerHex);
+}
 
 export class KeyManager {
   static hexToBytes(hex: string): Uint8Array {
@@ -64,10 +151,7 @@ export class KeyManager {
   ): Promise<SignedPreKey> {
     const keyPair = await this.generateKeyPair();
     const signaturePayload = `ojchat-spk:${keyPair.publicKey}:${keyId}`;
-    const signature = await Crypto.digestStringAsync(
-      Crypto.CryptoDigestAlgorithm.SHA256,
-      signaturePayload + ':' + identityPrivateKey,
-    );
+    const signature = await hmacSha256(identityPrivateKey, signaturePayload);
     return {
       ...keyPair,
       keyId,
@@ -102,10 +186,11 @@ export class KeyManager {
 
   static async storeSignedPreKey(signedPreKey: SignedPreKey): Promise<void> {
     const db = await getDatabase();
+    const encrypted = await encryptForDb(JSON.stringify(signedPreKey));
     await db.runAsync(
       `INSERT OR REPLACE INTO local_encryption_keys (id, key_type, key_data, created_at, rotated_at, expires_at)
        VALUES (?, 'signed_pre_key', ?, datetime('now'), datetime('now'), datetime('now', '+7 days'))`,
-      [String(signedPreKey.keyId), JSON.stringify(signedPreKey)],
+      [String(signedPreKey.keyId), encrypted],
     );
   }
 
@@ -116,7 +201,8 @@ export class KeyManager {
       [String(keyId), 'signed_pre_key'],
     );
     if (!row) return null;
-    return JSON.parse(row.key_data);
+    const decrypted = await decryptFromDb(row.key_data);
+    return JSON.parse(decrypted);
   }
 
   static async getLatestSignedPreKey(): Promise<SignedPreKey | null> {
@@ -127,16 +213,18 @@ export class KeyManager {
        ORDER BY created_at DESC LIMIT 1`,
     );
     if (!row) return null;
-    return JSON.parse(row.key_data);
+    const decrypted = await decryptFromDb(row.key_data);
+    return JSON.parse(decrypted);
   }
 
   static async storeOneTimePreKeys(keys: OneTimePreKey[]): Promise<void> {
     const db = await getDatabase();
     for (const key of keys) {
+      const encrypted = await encryptForDb(JSON.stringify(key));
       await db.runAsync(
         `INSERT OR REPLACE INTO local_encryption_keys (id, key_type, key_data, created_at)
          VALUES (?, 'one_time_pre_key', ?, datetime('now'))`,
-        [String(key.keyId), JSON.stringify(key)],
+        [String(key.keyId), encrypted],
       );
     }
   }
@@ -148,7 +236,8 @@ export class KeyManager {
       [String(keyId), 'one_time_pre_key'],
     );
     if (!row) return null;
-    return JSON.parse(row.key_data);
+    const decrypted = await decryptFromDb(row.key_data);
+    return JSON.parse(decrypted);
   }
 
   static async getUnusedOneTimePreKeys(): Promise<OneTimePreKey[]> {
@@ -158,9 +247,13 @@ export class KeyManager {
        WHERE key_type = 'one_time_pre_key'
        ORDER BY created_at ASC`,
     );
-    return rows
-      .map((row) => JSON.parse(row.key_data) as OneTimePreKey)
-      .filter((key) => !key.used);
+    const results: OneTimePreKey[] = [];
+    for (const row of rows) {
+      const decrypted = await decryptFromDb(row.key_data);
+      const key = JSON.parse(decrypted) as OneTimePreKey;
+      if (!key.used) results.push(key);
+    }
+    return results;
   }
 
   static async getOneTimePreKeyCount(): Promise<number> {
@@ -179,11 +272,13 @@ export class KeyManager {
       [String(keyId)],
     );
     if (row) {
-      const keyData = JSON.parse(row.key_data);
+      const decrypted = await decryptFromDb(row.key_data);
+      const keyData = JSON.parse(decrypted);
       keyData.used = true;
+      const encrypted = await encryptForDb(JSON.stringify(keyData));
       await db.runAsync(
         'UPDATE local_encryption_keys SET key_data = ? WHERE id = ?',
-        [JSON.stringify(keyData), String(keyId)],
+        [encrypted, String(keyId)],
       );
     }
   }
