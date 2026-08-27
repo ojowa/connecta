@@ -62,9 +62,9 @@ const LikesYouScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
         return {
           ...old,
           likes: old.likes.filter((l) => l.userId !== userId),
+          meta: { ...old.meta, total: Math.max(0, old.meta.total - 1) },
         };
       });
-      queryClient.invalidateQueries({ queryKey: ['likedYou'] });
       queryClient.invalidateQueries({ queryKey: ['matches'] });
       queryClient.invalidateQueries({ queryKey: ['matchFeed'] });
     },
