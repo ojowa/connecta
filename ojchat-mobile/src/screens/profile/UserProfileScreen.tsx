@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, Image, TouchableOpacity, useWindowDimensions } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -10,6 +10,8 @@ import { typography } from '../../theme/typography';
 import { spacing } from '../../theme/spacing';
 import { borderRadius } from '../../theme/borderRadius';
 import { LoadingSpinner } from '../../components/common/LoadingSpinner';
+import { useConversations } from '../../hooks/useChat';
+import { useAppStore } from '../../store';
 
 function calculateAge(dob: string): number {
   const birth = new Date(dob);
@@ -24,6 +26,13 @@ export const UserProfileScreen: React.FC<{ navigation: any; route: any }> = ({ n
   const { userId } = route.params;
   const { width } = useWindowDimensions();
   const queryClient = useQueryClient();
+  const { data: convData } = useConversations();
+  const currentUserId = useAppStore((s) => s.user?.id);
+  const conversations = convData?.conversations || [];
+  const conversation = conversations.find((c: any) =>
+    c.participantIds?.includes(userId) && c.participantIds?.includes(currentUserId)
+  );
+  const conversationId = conversation?.id;
 
   const { data: profile, isLoading } = useQuery({
     queryKey: ['userProfile', userId],
@@ -83,7 +92,45 @@ export const UserProfileScreen: React.FC<{ navigation: any; route: any }> = ({ n
           <Ionicons name="arrow-back" size={24} color={colors.textPrimary} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>{p.firstName || 'Profile'}</Text>
-        <View style={{ width: 24 }} />
+        <View style={styles.headerActions}>
+          {conversationId && (
+            <>
+              <TouchableOpacity
+                style={styles.headerIcon}
+                onPress={() => navigation.navigate('Conversation', {
+                  conversationId,
+                  otherUserId: userId,
+                  otherName: p.firstName,
+                  otherAvatar: photos[0]?.url,
+                })}
+              >
+                <Ionicons name="chatbubble-outline" size={22} color={colors.primary} />
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.headerIcon}
+                onPress={() => navigation.navigate('Call', {
+                  conversationId,
+                  otherUserId: userId,
+                  otherName: p.firstName,
+                  callType: 'voice',
+                })}
+              >
+                <Ionicons name="call-outline" size={22} color={colors.primary} />
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.headerIcon}
+                onPress={() => navigation.navigate('Call', {
+                  conversationId,
+                  otherUserId: userId,
+                  otherName: p.firstName,
+                  callType: 'video',
+                })}
+              >
+                <Ionicons name="videocam-outline" size={22} color={colors.primary} />
+              </TouchableOpacity>
+            </>
+          )}
+        </View>
       </View>
 
       <ScrollView showsVerticalScrollIndicator={false}>
@@ -184,7 +231,9 @@ export const UserProfileScreen: React.FC<{ navigation: any; route: any }> = ({ n
 const styles = StyleSheet.create({
   safeArea: { flex: 1, backgroundColor: colors.background },
   header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: spacing.md },
-  headerTitle: { ...typography.h3 },
+  headerTitle: { ...typography.h3, flex: 1, textAlign: 'center' },
+  headerActions: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
+  headerIcon: { padding: spacing.xs },
   empty: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   emptyText: { ...typography.body, color: colors.textSecondary },
   photoGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 2 },
