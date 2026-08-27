@@ -33,12 +33,20 @@ async function isLocalReachable(): Promise<boolean> {
 export async function resolveApiUrl(): Promise<string> {
   if (cachedApiUrl) return cachedApiUrl;
 
-  if (LOCAL_API && isAllowedUrl(LOCAL_API) && (await isLocalReachable())) {
-    cachedApiUrl = LOCAL_API;
-  } else if (PUBLIC_API && isHttps(PUBLIC_API)) {
+  if (LOCAL_API && isAllowedUrl(LOCAL_API)) {
+    if (__DEV__ || (await isLocalReachable())) {
+      cachedApiUrl = LOCAL_API;
+    }
+  }
+  if (!cachedApiUrl && PUBLIC_API && isHttps(PUBLIC_API)) {
     cachedApiUrl = PUBLIC_API;
-  } else {
-    throw new Error('No valid HTTPS API URL configured. Set EXPO_PUBLIC_API_URL or EXPO_PUBLIC_LOCAL_API_URL.');
+  }
+  if (!cachedApiUrl) {
+    throw new Error(
+      `No valid API URL configured. Set EXPO_PUBLIC_API_URL or EXPO_PUBLIC_LOCAL_API_URL.` +
+      `\nLOCAL_API=${LOCAL_API || '(empty)'}` +
+      `\nPUBLIC_API=${PUBLIC_API || '(empty)'}`
+    );
   }
   return cachedApiUrl!;
 }
@@ -46,12 +54,20 @@ export async function resolveApiUrl(): Promise<string> {
 export async function resolveWsUrl(): Promise<string> {
   if (cachedWsUrl) return cachedWsUrl;
 
-  if (LOCAL_WS && isAllowedUrl(LOCAL_WS) && (await isLocalReachable())) {
-    cachedWsUrl = LOCAL_WS;
-  } else if (PUBLIC_WS && isHttps(PUBLIC_WS)) {
+  if (LOCAL_WS && isAllowedUrl(LOCAL_WS)) {
+    if (__DEV__ || (await isLocalReachable())) {
+      cachedWsUrl = LOCAL_WS;
+    }
+  }
+  if (!cachedWsUrl && PUBLIC_WS && isHttps(PUBLIC_WS)) {
     cachedWsUrl = PUBLIC_WS;
-  } else {
-    throw new Error('No valid WSS URL configured. Set EXPO_PUBLIC_WS_URL or EXPO_PUBLIC_LOCAL_WS_URL.');
+  }
+  if (!cachedWsUrl) {
+    throw new Error(
+      `No valid WS URL configured. Set EXPO_PUBLIC_WS_URL or EXPO_PUBLIC_LOCAL_WS_URL.` +
+      `\nLOCAL_WS=${LOCAL_WS || '(empty)'}` +
+      `\nPUBLIC_WS=${PUBLIC_WS || '(empty)'}`
+    );
   }
   return cachedWsUrl!;
 }
