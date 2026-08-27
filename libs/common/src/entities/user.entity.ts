@@ -25,10 +25,12 @@ export enum UserStatus {
 @Entity('users')
 @Index(['email'], { unique: true })
 @Index(['phone'], { unique: true, where: '"phone" IS NOT NULL' })
+@Index(['username'], { unique: true, where: '"username" IS NOT NULL' })
 export class User {
   @PrimaryGeneratedColumn('uuid') id: string;
   @Column({ unique: true }) email: string;
   @Column({ nullable: true }) phone: string;
+  @Column({ nullable: true, unique: true }) username: string;
   @Column() passwordHash: string;
   @Column({ nullable: true }) fullName: string;
   @Column({ type: 'date', nullable: true }) dateOfBirth: Date;

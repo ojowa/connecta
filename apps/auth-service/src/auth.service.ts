@@ -21,15 +21,19 @@ export class AuthService {
   ) {}
 
   async register(data: any) {
-    const { email, phone, password, fullName, dateOfBirth, gender, deviceId, platform, osVersion, appVersion } = data;
-    if (!email || !password || !fullName || !dateOfBirth || !gender) throw new BadRequestException('Missing required fields');
+    const { email, phone, password, fullName, dateOfBirth, gender, username, deviceId, platform, osVersion, appVersion } = data;
+    if (!email || !password || !fullName || !dateOfBirth || !gender || !username) throw new BadRequestException('Missing required fields');
+    const usernameRegex = /^[a-zA-Z0-9_]{3,20}$/;
+    if (!usernameRegex.test(username)) throw new BadRequestException('Username must be 3-20 characters, alphanumeric and underscores only');
+    const existingUsername = await this.userRepo.findOne({ where: { username } });
+    if (existingUsername) throw new ConflictException('Username already taken');
     const existing = await this.userRepo.findOne({ where: [{ email }, ...(phone ? [{ phone }] : [])] });
     if (existing) throw new ConflictException(existing.email === email ? 'Email already registered' : 'Phone already registered');
     const dob = new Date(dateOfBirth);
     const age = Math.floor((Date.now() - dob.getTime()) / (365.25 * 24 * 60 * 60 * 1000));
     if (age < 18) throw new BadRequestException('Must be at least 18 years old');
     const passwordHash = await bcrypt.hash(password, 12);
-    const user = this.userRepo.create({ email, phone, passwordHash, fullName, dateOfBirth: dob, gender, role: UserRole.USER, status: UserStatus.PENDING_VERIFICATION });
+    const user = this.userRepo.create({ email, phone, passwordHash, fullName, dateOfBirth: dob, gender, username, role: UserRole.USER, status: UserStatus.PENDING_VERIFICATION });
     const saved = await this.userRepo.save(user);
     const tokens = await this.generateTokens(saved);
     await this.createSession(saved.id, tokens.refreshToken, deviceId, platform, osVersion, appVersion);

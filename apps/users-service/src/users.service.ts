@@ -281,4 +281,22 @@ export class UsersService {
       request: request || null,
     };
   }
+
+  async searchByUsername(userId: string, query: string, limit?: number) {
+    if (!query || query.trim().length < 2) {
+      return { users: [] };
+    }
+    const max = Math.min(limit || 20, 50);
+    const blockedIds = (await this.blockRepo.find({ where: { blockerId: userId } })).map((b) => b.blockedId);
+    const qb = this.userRepo.createQueryBuilder('user')
+      .select(['user.id', 'user.username', 'user.fullName'])
+      .where('user.username ILIKE :query', { query: `%${query.trim()}%` })
+      .andWhere('user.id != :userId', { userId })
+      .andWhere('user.status = :status', { status: 'active' });
+    if (blockedIds.length > 0) {
+      qb.andWhere('user.id NOT IN (:...blockedIds)', { blockedIds });
+    }
+    const users = await qb.limit(max).getMany();
+    return { users };
+  }
 }
