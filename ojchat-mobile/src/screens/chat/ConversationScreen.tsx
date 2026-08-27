@@ -49,7 +49,8 @@ function callsToMessages(calls: CallEvent[], userId: string): FeedItem[] {
 }
 
 export const ConversationScreen: React.FC<{ route: any; navigation: any }> = ({ route, navigation }) => {
-  const { conversationId, otherUserId = '', otherName = 'Chat', otherAvatar } = route.params || {};
+  const { conversationId: routeConversationId, otherUserId = '', otherName = 'Chat', otherAvatar } = route.params || {};
+  const [conversationId, setConversationId] = useState<string | undefined>(routeConversationId);
   const { height: screenHeight } = useWindowDimensions();
   const keyboardOffset = Math.round(screenHeight * 0.1);
   const { data, isLoading } = useMessages(conversationId);
@@ -61,6 +62,18 @@ export const ConversationScreen: React.FC<{ route: any; navigation: any }> = ({ 
   const typingUsers = useTypingIndicator(conversationId);
   const [replyTo, setReplyTo] = useState<{ id: string; content: string } | null>(null);
   const [callEvents, setCallEvents] = useState<FeedItem[]>([]);
+
+  useEffect(() => {
+    if (!conversationId && otherUserId) {
+      apiClient.post(ENDPOINTS.CHAT.CONVERSATIONS, { otherUserId })
+        .then((res) => {
+          const data = res.data as any;
+          const newId = data?.id || data;
+          if (newId) setConversationId(newId);
+        })
+        .catch(() => {});
+    }
+  }, [otherUserId]);
 
   useEffect(() => {
     if (!otherUserId) return;
