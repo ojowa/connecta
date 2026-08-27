@@ -209,21 +209,18 @@ const CreateMomentModal: React.FC<{
       input.click();
       return;
     }
-    try {
-      const { status } = await ImagePicker.requestCameraPermissionsAsync();
-      if (status !== 'granted') {
-        Alert.alert('Permission needed', 'Please grant camera access to take a photo.');
-        return;
-      }
-      const result = await ImagePicker.launchCameraAsync({
-        quality: 0.8,
-        allowsEditing: true,
-      });
-      if (!result.canceled && result.assets[0]) {
-        setMediaUri(result.assets[0].uri);
-      }
-    } catch (err) {
-      Alert.alert('Camera unavailable', 'Could not open camera. Try picking from gallery instead.');
+    const { status } = await ImagePicker.requestCameraPermissionsAsync();
+    if (status !== 'granted') {
+      Alert.alert('Permission needed', 'Please grant camera access in your device settings.');
+      return;
+    }
+    const result = await ImagePicker.launchCameraAsync({
+      quality: 0.8,
+      allowsEditing: true,
+      mediaTypes: ['images'],
+    });
+    if (!result.canceled && result.assets[0]) {
+      setMediaUri(result.assets[0].uri);
     }
   };
 
