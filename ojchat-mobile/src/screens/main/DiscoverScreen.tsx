@@ -19,6 +19,7 @@ export const DiscoverScreen: React.FC = () => {
   const superLikeMutation = useSuperLike();
   const undoMutation = useUndo();
   const [refreshing, setRefreshing] = useState(false);
+  const viewedIds = useRef(new Set<string>());
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
@@ -26,21 +27,19 @@ export const DiscoverScreen: React.FC = () => {
     setRefreshing(false);
   }, [refetch]);
 
-  if (isLoading) return <LoadingSpinner />;
   const profiles = data?.candidates || [];
-
-  const viewedIds = useRef(new Set<string>());
 
   useEffect(() => {
     if (profiles.length > 0) {
-      const topProfile = profiles[0];
-      const uid = topProfile.user.id;
+      const uid = profiles[0].user.id;
       if (!viewedIds.current.has(uid)) {
         viewedIds.current.add(uid);
         apiClient.post(ENDPOINTS.MATCHING.PROFILE_VIEW(uid)).catch(() => {});
       }
     }
   }, [profiles]);
+
+  if (isLoading) return <LoadingSpinner />;
 
   if (profiles.length === 0) {
     return (
