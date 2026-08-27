@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Modal, FlatList } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Modal, FlatList, TextInput } from 'react-native';
 import { colors } from '../../theme/colors';
 import { typography } from '../../theme/typography';
 import { spacing } from '../../theme/spacing';
@@ -16,6 +16,8 @@ const MONTHS = [
   'July', 'August', 'September', 'October', 'November', 'December',
 ];
 
+const MONTH_SHORT = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+
 function daysInMonth(month: number, year: number): number {
   return new Date(year, month + 1, 0).getDate();
 }
@@ -23,13 +25,7 @@ function daysInMonth(month: number, year: number): number {
 function formatDate(day: number, month: number, year: number): string {
   const dd = String(day).padStart(2, '0');
   const mm = String(month + 1).padStart(2, '0');
-  return `${dd}-${mm}-${year}`;
-}
-
-function toDisplay(iso: string): string {
-  if (!iso) return '';
-  const [y, m, d] = iso.split('-');
-  return `${d}-${m}-${y}`;
+  return `${year}-${mm}-${dd}`;
 }
 
 function WheelPicker({ items, selected, onSelect, label }: {
@@ -78,10 +74,12 @@ function WheelPicker({ items, selected, onSelect, label }: {
 }
 
 export function DOBPicker({ value, onChange, error }: DOBPickerProps) {
+  const [mode, setMode] = useState<'pick' | 'type'>('pick');
   const parts = value ? value.split('-') : [];
   const [day, setDay] = useState(parts[2] ? parseInt(parts[2], 10) : 0);
   const [month, setMonth] = useState(parts[1] ? parseInt(parts[1], 10) - 1 : -1);
   const [year, setYear] = useState(parts[0] ? parseInt(parts[0], 10) : 0);
+  const [typed, setTyped] = useState('');
 
   const currentYear = new Date().getFullYear();
   const years = Array.from({ length: currentYear - 1905 }, (_, i) => currentYear - i);
@@ -89,16 +87,69 @@ export function DOBPicker({ value, onChange, error }: DOBPickerProps) {
   const days = Array.from({ length: maxDay }, (_, i) => i + 1);
 
   useEffect(() => {
-    if (day > 0 && month >= 0 && year > 0) {
+    if (mode === 'pick' && day > 0 && month >= 0 && year > 0) {
       const max = daysInMonth(month, year);
       const clamped = day > max ? max : day;
       onChange(formatDate(clamped, month, year));
     }
-  }, [day, month, year]);
+  }, [day, month, year, mode]);
+
+  const parseTyped = (text: string) => {
+    const clean = text.replace(/[^0-9]/g, '');
+    const formatted = clean.replace(/^(\d{2})(\d{0,2})(\d{0,4})$/, (_, dd, mm, yyyy) => {
+      let result = dd;
+      if (mm) result += '-' + mm;
+      if (yyyy) result += '-' + yyyy;
+      return result;
+    });
+    setTyped(formatted);
+
+    const match = formatted.match(/^(\d{2})-(\d{2})-(\d{4})$/);
+    if (match) {
+      const [, d, m, y] = match;
+      const di = parseInt(d, 10), mi = parseInt(m, 10), yi = parseInt(y, 10);
+      if (mi >= 1 && mi <= 12 && di >= 1 && di <= 31 && yi >= 1900) {
+        const date = new Date(yi, mi - 1, di);
+        if (date.getDate() === di && date.getMonth() === mi - 1 && date.getFullYear() === yi) {
+          onChange(`${y}-${m}-${d}`);
+        }
+      }
+    }
+  };
+
+  const displayValue = value ? `${parts[2] || ''}-${parts[1] || ''}-${parts[0] || ''}` : '';
+
+  if (mode === 'type') {
+    return (
+      <View style={styles.container}>
+        <View style={styles.labelRow}>
+          <Text style={styles.label}>Date of Birth</Text>
+          <TouchableOpacity onPress={() => setMode('pick')}>
+            <Text style={styles.toggle}>Use picker</Text>
+          </TouchableOpacity>
+        </View>
+        <TextInput
+          style={[styles.textInput, error ? styles.textInputError : null]}
+          placeholder="DD-MM-YYYY"
+          placeholderTextColor={colors.textTertiary}
+          value={typed || displayValue}
+          onChangeText={parseTyped}
+          keyboardType="numeric"
+          maxLength={10}
+        />
+        {error ? <Text style={styles.error}>{error}</Text> : null}
+      </View>
+    );
+  }
 
   return (
     <View style={styles.container}>
-      <Text style={styles.label}>Date of Birth</Text>
+      <View style={styles.labelRow}>
+        <Text style={styles.label}>Date of Birth</Text>
+        <TouchableOpacity onPress={() => { setTyped(displayValue); setMode('type'); }}>
+          <Text style={styles.toggle}>Type instead</Text>
+        </TouchableOpacity>
+      </View>
       <View style={styles.row}>
         <View style={styles.col}>
           <WheelPicker items={days} selected={day || 'DD'} onSelect={(v) => setDay(Number(v))} label="Day" />
@@ -117,7 +168,9 @@ export function DOBPicker({ value, onChange, error }: DOBPickerProps) {
 
 const styles = StyleSheet.create({
   container: { marginBottom: spacing.md },
-  label: { ...typography.caption, color: colors.textSecondary, fontWeight: '600', marginBottom: spacing.sm },
+  labelRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: spacing.sm },
+  label: { ...typography.caption, color: colors.textSecondary, fontWeight: '600' },
+  toggle: { ...typography.small, color: colors.primary, fontWeight: '600' },
   row: { flexDirection: 'row', gap: spacing.sm },
   col: { flex: 1 },
   colWide: { flex: 2 },
@@ -130,6 +183,12 @@ const styles = StyleSheet.create({
   wheelText: { ...typography.body, color: colors.textPrimary, flex: 1 },
   wheelPlaceholder: { color: colors.textTertiary },
   wheelChevron: { ...typography.body, color: colors.textTertiary },
+  textInput: {
+    borderWidth: 1, borderColor: colors.border, borderRadius: borderRadius.input,
+    paddingHorizontal: spacing.md, paddingVertical: spacing.md,
+    ...typography.body, color: colors.textPrimary,
+  },
+  textInputError: { borderColor: colors.error },
   overlay: { flex: 1, justifyContent: 'flex-end', backgroundColor: 'rgba(0,0,0,0.4)' },
   pickerContainer: { backgroundColor: colors.white, borderTopLeftRadius: 16, borderTopRightRadius: 16, maxHeight: '50%' },
   pickerHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: spacing.lg, borderBottomWidth: 1, borderBottomColor: colors.border },
