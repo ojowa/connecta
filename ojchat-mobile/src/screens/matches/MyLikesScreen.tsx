@@ -16,7 +16,6 @@ interface LikedUser {
     photos: { id: string; url: string; isPrimary: boolean }[];
   };
   likedAt: string;
-  isMatched: boolean;
 }
 
 export const MyLikesScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
@@ -69,11 +68,6 @@ export const MyLikesScreen: React.FC<{ navigation: any }> = ({ navigation }) => 
                 <Text style={styles.userName}>{item.user?.fullName}</Text>
                 <Text style={styles.likedTime}>Liked {timeAgo}</Text>
               </View>
-              {item.isMatched && (
-                <View style={styles.matchedBadge}>
-                  <Text style={styles.matchedText}>Matched</Text>
-                </View>
-              )}
               <Ionicons name="chevron-forward" size={20} color={colors.gray400} />
             </TouchableOpacity>
           );
@@ -117,12 +111,4 @@ const styles = StyleSheet.create({
   userInfo: { flex: 1, marginLeft: spacing.md },
   userName: { ...typography.body, fontWeight: '600' },
   likedTime: { ...typography.caption, color: colors.textSecondary },
-  matchedBadge: {
-    backgroundColor: colors.primaryOverlay,
-    paddingHorizontal: spacing.sm,
-    paddingVertical: 2,
-    borderRadius: borderRadius.sm,
-    marginRight: spacing.sm,
-  },
-  matchedText: { ...typography.small, color: colors.primary, fontWeight: '600' },
 });
