@@ -12,7 +12,6 @@ import { borderRadius } from '../../theme/borderRadius';
 import { LoadingSpinner } from '../../components/common/LoadingSpinner';
 import { useConversations } from '../../hooks/useChat';
 import { useAppStore } from '../../store';
-import { ENDPOINTS } from '../../constants/endpoints';
 
 function calculateAge(dob: string): number {
   const birth = new Date(dob);
