@@ -93,9 +93,8 @@ export const UserProfileScreen: React.FC<{ navigation: any; route: any }> = ({ n
           <Ionicons name="arrow-back" size={24} color={colors.textPrimary} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>{p.firstName || 'Profile'}</Text>
+        {isMatched ? (
         <View style={styles.headerActions}>
-          {conversationId && (
-            <>
               <TouchableOpacity
                 style={styles.headerIcon}
                 onPress={() => navigation.navigate('Conversation', {
@@ -129,9 +128,10 @@ export const UserProfileScreen: React.FC<{ navigation: any; route: any }> = ({ n
               >
                 <Ionicons name="videocam-outline" size={22} color={colors.primary} />
               </TouchableOpacity>
-            </>
-          )}
         </View>
+        ) : (
+          <View style={{ width: 24 }} />
+        )}
       </View>
 
       <ScrollView showsVerticalScrollIndicator={false}>
