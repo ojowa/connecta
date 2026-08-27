@@ -25,7 +25,7 @@ interface FormErrors {
 }
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-const GENDERS = ['Male', 'Female', 'Non-binary', 'Other'] as const;
+const GENDERS = ['Male', 'Female'] as const;
 const ISO_DOB_RE = /^\d{4}-\d{2}-\d{2}$/;
 
 function parseIsoDob(iso: string): Date | null {
