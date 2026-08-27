@@ -1,5 +1,5 @@
 import React, { useRef, useCallback, useState, useLayoutEffect, useEffect } from 'react';
-import { View, StyleSheet, FlatList, KeyboardAvoidingView, Platform, Text, TouchableOpacity, useWindowDimensions } from 'react-native';
+import { View, StyleSheet, FlatList, KeyboardAvoidingView, Platform, Text, TouchableOpacity, useWindowDimensions, Image } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useMessages, useSendMessage, useDeleteMessage, useReactToMessage, useTypingIndicator } from '../../hooks/useChat';
 import { chatApi } from '../../services/api/chatApi';
@@ -77,7 +77,6 @@ export const ConversationScreen: React.FC<{ route: any; navigation: any }> = ({ 
 
   useLayoutEffect(() => {
     navigation.setOptions({
-      title: otherName,
       headerRight: () => (
         <View style={styles.headerActions}>
           <TouchableOpacity style={styles.headerButton} onPress={handleVoiceCall}>
@@ -88,8 +87,16 @@ export const ConversationScreen: React.FC<{ route: any; navigation: any }> = ({ 
           </TouchableOpacity>
         </View>
       ),
+      headerTitle: () => (
+        <TouchableOpacity onPress={() => navigation.navigate('UserProfile', { userId: otherUserId })} style={styles.headerTitleContainer}>
+          {otherAvatar ? (
+            <Image source={{ uri: otherAvatar }} style={styles.headerAvatar} />
+          ) : null}
+          <Text style={styles.headerTitleText} numberOfLines={1}>{otherName}</Text>
+        </TouchableOpacity>
+      ),
     });
-  }, [navigation, otherName, otherUserId]);
+  }, [navigation, otherName, otherUserId, otherAvatar]);
 
   const handleVoiceCall = useCallback(() => {
     navigation.navigate('ActiveVoiceCall', {
@@ -229,6 +236,9 @@ const styles = StyleSheet.create({
   headerActions: { flexDirection: 'row', gap: spacing.sm },
   headerButton: { width: 36, height: 36, borderRadius: 18, backgroundColor: colors.gray100, justifyContent: 'center', alignItems: 'center' },
   headerButtonIcon: { fontSize: 18 },
+  headerTitleContainer: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
+  headerAvatar: { width: 28, height: 28, borderRadius: 14 },
+  headerTitleText: { ...typography.body, fontWeight: '600', maxWidth: 180 },
   callEvent: { alignSelf: 'center', marginVertical: spacing.sm, alignItems: 'center' },
   callEventText: { ...typography.caption, color: colors.textSecondary, textAlign: 'center' },
   callEventTime: { ...typography.small, color: colors.gray400, marginTop: 2 },
