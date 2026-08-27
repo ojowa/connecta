@@ -27,7 +27,7 @@ export const ChatsScreen: React.FC = ({ navigation }: any) => {
       <View style={styles.container}>
       <Text style={styles.title}>Messages</Text>
       {conversations.length === 0 ? (
-        <ScrollView style={styles.empty} contentContainerStyle={{flex:1, justifyContent:'center', alignItems:'center'}} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />}>
+        <ScrollView style={styles.empty} contentContainerStyle={styles.emptyContent} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />}>
           <Text style={styles.emptyIcon}>💬</Text>
           <Text style={styles.emptyText}>No conversations yet</Text>
           <Text style={styles.emptySubtext}>Match with someone to start chatting</Text>
@@ -53,7 +53,8 @@ const styles = StyleSheet.create({
   safeArea: { flex: 1, backgroundColor: colors.white },
   container: { flex: 1, backgroundColor: colors.white },
   title: { ...typography.h2, padding: spacing.md },
-  empty: { flex: 1, justifyContent: 'center', alignItems: 'center' },
+  empty: { flex: 1 },
+  emptyContent: { flex: 1, justifyContent: 'center', alignItems: 'center' },
   emptyIcon: { fontSize: 48, marginBottom: spacing.md },
   emptyText: { ...typography.h3, marginBottom: spacing.xs },
   emptySubtext: { ...typography.body, color: colors.textSecondary },
