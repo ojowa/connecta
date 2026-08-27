@@ -37,6 +37,7 @@ import IncognitoScreen from '../screens/settings/IncognitoScreen';
 import { BiometricSetupScreen } from '../screens/auth/BiometricSetupScreen';
 import { InterestSelectorScreen } from '../screens/profile/InterestSelectorScreen';
 import { WhoViewedScreen } from '../screens/matches/WhoViewedScreen';
+import { UserProfileScreen } from '../screens/profile/UserProfileScreen';
 import { DailyStreakScreen } from '../screens/gamification/DailyStreakScreen';
 
 const Stack = createNativeStackNavigator();
@@ -58,6 +59,7 @@ export const RootNavigator: React.FC = () => {
             <Stack.Screen name="InterestSelector" component={InterestSelectorScreen} options={{ headerShown: false }} />
             <Stack.Screen name="PhotoManager" component={PhotoManagerScreen} options={{ headerShown: true, title: 'Manage Photos' }} />
             <Stack.Screen name="ProfilePrompts" component={ProfilePromptsScreen} options={{ headerShown: true, title: 'Profile Prompts' }} />
+            <Stack.Screen name="UserProfile" component={UserProfileScreen} options={{ headerShown: false }} />
             {/* Settings & Notifications */}
             <Stack.Screen name="Settings" component={SettingsScreen} options={{ headerShown: true, title: 'Settings' }} />
             <Stack.Screen name="Preferences" component={PreferencesScreen} options={{ headerShown: true, title: 'Preferences' }} />
