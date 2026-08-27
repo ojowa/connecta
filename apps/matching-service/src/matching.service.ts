@@ -444,10 +444,16 @@ export class MatchingService {
         const profile = profileMap.get(otherId);
         const profilePhotos = profile ? (photoMap.get(profile.id) || []) : [];
         return {
-          ...m,
+          id: m.id,
+          user1Id: m.user1Id,
+          user2Id: m.user2Id,
+          matchedAt: m.matchedAt,
+          matchedVia: m.matchedVia,
+          conversationId: m.conversationId,
           otherUser: otherUser ? {
             id: otherUser.id,
             fullName: otherUser.fullName,
+            avatarUrl: profilePhotos.find((p) => p.isPrimary)?.url || profilePhotos[0]?.url || null,
             photos: profilePhotos.map((p) => ({ id: p.id, url: p.url, isPrimary: p.isPrimary, order: p.order })),
           } : null,
         };
