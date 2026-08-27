@@ -123,7 +123,7 @@ export const MatchesScreen: React.FC = () => {
           renderItem={({ item }) => <MatchCard match={item} onPress={() => {
             const otherId = item.otherUser?.id;
             if (!otherId) return;
-            navigation.navigate('UserProfile', { userId: otherId });
+            navigation.navigate('UserProfile', { userId: otherId, isMatched: true });
           }} />}
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />}
         />

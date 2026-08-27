@@ -23,7 +23,7 @@ function calculateAge(dob: string): number {
 }
 
 export const UserProfileScreen: React.FC<{ navigation: any; route: any }> = ({ navigation, route }) => {
-  const { userId } = route.params;
+  const { userId, isMatched: routeIsMatched } = route.params;
   const { width } = useWindowDimensions();
   const queryClient = useQueryClient();
   const { data: convData } = useConversations();
@@ -32,7 +32,7 @@ export const UserProfileScreen: React.FC<{ navigation: any; route: any }> = ({ n
   const conversation = conversations.find((c: any) =>
     c.participantIds?.includes(userId) && c.participantIds?.includes(currentUserId)
   );
-  const isMatched = !!conversation;
+  const isMatched = routeIsMatched || !!conversation;
   const conversationId = conversation?.id;
 
   const { data: profile, isLoading } = useQuery({

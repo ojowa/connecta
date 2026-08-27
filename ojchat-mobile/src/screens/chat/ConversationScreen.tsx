@@ -88,7 +88,7 @@ export const ConversationScreen: React.FC<{ route: any; navigation: any }> = ({ 
         </View>
       ),
       headerTitle: () => (
-        <TouchableOpacity onPress={() => navigation.navigate('UserProfile', { userId: otherUserId })} style={styles.headerTitleContainer}>
+        <TouchableOpacity onPress={() => navigation.navigate('UserProfile', { userId: otherUserId, isMatched: true })} style={styles.headerTitleContainer}>
           {otherAvatar ? (
             <Image source={{ uri: otherAvatar }} style={styles.headerAvatar} />
           ) : null}
