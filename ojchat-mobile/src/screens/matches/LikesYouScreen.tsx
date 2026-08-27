@@ -16,7 +16,6 @@ import { colors } from '../../theme/colors';
 import { typography } from '../../theme/typography';
 import { spacing } from '../../theme/spacing';
 import { borderRadius } from '../../theme/borderRadius';
-import { Avatar } from '../../components/common/Avatar';
 import { LoadingSpinner } from '../../components/common/LoadingSpinner';
 import { Photo } from '../../types/match';
 
@@ -43,12 +42,11 @@ interface LikesYouResponse {
   };
 }
 
-const CARD_WIDTH_ARGS = '(100% - 16*3) / 2';
-
 const LikesYouScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
   const queryClient = useQueryClient();
   const [page, setPage] = useState(1);
   const [likedUserIds, setLikedUserIds] = useState<Set<string>>(new Set());
+  const [refreshing, setRefreshing] = useState(false);
 
   const { data, isLoading, refetch, isFetching } = useQuery<LikesYouResponse>({
     queryKey: ['likedYou', page],
@@ -72,8 +70,6 @@ const LikesYouScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
     },
   });
 
-  const [refreshing, setRefreshing] = useState(false);
-
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
     await refetch();
@@ -82,6 +78,7 @@ const LikesYouScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
 
   const likes = data?.likes || [];
   const hasMore = data?.meta?.hasMore ?? false;
+  const totalCount = data?.meta?.total ?? 0;
 
   const loadMore = useCallback(() => {
     if (hasMore && !isFetching) {
@@ -94,61 +91,99 @@ const LikesYouScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
     return primary?.url || photos?.[0]?.url;
   };
 
-  const renderCard = useCallback(
-    ({ item }: { item: LikeYouItem }) => {
+  const formatTime = (dateStr: string) => {
+    const diff = Date.now() - new Date(dateStr).getTime();
+    const mins = Math.floor(diff / 60000);
+    if (mins < 1) return 'Just now';
+    if (mins < 60) return `${mins}m ago`;
+    const hours = Math.floor(mins / 60);
+    if (hours < 24) return `${hours}h ago`;
+    const days = Math.floor(hours / 24);
+    return `${days}d ago`;
+  };
+
+  const renderHeader = () => (
+    <View style={styles.headerSection}>
+      <View style={styles.statsRow}>
+        <View style={styles.statCard}>
+          <Text style={styles.statNumber}>{totalCount}</Text>
+          <Text style={styles.statLabel}>{totalCount === 1 ? 'Like' : 'Likes'}</Text>
+        </View>
+        {likes.some((l) => l.isSuperLike) && (
+          <View style={[styles.statCard, styles.superStatCard]}>
+            <Text style={styles.superStatIcon}>★</Text>
+            <Text style={styles.statLabel}>Super Likes</Text>
+          </View>
+        )}
+      </View>
+      <Text style={styles.sectionHint}>
+        {totalCount > 0
+          ? 'Like someone back to start a conversation'
+          : 'When someone likes you, they\'ll appear here'}
+      </Text>
+    </View>
+  );
+
+  const renderItem = useCallback(
+    ({ item, index }: { item: LikeYouItem; index: number }) => {
       const photoUrl = getPrimaryPhoto(item.user.photos);
       const likedBack = likedUserIds.has(item.user.id);
 
       return (
         <View style={styles.card}>
-          <View style={styles.imageContainer}>
+          <TouchableOpacity
+            style={styles.cardImageWrap}
+            onPress={() => navigation.navigate('UserProfile', { userId: item.user.id })}
+            activeOpacity={0.9}
+          >
             {photoUrl ? (
               <Image source={{ uri: photoUrl }} style={styles.cardImage} />
             ) : (
               <View style={styles.cardImagePlaceholder}>
-                <Avatar uri={null} size={64} name={item.user.fullName} />
+                <Ionicons name="person" size={48} color={colors.gray400} />
               </View>
             )}
-            <View style={styles.blurOverlay} />
+            <View style={styles.cardOverlay} />
             {item.isSuperLike && (
-              <View style={styles.superLikeBadge}>
-                <Text style={styles.superLikeText}>★</Text>
+              <View style={styles.superBadge}>
+                <Text style={styles.superBadgeText}>★</Text>
               </View>
             )}
-          </View>
-          <View style={styles.cardContent}>
-            <Avatar
-              uri={getPrimaryPhoto(item.user.photos)}
-              size={40}
-              name={item.user.fullName}
-              style={styles.cardAvatar}
-            />
-            <Text style={styles.cardName} numberOfLines={1}>
-              {item.user.fullName}
-            </Text>
+            <View style={styles.cardTopInfo}>
+              <Text style={styles.cardName}>{item.user.fullName}</Text>
+              <Text style={styles.cardTime}>{formatTime(item.createdAt)}</Text>
+            </View>
+          </TouchableOpacity>
+
+          <View style={styles.cardActions}>
             <TouchableOpacity
-              style={[
-                styles.likeButton,
-                likedBack && styles.likeButtonActive,
-              ]}
-              onPress={() => likeBackMutation.mutate(item.user.id)}
-              disabled={likedBack}
-              activeOpacity={0.8}
+              style={styles.profileBtn}
+              onPress={() => navigation.navigate('UserProfile', { userId: item.user.id })}
+              activeOpacity={0.7}
             >
-              <Text
-                style={[
-                  styles.likeButtonText,
-                  likedBack && styles.likeButtonTextActive,
-                ]}
-              >
-                {likedBack ? 'Liked!' : 'Like Back'}
+              <Ionicons name="person-outline" size={18} color={colors.textSecondary} />
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[styles.likeBackBtn, likedBack && styles.likeBackBtnDone]}
+              onPress={() => !likedBack && likeBackMutation.mutate(item.user.id)}
+              disabled={likedBack}
+              activeOpacity={0.7}
+            >
+              {likedBack ? (
+                <Ionicons name="checkmark" size={18} color={colors.white} />
+              ) : (
+                <Ionicons name="heart" size={18} color={colors.white} />
+              )}
+              <Text style={[styles.likeBackText, likedBack && styles.likeBackTextDone]}>
+                {likedBack ? 'Matched!' : 'Like Back'}
               </Text>
             </TouchableOpacity>
           </View>
         </View>
       );
     },
-    [likedUserIds]
+    [likedUserIds, navigation]
   );
 
   if (isLoading) return <LoadingSpinner message="Loading likes..." />;
@@ -156,18 +191,28 @@ const LikesYouScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
+        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
           <Ionicons name="arrow-back" size={24} color={colors.textPrimary} />
         </TouchableOpacity>
-        <Text style={styles.title}>Likes You</Text>
-        <View style={{ width: 24 }} />
+        <View style={styles.headerCenter}>
+          <Text style={styles.title}>Likes You</Text>
+          {totalCount > 0 && (
+            <View style={styles.countBadge}>
+              <Text style={styles.countBadgeText}>{totalCount}</Text>
+            </View>
+          )}
+        </View>
+        <View style={{ width: 40 }} />
       </View>
+
       {likes.length === 0 ? (
         <View style={styles.empty}>
-          <Text style={styles.emptyIcon}>💝</Text>
+          <View style={styles.emptyCircle}>
+            <Ionicons name="heart-outline" size={56} color={colors.primary} />
+          </View>
           <Text style={styles.emptyText}>No likes yet</Text>
           <Text style={styles.emptySubtext}>
-            When someone likes you, they'll appear here
+            When someone likes your profile, they'll appear here
           </Text>
         </View>
       ) : (
@@ -175,11 +220,13 @@ const LikesYouScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
           data={likes}
           keyExtractor={(item) => item.id}
           numColumns={2}
+          ListHeaderComponent={renderHeader}
           contentContainerStyle={styles.list}
           columnWrapperStyle={styles.row}
-          renderItem={renderCard}
+          renderItem={renderItem}
           onEndReached={loadMore}
           onEndReachedThreshold={0.5}
+          showsVerticalScrollIndicator={false}
           refreshControl={
             <RefreshControl
               refreshing={refreshing}
@@ -202,32 +249,97 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    padding: spacing.md,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.gray100,
   },
-  backButton: {
-    padding: spacing.xs,
+  backBtn: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  headerCenter: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
   },
   title: {
     ...typography.h3,
+    color: colors.textPrimary,
+  },
+  countBadge: {
+    backgroundColor: colors.primary,
+    borderRadius: borderRadius.full,
+    minWidth: 22,
+    height: 22,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 6,
+  },
+  countBadgeText: {
+    color: colors.white,
+    fontSize: 11,
+    fontWeight: '700',
+  },
+  headerSection: {
+    paddingHorizontal: spacing.md,
+    paddingTop: spacing.sm,
+    paddingBottom: spacing.xs,
+  },
+  statsRow: {
+    flexDirection: 'row',
+    gap: spacing.sm,
+    marginBottom: spacing.xs,
+  },
+  statCard: {
+    flex: 1,
+    backgroundColor: colors.primaryLight,
+    borderRadius: borderRadius.md,
+    padding: spacing.md,
+    alignItems: 'center',
+  },
+  superStatCard: {
+    backgroundColor: '#FEF3C7',
+  },
+  statNumber: {
+    ...typography.h2,
+    color: colors.primary,
+  },
+  superStatIcon: {
+    fontSize: 24,
+    color: colors.warning,
+  },
+  statLabel: {
+    ...typography.caption,
+    color: colors.textSecondary,
+    marginTop: 2,
+  },
+  sectionHint: {
+    ...typography.caption,
+    color: colors.textTertiary,
+    textAlign: 'center',
   },
   list: {
-    padding: spacing.sm,
+    paddingBottom: spacing.xxl,
   },
   row: {
     justifyContent: 'space-between',
-    paddingHorizontal: spacing.xs,
+    paddingHorizontal: spacing.md,
   },
   card: {
     flex: 1,
     maxWidth: '48%',
+    marginBottom: spacing.md,
     backgroundColor: colors.white,
     borderRadius: borderRadius.card,
-    marginBottom: spacing.md,
     overflow: 'hidden',
     borderWidth: 1,
-    borderColor: colors.border,
+    borderColor: colors.gray200,
   },
-  imageContainer: {
+  cardImageWrap: {
     position: 'relative',
     width: '100%',
     aspectRatio: 3 / 4,
@@ -240,80 +352,114 @@ const styles = StyleSheet.create({
   cardImagePlaceholder: {
     width: '100%',
     height: '100%',
-    backgroundColor: colors.gray200,
+    backgroundColor: colors.gray100,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  blurOverlay: {
+  cardOverlay: {
     ...StyleSheet.absoluteFill,
-    backgroundColor: colors.overlayLight,
+    backgroundColor: 'transparent',
   },
-  superLikeBadge: {
+  superBadge: {
     position: 'absolute',
     top: spacing.sm,
     right: spacing.sm,
-    backgroundColor: colors.primary,
     width: 28,
     height: 28,
     borderRadius: 14,
+    backgroundColor: colors.warning,
     alignItems: 'center',
     justifyContent: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 3,
   },
-  superLikeText: {
+  superBadgeText: {
     color: colors.white,
     fontSize: 14,
     fontWeight: '700',
   },
-  cardContent: {
+  cardTopInfo: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
     padding: spacing.sm,
-    alignItems: 'center',
-  },
-  cardAvatar: {
-    marginBottom: spacing.xs,
+    paddingBottom: spacing.md,
+    backgroundColor: 'linear-gradient(transparent, rgba(0,0,0,0.7))',
   },
   cardName: {
-    ...typography.caption,
-    fontWeight: '600',
-    color: colors.textPrimary,
-    textAlign: 'center',
-    marginBottom: spacing.sm,
+    ...typography.body,
+    fontWeight: '700',
+    color: colors.white,
+    fontSize: 15,
   },
-  likeButton: {
-    width: '100%',
-    backgroundColor: colors.primary,
-    borderRadius: borderRadius.button,
-    paddingVertical: spacing.sm,
+  cardTime: {
+    ...typography.small,
+    color: 'rgba(255,255,255,0.7)',
+    fontSize: 11,
+  },
+  cardActions: {
+    flexDirection: 'row',
+    padding: spacing.sm,
+    gap: spacing.xs,
+  },
+  profileBtn: {
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    backgroundColor: colors.gray100,
     alignItems: 'center',
+    justifyContent: 'center',
   },
-  likeButtonActive: {
+  likeBackBtn: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    height: 38,
+    borderRadius: 19,
+    backgroundColor: colors.primary,
+    gap: 4,
+  },
+  likeBackBtnDone: {
     backgroundColor: colors.success,
   },
-  likeButtonText: {
+  likeBackText: {
     ...typography.button,
     color: colors.white,
-    fontSize: 14,
+    fontSize: 13,
   },
-  likeButtonTextActive: {
+  likeBackTextDone: {
     color: colors.white,
   },
   empty: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
+    paddingHorizontal: spacing.xl,
   },
-  emptyIcon: {
-    fontSize: 48,
-    marginBottom: spacing.md,
+  emptyCircle: {
+    width: 100,
+    height: 100,
+    borderRadius: 50,
+    backgroundColor: colors.primaryLight,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: spacing.lg,
   },
   emptyText: {
     ...typography.h3,
+    color: colors.textPrimary,
     marginBottom: spacing.xs,
   },
   emptySubtext: {
     ...typography.body,
     color: colors.textSecondary,
     textAlign: 'center',
-    paddingHorizontal: spacing.xl,
+    lineHeight: 22,
   },
 });
 
