@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, FlatList, RefreshControl, TouchableOpacity, Tex
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { useMatches } from '../../hooks/useMatch';
+import { useConversations } from '../../hooks/useChat';
 import { MatchCard } from '../../components/dating/MatchCard';
 import { LoadingSpinner } from '../../components/common/LoadingSpinner';
 import { colors } from '../../theme/colors';
@@ -12,6 +13,7 @@ import { borderRadius } from '../../theme/borderRadius';
 import { Match } from '../../types/match';
 import { apiClient } from '../../services/api/apiClient';
 import { ENDPOINTS } from '../../constants/endpoints';
+import { useAppStore } from '../../store';
 
 interface SearchUser {
   id: string;
@@ -22,10 +24,21 @@ interface SearchUser {
 export const MatchesScreen: React.FC = () => {
   const navigation = useNavigation();
   const { data, isLoading, refetch } = useMatches();
+  const { data: convData } = useConversations();
   const [refreshing, setRefreshing] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<SearchUser[]>([]);
   const [searching, setSearching] = useState(false);
+  const currentUserId = useAppStore((s) => s.user?.id);
+
+  const conversations = convData?.conversations || [];
+
+  const findConversationId = useCallback((userId: string): string | null => {
+    const conv = conversations.find((c: any) =>
+      c.participantIds?.includes(userId) && c.participantIds?.includes(currentUserId)
+    );
+    return conv?.id || null;
+  }, [conversations, currentUserId]);
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
@@ -115,7 +128,21 @@ export const MatchesScreen: React.FC = () => {
           keyExtractor={(item: Match) => item.id}
           numColumns={3}
           contentContainerStyle={styles.list}
-          renderItem={({ item }) => <MatchCard match={item} />}
+          renderItem={({ item }) => <MatchCard match={item} onPress={() => {
+            const otherId = item.otherUser?.id;
+            if (!otherId) return;
+            const convId = findConversationId(otherId);
+            if (convId) {
+              navigation.navigate('Conversation', {
+                conversationId: convId,
+                otherUserId: otherId,
+                otherName: item.otherUser?.fullName,
+                otherAvatar: item.otherUser?.avatarUrl,
+              });
+            } else {
+              navigation.navigate('UserProfile', { userId: otherId });
+            }
+          }} />}
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />}
         />
       )}
