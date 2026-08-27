@@ -10,6 +10,7 @@ import { typography } from '../../theme/typography';
 import { spacing } from '../../theme/spacing';
 import { borderRadius } from '../../theme/borderRadius';
 import { Linking } from 'react-native';
+import { DOBPicker } from '../../components/common/DOBPicker';
 
 interface RegisterScreenProps { navigation: any; }
 
@@ -25,23 +26,21 @@ interface FormErrors {
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const GENDERS = ['Male', 'Female', 'Non-binary', 'Other'] as const;
-const DOB_RE = /^(\d{2})-(\d{2})-(\d{4})$/;
+const ISO_DOB_RE = /^\d{4}-\d{2}-\d{2}$/;
 
-function parseDob(ddmmyyyy: string): Date | null {
-  const match = ddmmyyyy.match(DOB_RE);
-  if (!match) return null;
-  const [, dd, mm, yyyy] = match;
-  const d = parseInt(dd, 10), m = parseInt(mm, 10), y = parseInt(yyyy, 10);
+function parseIsoDob(iso: string): Date | null {
+  if (!ISO_DOB_RE.test(iso)) return null;
+  const [y, m, d] = iso.split('-').map(Number);
   if (m < 1 || m > 12 || d < 1 || d > 31 || y < 1900) return null;
   const date = new Date(y, m - 1, d);
   if (date.getDate() !== d || date.getMonth() !== m - 1 || date.getFullYear() !== y) return null;
   return date;
 }
 
-function toIsoDob(ddmmyyyy: string): string {
-  const match = ddmmyyyy.match(DOB_RE);
-  if (!match) return ddmmyyyy;
-  return `${match[3]}-${match[2]}-${match[1]}`;
+function formatDobDisplay(iso: string): string {
+  if (!iso) return '';
+  const [y, m, d] = iso.split('-');
+  return `${d}-${m}-${y}`;
 }
 
 const STRENGTH_COLORS = { weak: colors.error, medium: colors.warning, strong: colors.success };
@@ -54,10 +53,9 @@ function validate(values: {
   else if (values.fullName.trim().length < 2) errors.fullName = 'Name must be at least 2 characters';
   if (!values.email.trim()) errors.email = 'Email is required';
   else if (!EMAIL_RE.test(values.email.trim())) errors.email = 'Enter a valid email address';
-  if (!values.dateOfBirth.trim()) errors.dateOfBirth = 'Date of birth is required';
-  else if (!DOB_RE.test(values.dateOfBirth.trim())) errors.dateOfBirth = 'Use format DD-MM-YYYY';
+  if (!values.dateOfBirth) errors.dateOfBirth = 'Date of birth is required';
   else {
-    const dob = parseDob(values.dateOfBirth.trim());
+    const dob = parseIsoDob(values.dateOfBirth);
     if (!dob) errors.dateOfBirth = 'Enter a valid date';
     else {
       const age = Math.floor((Date.now() - dob.getTime()) / (365.25 * 24 * 60 * 60 * 1000));
@@ -100,7 +98,7 @@ export const RegisterScreen: React.FC<RegisterScreenProps> = ({ navigation }) =>
 
     setServerError(null);
     try {
-      await register({ email: email.trim(), password, fullName: fullName.trim(), dateOfBirth: toIsoDob(dateOfBirth.trim()), gender: gender.toLowerCase().replace(/[- ]/g, '_') });
+      await register({ email: email.trim(), password, fullName: fullName.trim(), dateOfBirth, gender: gender.toLowerCase().replace(/[- ]/g, '_') });
     } catch (err: any) {
       const msg = err?.response?.data?.error?.message || err?.response?.data?.message || err?.message || 'Registration failed';
       setServerError(msg);
@@ -139,7 +137,7 @@ export const RegisterScreen: React.FC<RegisterScreenProps> = ({ navigation }) =>
 
           <Input label="Full Name" placeholder="Enter your full name" value={fullName} onChangeText={(v) => updateField('fullName', v)} autoCapitalize="words" error={errors.fullName} />
           <Input label="Email" placeholder="Enter your email" value={email} onChangeText={(v) => updateField('email', v)} keyboardType="email-address" autoCapitalize="none" error={errors.email} />
-          <Input label="Date of Birth" placeholder="DD-MM-YYYY" value={dateOfBirth} onChangeText={(v) => updateField('dateOfBirth', v)} keyboardType="numeric" error={errors.dateOfBirth} />
+          <DOBPicker value={dateOfBirth} onChange={(v) => updateField('dateOfBirth', v)} error={errors.dateOfBirth} />
 
           <Text style={styles.fieldLabel}>Gender</Text>
           <View style={styles.genderRow}>
