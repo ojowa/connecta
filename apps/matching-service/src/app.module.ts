@@ -6,6 +6,7 @@ import { allEntities } from '@app/common/entities';
 import { TypeOrmConfigService } from '@app/database/typeorm-config.service';
 import { MatchingController } from './matching.controller';
 import { MatchingService } from './matching.service';
+import { MatchingEnhancementService } from './matching-enhancement.service';
 import { CompatibilityEngine } from './ai/compatibility.engine';
 import { CandidateGenerator } from './ai/candidate.generator';
 import { DiversityInjector } from './ai/diversity.injector';
@@ -28,6 +29,7 @@ import { FakeProfileDetector } from './ai/fake-profile.detector';
   controllers: [MatchingController],
   providers: [
     MatchingService,
+    MatchingEnhancementService,
     CompatibilityEngine,
     CandidateGenerator,
     DiversityInjector,
@@ -38,5 +40,6 @@ import { FakeProfileDetector } from './ai/fake-profile.detector';
     ToxicityDetector,
     FakeProfileDetector,
   ],
+  exports: [MatchingEnhancementService],
 })
 export class AppModule {}

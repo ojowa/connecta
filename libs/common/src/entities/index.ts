@@ -41,6 +41,10 @@ import { PhotoLike } from './photo-like.entity';
 import { Appeal } from './appeal.entity';
 import { ProfileView } from './profile-view.entity';
 import { VerificationRequest } from './verification-request.entity';
+import { UserBehavior } from './user-behavior.entity';
+import { EloScore } from './elo-score.entity';
+import { PhotoAnalytic } from './photo-analytic.entity';
+import { ConversationSignal } from './conversation-signal.entity';
 
 export { User, UserRole, UserStatus } from './user.entity';
 export { Session } from './session.entity';
@@ -85,6 +89,10 @@ export { PhotoLike } from './photo-like.entity';
 export { Appeal } from './appeal.entity';
 export { ProfileView } from './profile-view.entity';
 export { VerificationRequest } from './verification-request.entity';
+export { UserBehavior } from './user-behavior.entity';
+export { EloScore } from './elo-score.entity';
+export { PhotoAnalytic } from './photo-analytic.entity';
+export { ConversationSignal } from './conversation-signal.entity';
 
 export const allEntities = [
   User,
@@ -130,4 +138,8 @@ export const allEntities = [
   Appeal,
   ProfileView,
   VerificationRequest,
+  UserBehavior,
+  EloScore,
+  PhotoAnalytic,
+  ConversationSignal,
 ];

@@ -10,6 +10,7 @@ import { IcebreakerGenerator } from './ai/icebreaker.generator';
 import { CandidateGenerator } from './ai/candidate.generator';
 import { ToxicityDetector } from './ai/toxicity.detector';
 import { FakeProfileDetector } from './ai/fake-profile.detector';
+import { MatchingEnhancementService } from './matching-enhancement.service';
 
 @Injectable()
 export class MatchingService {
@@ -38,6 +39,7 @@ export class MatchingService {
     private readonly candidateGenerator: CandidateGenerator,
     private readonly toxicityDetector: ToxicityDetector,
     private readonly fakeProfileDetector: FakeProfileDetector,
+    private readonly enhancementService: MatchingEnhancementService,
   ) {}
 
   private validateUserId(userId: string) {
@@ -147,7 +149,10 @@ export class MatchingService {
       candidates.map(async (c) => {
         try {
           const compatibility = await this.compatibilityEngine.score(userId, c.user.id);
-          return { ...c, compatibility };
+          const overallScore = await this.enhancementService.calculateOverallScore(
+            userId, c.user.id, compatibility.overallScore,
+          );
+          return { ...c, compatibility, overallScore };
         } catch {
           return c;
         }
@@ -158,9 +163,7 @@ export class MatchingService {
       const aBoosted = boostedUserIds.includes(a.user.id) ? 1 : 0;
       const bBoosted = boostedUserIds.includes(b.user.id) ? 1 : 0;
       if (aBoosted !== bBoosted) return bBoosted - aBoosted;
-      const aScore = (a as any).compatibility?.overallScore ?? 0;
-      const bScore = (b as any).compatibility?.overallScore ?? 0;
-      return bScore - aScore;
+      return (b as any).overallScore - (a as any).overallScore;
     });
 
     return {
@@ -186,10 +189,21 @@ export class MatchingService {
     await this.likeRepo.save(like);
     await this.dailyLikeRepo.increment({ id: dailyLike.id }, 'likesGiven', 1);
 
+    const likedUser = await this.userRepo.findOne({ where: { id: likedId } });
+    await this.enhancementService.trackBehavior({
+      userId: likerId,
+      targetUserId: likedId,
+      action: 'like',
+      targetAge: likedUser?.dateOfBirth ? Math.floor((Date.now() - new Date(likedUser.dateOfBirth).getTime()) / (365.25 * 24 * 60 * 60 * 1000)) : undefined,
+      targetGender: likedUser?.gender,
+    });
+
     const mutual = await this.likeRepo.findOne({ where: { userId: likedId, likedUserId: likerId } });
     if (mutual) {
       const match = this.matchRepo.create({ user1Id: likerId, user2Id: likedId, matchedAt: new Date(), isActive: true });
       await this.matchRepo.save(match);
+      await this.enhancementService.updateEloOnMatch(likerId);
+      await this.enhancementService.updateEloOnMatch(likedId);
       this.eventEmitter.emit('match.created', { matchId: match.id, user1Id: likerId, user2Id: likedId });
       return { liked: true, matched: true, matchId: match.id };
     }
@@ -202,6 +216,16 @@ export class MatchingService {
     if (existing) return existing;
     const pass = this.passRepo.create({ userId: passerId, passedUserId: passedId });
     await this.passRepo.save(pass);
+
+    const passedUser = await this.userRepo.findOne({ where: { id: passedId } });
+    await this.enhancementService.trackBehavior({
+      userId: passerId,
+      targetUserId: passedId,
+      action: 'pass',
+      targetAge: passedUser?.dateOfBirth ? Math.floor((Date.now() - new Date(passedUser.dateOfBirth).getTime()) / (365.25 * 24 * 60 * 60 * 1000)) : undefined,
+      targetGender: passedUser?.gender,
+    });
+
     return { passed: true };
   }
 
@@ -219,6 +243,16 @@ export class MatchingService {
     const like = this.likeRepo.create({ userId: likerId, likedUserId: likedId, isSuperLike: true });
     await this.likeRepo.save(like);
     await this.dailyLikeRepo.increment({ id: dailyLike.id }, 'superLikesGiven', 1);
+
+    const likedUser = await this.userRepo.findOne({ where: { id: likedId } });
+    await this.enhancementService.trackBehavior({
+      userId: likerId,
+      targetUserId: likedId,
+      action: 'super_like',
+      targetAge: likedUser?.dateOfBirth ? Math.floor((Date.now() - new Date(likedUser.dateOfBirth).getTime()) / (365.25 * 24 * 60 * 60 * 1000)) : undefined,
+      targetGender: likedUser?.gender,
+    });
+
     this.eventEmitter.emit('user.super_liked', { likerId, likedId });
     return { superLiked: true };
   }
@@ -480,6 +514,16 @@ export class MatchingService {
 
     const view = this.profileViewRepo.create({ viewerId, profileId });
     await this.profileViewRepo.save(view);
+
+    const viewedUser = await this.userRepo.findOne({ where: { id: profileId } });
+    await this.enhancementService.trackBehavior({
+      userId: viewerId,
+      targetUserId: profileId,
+      action: 'view_profile',
+      targetAge: viewedUser?.dateOfBirth ? Math.floor((Date.now() - new Date(viewedUser.dateOfBirth).getTime()) / (365.25 * 24 * 60 * 60 * 1000)) : undefined,
+      targetGender: viewedUser?.gender,
+    });
+
     return { recorded: true };
   }
 
