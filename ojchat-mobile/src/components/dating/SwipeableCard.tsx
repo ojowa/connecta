@@ -76,7 +76,10 @@ export const SwipeableCard: React.FC<SwipeableCardProps> = ({ profile, compatibi
               {profile.city && <Text style={styles.city}> | {profile.city}</Text>}
             </View>
             {typeof compatibilityScore === 'number' && (
-              <CompatibilityScore score={compatibilityScore} />
+              <View style={styles.scoreContainer}>
+                <CompatibilityScore score={compatibilityScore} />
+                <Text style={styles.scoreLabel}>Match</Text>
+              </View>
             )}
           </View>
           {profile.bio ? (
@@ -123,6 +126,8 @@ const styles = StyleSheet.create({
   bio: { ...typography.caption, color: 'rgba(255,255,255,0.9)', marginBottom: spacing.xs },
   interestsRow: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs },
   moreInterests: { ...typography.small, color: colors.whiteOverlaySoft, alignSelf: 'center' },
+  scoreContainer: { alignItems: 'center' },
+  scoreLabel: { ...typography.small, color: 'rgba(255,255,255,0.8)', marginTop: 2 },
   actionButtons: {
     flexDirection: 'row',
     justifyContent: 'center',

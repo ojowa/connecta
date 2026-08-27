@@ -64,6 +64,8 @@ export const ENDPOINTS = {
     TOXICITY_CHECK: '/matching/toxicity-check',
     FAKE_PROFILE_CHECK: (userId: string) => `/matching/fake-profile-check/${userId}`,
     SCAM_CHECK: (userId: string) => `/matching/scam-check/${userId}`,
+    PREFERENCE_MODEL: '/matching/preference-model',
+    ELO_SCORE: '/matching/elo-score',
   },
   CHAT: {
     CONVERSATIONS: '/chat/conversations',

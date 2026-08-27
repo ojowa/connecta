@@ -56,3 +56,19 @@ export function useCompatibility(userId: string) {
     enabled: !!userId,
   });
 }
+
+export function usePreferenceModel() {
+  return useQuery({
+    queryKey: ['preferenceModel'],
+    queryFn: () => matchApi.getPreferenceModel(),
+    staleTime: 300000,
+  });
+}
+
+export function useEloScore() {
+  return useQuery({
+    queryKey: ['eloScore'],
+    queryFn: () => matchApi.getEloScore(),
+    staleTime: 60000,
+  });
+}

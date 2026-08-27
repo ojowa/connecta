@@ -68,6 +68,7 @@ export interface MatchFeedItem {
   profile: Profile;
   compatibility?: CompatibilityData;
   compatibilityScore?: number;
+  overallScore?: number;
   distance?: number;
 }
 

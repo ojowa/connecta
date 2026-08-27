@@ -57,7 +57,7 @@ export const DiscoverScreen: React.FC = () => {
       <View style={styles.container}>
         <SwipeableCard
           profile={profiles[0].profile}
-          compatibilityScore={profiles[0].compatibility?.overallScore}
+          compatibilityScore={profiles[0].overallScore || profiles[0].compatibility?.overallScore}
           onSwipeLeft={() => passMutation.mutate(profiles[0].user.id)}
           onSwipeRight={() => likeMutation.mutate(profiles[0].user.id)}
         />

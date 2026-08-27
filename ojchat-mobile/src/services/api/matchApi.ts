@@ -92,4 +92,14 @@ export const matchApi = {
     const response = await apiClient.get(ENDPOINTS.MATCHING.PHOTO_STATS);
     return response.data;
   },
+
+  async getPreferenceModel() {
+    const response = await apiClient.get(ENDPOINTS.MATCHING.PREFERENCE_MODEL);
+    return response.data;
+  },
+
+  async getEloScore() {
+    const response = await apiClient.get(ENDPOINTS.MATCHING.ELO_SCORE);
+    return response.data;
+  },
 };
