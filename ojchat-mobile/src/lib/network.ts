@@ -10,18 +10,8 @@ function isHttps(url: string): boolean {
   return url.startsWith('https://') || url.startsWith('wss://');
 }
 
-function isLocalDevUrl(url: string): boolean {
-  if (!__DEV__) return false;
-  try {
-    const parsed = new URL(url);
-    return parsed.hostname === 'localhost' || parsed.hostname === '127.0.0.1';
-  } catch {
-    return false;
-  }
-}
-
 function isAllowedUrl(url: string): boolean {
-  return isHttps(url) || isLocalDevUrl(url);
+  return isHttps(url) || __DEV__;
 }
 
 async function isLocalReachable(): Promise<boolean> {
