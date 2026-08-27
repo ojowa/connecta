@@ -473,9 +473,21 @@ export class MatchingService {
     });
 
     const likerIds = likes.map((l) => l.userId);
-    const likers = likerIds.length > 0 ? await this.userRepo.find({ where: { id: In(likerIds) } }) : [];
+
+    const matchedLikes = await this.matchRepo.find({
+      where: [
+        { user1Id: userId, isActive: true },
+        { user2Id: userId, isActive: true },
+      ],
+    });
+    const matchedIds = new Set(matchedLikes.flatMap((m) => [m.user1Id, m.user2Id]));
+
+    const filteredLikes = likes.filter((l) => !matchedIds.has(l.userId));
+    const filteredLikerIds = filteredLikes.map((l) => l.userId);
+
+    const likers = filteredLikerIds.length > 0 ? await this.userRepo.find({ where: { id: In(filteredLikerIds) } }) : [];
     const userMap = new Map(likers.map((u) => [u.id, u]));
-    const profiles = likerIds.length > 0 ? await this.profileRepo.find({ where: { userId: In(likerIds) } }) : [];
+    const profiles = filteredLikerIds.length > 0 ? await this.profileRepo.find({ where: { userId: In(filteredLikerIds) } }) : [];
     const profileMap = new Map(profiles.map((p) => [p.userId, p]));
     const profileIds = profiles.map((p) => p.id);
     const photos = profileIds.length > 0 ? await this.photoRepo.find({ where: { profileId: In(profileIds) }, order: { order: 'ASC' } }) : [];
@@ -487,7 +499,7 @@ export class MatchingService {
     }
 
     return {
-      likes: likes.map((l) => {
+      likes: filteredLikes.map((l) => {
         const user = userMap.get(l.userId);
         const profile = profileMap.get(l.userId);
         const profilePhotos = profile ? (photoMap.get(profile.id) || []) : [];
@@ -500,7 +512,7 @@ export class MatchingService {
           } : null,
         };
       }),
-      meta: { page, limit, total, hasMore: total > page * limit },
+      meta: { page, limit, total: filteredLikes.length, hasMore: total > page * limit },
     };
   }
 
