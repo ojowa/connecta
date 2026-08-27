@@ -59,6 +59,13 @@ const LikesYouScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
     mutationFn: (userId: string) => matchApi.like(userId),
     onSuccess: (_data, userId) => {
       setLikedUserIds((prev) => new Set(prev).add(userId));
+      queryClient.setQueryData<LikesYouResponse>(['likedYou', page], (old) => {
+        if (!old) return old;
+        return {
+          ...old,
+          likes: old.likes.filter((l) => l.userId !== userId),
+        };
+      });
       queryClient.invalidateQueries({ queryKey: ['likedYou'] });
       queryClient.invalidateQueries({ queryKey: ['matches'] });
       queryClient.invalidateQueries({ queryKey: ['matchFeed'] });
