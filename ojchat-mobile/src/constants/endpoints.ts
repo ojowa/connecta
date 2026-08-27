@@ -27,6 +27,7 @@ export const ENDPOINTS = {
     SYNC: '/users/sync',
     SUBMIT_APPEAL: '/users/me/appeal',
     MY_APPEALS: '/users/me/appeals',
+    SEARCH: '/users/search',
   },
   PROFILES: {
     PHOTOS: '/users/me/photos',

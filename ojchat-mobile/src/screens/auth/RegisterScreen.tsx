@@ -16,6 +16,7 @@ interface RegisterScreenProps { navigation: any; }
 
 interface FormErrors {
   fullName?: string;
+  username?: string;
   email?: string;
   dateOfBirth?: string;
   gender?: string;
@@ -25,6 +26,7 @@ interface FormErrors {
 }
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const USERNAME_RE = /^[a-zA-Z0-9_]{3,20}$/;
 const GENDERS = ['Male', 'Female'] as const;
 const ISO_DOB_RE = /^\d{4}-\d{2}-\d{2}$/;
 
@@ -46,11 +48,13 @@ function formatDobDisplay(iso: string): string {
 const STRENGTH_COLORS = { weak: colors.error, medium: colors.warning, strong: colors.success };
 
 function validate(values: {
-  fullName: string; email: string; dateOfBirth: string; gender: string; password: string; confirmPassword: string; termsAccepted: boolean;
+  fullName: string; username: string; email: string; dateOfBirth: string; gender: string; password: string; confirmPassword: string; termsAccepted: boolean;
 }): FormErrors {
   const errors: FormErrors = {};
   if (!values.fullName.trim()) errors.fullName = 'Full name is required';
   else if (values.fullName.trim().length < 2) errors.fullName = 'Name must be at least 2 characters';
+  if (!values.username.trim()) errors.username = 'Username is required';
+  else if (!USERNAME_RE.test(values.username.trim())) errors.username = '3-20 chars, letters, numbers, underscores';
   if (!values.email.trim()) errors.email = 'Email is required';
   else if (!EMAIL_RE.test(values.email.trim())) errors.email = 'Enter a valid email address';
   if (!values.dateOfBirth) errors.dateOfBirth = 'Date of birth is required';
@@ -75,6 +79,7 @@ function validate(values: {
 
 export const RegisterScreen: React.FC<RegisterScreenProps> = ({ navigation }) => {
   const [fullName, setFullName] = useState('');
+  const [username, setUsername] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -91,14 +96,14 @@ export const RegisterScreen: React.FC<RegisterScreenProps> = ({ navigation }) =>
   const passwordStrength = password ? getPasswordStrength(password) : null;
 
   const handleRegister = async () => {
-    const fieldErrors = validate({ fullName, email, dateOfBirth, gender, password, confirmPassword, termsAccepted });
+    const fieldErrors = validate({ fullName, username, email, dateOfBirth, gender, password, confirmPassword, termsAccepted });
     setErrors(fieldErrors);
     setSubmitted(true);
     if (Object.keys(fieldErrors).length > 0 || cooldown > 0) return;
 
     setServerError(null);
     try {
-      await register({ email: email.trim(), password, fullName: fullName.trim(), dateOfBirth, gender: gender.toLowerCase().replace(/[- ]/g, '_') });
+      await register({ email: email.trim(), password, fullName: fullName.trim(), username: username.trim().toLowerCase(), dateOfBirth, gender: gender.toLowerCase().replace(/[- ]/g, '_') });
     } catch (err: any) {
       const msg = err?.response?.data?.error?.message || err?.response?.data?.message || err?.message || 'Registration failed';
       setServerError(msg);
@@ -117,9 +122,10 @@ export const RegisterScreen: React.FC<RegisterScreenProps> = ({ navigation }) =>
   };
 
   const updateField = (field: string, value: string) => {
-    const updated = { fullName, email, dateOfBirth, gender, password, confirmPassword, termsAccepted };
+    const updated = { fullName, username, email, dateOfBirth, gender, password, confirmPassword, termsAccepted };
     (updated as any)[field] = value;
     if (field === 'fullName') setFullName(value);
+    else if (field === 'username') setUsername(value);
     else if (field === 'email') setEmail(value);
     else if (field === 'dateOfBirth') setDateOfBirth(value);
     else if (field === 'gender') setGender(value);
@@ -136,6 +142,7 @@ export const RegisterScreen: React.FC<RegisterScreenProps> = ({ navigation }) =>
           <Text style={styles.subtitle}>Find your perfect match</Text>
 
           <Input label="Full Name" placeholder="Enter your full name" value={fullName} onChangeText={(v) => updateField('fullName', v)} autoCapitalize="words" error={errors.fullName} />
+          <Input label="Username" placeholder="Choose a username" value={username} onChangeText={(v) => updateField('username', v.toLowerCase())} autoCapitalize="none" error={errors.username} />
           <Input label="Email" placeholder="Enter your email" value={email} onChangeText={(v) => updateField('email', v)} keyboardType="email-address" autoCapitalize="none" error={errors.email} />
           <DOBPicker value={dateOfBirth} onChange={(v) => updateField('dateOfBirth', v)} error={errors.dateOfBirth} />
 

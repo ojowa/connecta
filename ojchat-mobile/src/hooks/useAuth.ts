@@ -60,7 +60,7 @@ export function useAuth() {
     }
   };
 
-  const register = async (data: { email: string; password: string; fullName: string; dateOfBirth: string; gender: string }) => {
+  const register = async (data: { email: string; password: string; fullName: string; dateOfBirth: string; gender: string; username: string }) => {
     setLoading(true);
     setError(null);
     try {

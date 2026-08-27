@@ -4,7 +4,7 @@ import { ApiResponse } from '../../types/api';
 import { LoginResponse, User, AuthTokens } from '../../types/auth';
 
 export const authApi = {
-  async register(data: { email: string; password: string; fullName: string; dateOfBirth: string; gender: string; phone?: string }) {
+  async register(data: { email: string; password: string; fullName: string; dateOfBirth: string; gender: string; username: string; phone?: string }) {
     const response = await apiClient.post(ENDPOINTS.AUTH.REGISTER, data);
     return response.data as ApiResponse<LoginResponse>;
   },
