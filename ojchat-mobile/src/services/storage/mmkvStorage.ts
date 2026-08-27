@@ -1,4 +1,5 @@
 import { createMMKV, MMKV } from 'react-native-mmkv';
+import { Platform } from 'react-native';
 import * as Crypto from 'expo-crypto';
 import { secureStorage } from './secureStorage';
 
@@ -46,12 +47,16 @@ export function initMMKV(): Promise<void> {
   if (initPromise) return initPromise;
 
   initPromise = (async () => {
-    const key = await getOrCreateEncryptionKey();
-    storage = createMMKV({
-      id: 'ojchat-secure',
-      encryptionKey: key,
-      encryptionType: 'AES-256',
-    });
+    if (Platform.OS === 'web') {
+      storage = createMMKV({ id: 'ojchat-secure' });
+    } else {
+      const key = await getOrCreateEncryptionKey();
+      storage = createMMKV({
+        id: 'ojchat-secure',
+        encryptionKey: key,
+        encryptionType: 'AES-256',
+      });
+    }
     migrateOldMMKV(storage);
   })();
 
