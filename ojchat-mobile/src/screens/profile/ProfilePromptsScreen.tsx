@@ -1,11 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, TextInput, StyleSheet, FlatList, TouchableOpacity, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { Ionicons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 import { apiClient } from '../../services/api/apiClient';
 import { colors } from '../../theme/colors';
 import { typography } from '../../theme/typography';
 import { spacing } from '../../theme/spacing';
 import { borderRadius } from '../../theme/borderRadius';
+import { shadows } from '../../theme/shadows';
 import { LoadingSpinner } from '../../components/common/LoadingSpinner';
 
 interface Prompt {
@@ -36,9 +39,7 @@ export default function ProfilePromptsScreen() {
         apiClient.get('/users/prompts'),
         apiClient.get('/users/me/prompts'),
       ]);
-
       setPrompts(allPromptsRes.data?.prompts ?? allPromptsRes.data ?? []);
-
       const saved: UserPrompt[] = userPromptsRes.data?.prompts ?? userPromptsRes.data ?? [];
       setSelectedPrompts(saved);
     } catch {
@@ -91,29 +92,40 @@ export default function ProfilePromptsScreen() {
     const userPrompt = selectedPrompts.find((p) => p.question === item.question);
 
     return (
-      <TouchableOpacity
-        style={[styles.card, selected && styles.cardSelected]}
-        onPress={() => togglePrompt(item)}
-        activeOpacity={0.7}
-      >
-        <View style={styles.cardHeader}>
-          <Text style={styles.question}>{item.question}</Text>
-          <View style={[styles.checkbox, selected && styles.checkboxChecked]}>
-            {selected && <Text style={styles.checkmark}>✓</Text>}
+      <View style={[styles.card, selected && styles.cardSelected]}>
+        <TouchableOpacity
+          style={styles.cardContent}
+          onPress={() => togglePrompt(item)}
+          activeOpacity={0.7}
+        >
+          {/* Accent bar */}
+          {selected && <View style={styles.accentBar} />}
+          <View style={styles.cardBody}>
+            <View style={styles.cardHeader}>
+              <Text style={styles.question}>{item.question}</Text>
+              <View style={[styles.checkbox, selected && styles.checkboxChecked]}>
+                {selected && <Ionicons name="checkmark" size={14} color={colors.white} />}
+              </View>
+            </View>
+            {selected && (
+              <View style={styles.answerSection}>
+                <TextInput
+                  style={styles.answerInput}
+                  placeholder="Write your answer..."
+                  placeholderTextColor={colors.gray400}
+                  value={userPrompt?.answer ?? ''}
+                  onChangeText={(text) => updateAnswer(item.question, text)}
+                  multiline
+                  maxLength={200}
+                />
+                <Text style={styles.answerCharCount}>
+                  {(userPrompt?.answer ?? '').length}/200
+                </Text>
+              </View>
+            )}
           </View>
-        </View>
-        {selected && (
-          <TextInput
-            style={styles.answerInput}
-            placeholder="Write your answer..."
-            placeholderTextColor={colors.gray400}
-            value={userPrompt?.answer ?? ''}
-            onChangeText={(text) => updateAnswer(item.question, text)}
-            multiline
-            maxLength={200}
-          />
-        )}
-      </TouchableOpacity>
+        </TouchableOpacity>
+      </View>
     );
   };
 
@@ -124,9 +136,26 @@ export default function ProfilePromptsScreen() {
   return (
     <SafeAreaView style={styles.safeArea} edges={['bottom']}>
       <View style={styles.container}>
-        <Text style={styles.header}>
-          Choose {MAX_SELECTED} prompts to answer on your profile
-        </Text>
+        {/* Header */}
+        <View style={styles.headerSection}>
+          <Text style={styles.headerTitle}>Profile Prompts</Text>
+          <Text style={styles.headerSubtitle}>
+            Choose {MAX_SELECTED} prompts to answer on your profile
+          </Text>
+          {/* Selected Pills */}
+          {selectedPrompts.length > 0 && (
+            <View style={styles.selectedPills}>
+              {selectedPrompts.map((p, i) => (
+                <View key={i} style={styles.pill}>
+                  <Text style={styles.pillText} numberOfLines={1}>
+                    {p.question.length > 25 ? p.question.slice(0, 25) + '...' : p.question}
+                  </Text>
+                </View>
+              ))}
+            </View>
+          )}
+        </View>
+
         <FlatList
           data={prompts}
           keyExtractor={(item) => item.id}
@@ -134,68 +163,168 @@ export default function ProfilePromptsScreen() {
           contentContainerStyle={styles.list}
           showsVerticalScrollIndicator={false}
         />
-        <TouchableOpacity
-          style={[styles.saveButton, saving && styles.saveButtonDisabled]}
-          onPress={handleSave}
-          disabled={saving}
-        >
-          <Text style={styles.saveButtonText}>{saving ? 'Saving...' : 'Save Prompts'}</Text>
-        </TouchableOpacity>
+
+        {/* Save Button */}
+        <View style={styles.saveContainer}>
+          <TouchableOpacity
+            style={[styles.saveButton, saving && styles.saveButtonDisabled]}
+            onPress={handleSave}
+            disabled={saving}
+            activeOpacity={0.8}
+          >
+            <LinearGradient
+              colors={[colors.gradientStart, colors.gradientEnd]}
+              style={[styles.saveGradient, saving && styles.saveGradientDisabled]}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 0 }}
+            >
+              <Text style={styles.saveButtonText}>{saving ? 'Saving...' : 'Save Prompts'}</Text>
+            </LinearGradient>
+          </TouchableOpacity>
+        </View>
       </View>
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  safeArea: { flex: 1, backgroundColor: colors.white },
-  container: { flex: 1, backgroundColor: colors.white },
-  header: { ...typography.body, color: colors.textSecondary, textAlign: 'center', paddingVertical: spacing.md },
-  list: { paddingHorizontal: spacing.md, paddingBottom: spacing.lg },
-  card: {
-    backgroundColor: colors.surface,
-    borderRadius: borderRadius.card,
+  safeArea: { flex: 1, backgroundColor: colors.gray50 },
+  container: { flex: 1, backgroundColor: colors.gray50 },
+
+  // Header
+  headerSection: {
+    backgroundColor: colors.white,
+    padding: spacing.lg,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: colors.gray100,
+  },
+  headerTitle: {
+    ...typography.h3,
+    color: colors.textPrimary,
+    marginBottom: spacing.xs,
+  },
+  headerSubtitle: {
+    ...typography.body,
+    color: colors.textSecondary,
+    marginBottom: spacing.md,
+  },
+  selectedPills: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: spacing.xs,
+  },
+  pill: {
+    backgroundColor: colors.primaryOverlay,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 3,
+    borderRadius: borderRadius.full,
+  },
+  pillText: {
+    ...typography.small,
+    color: colors.primary,
+    fontWeight: '600',
+  },
+
+  // List
+  list: {
     padding: spacing.md,
+    paddingBottom: spacing.xxl,
+  },
+
+  // Cards
+  card: {
+    backgroundColor: colors.white,
+    borderRadius: borderRadius.card,
     marginBottom: spacing.sm,
-    borderWidth: 2,
-    borderColor: 'transparent',
+    overflow: 'hidden',
+    ...shadows.card,
   },
   cardSelected: {
     borderColor: colors.primary,
-    backgroundColor: colors.primaryOverlay,
   },
-  cardHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' },
-  question: { ...typography.body, fontWeight: '600', color: colors.textPrimary, flex: 1, marginRight: spacing.sm },
+  cardContent: {
+    flexDirection: 'row',
+  },
+  accentBar: {
+    width: 4,
+    backgroundColor: colors.primary,
+  },
+  cardBody: {
+    flex: 1,
+    padding: spacing.md,
+  },
+  cardHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+  },
+  question: {
+    ...typography.body,
+    fontWeight: '600',
+    color: colors.textPrimary,
+    flex: 1,
+    marginRight: spacing.sm,
+  },
   checkbox: {
-    width: 24,
-    height: 24,
-    borderRadius: borderRadius.sm,
+    width: 26,
+    height: 26,
+    borderRadius: 13,
     borderWidth: 2,
     borderColor: colors.gray300,
     justifyContent: 'center',
     alignItems: 'center',
   },
-  checkboxChecked: { backgroundColor: colors.primary, borderColor: colors.primary },
-  checkmark: { color: colors.white, fontSize: 14, fontWeight: '700' },
+  checkboxChecked: {
+    backgroundColor: colors.primary,
+    borderColor: colors.primary,
+  },
+
+  // Answer
+  answerSection: {
+    marginTop: spacing.md,
+  },
   answerInput: {
     ...typography.body,
-    marginTop: spacing.sm,
-    padding: spacing.sm,
-    backgroundColor: colors.white,
+    padding: spacing.md,
+    backgroundColor: colors.gray50,
     borderRadius: borderRadius.input,
     borderWidth: 1,
     borderColor: colors.border,
     color: colors.textPrimary,
-    minHeight: 60,
+    minHeight: 80,
     textAlignVertical: 'top',
   },
-  saveButton: {
-    backgroundColor: colors.primary,
-    marginHorizontal: spacing.md,
-    marginBottom: spacing.lg,
-    paddingVertical: spacing.md,
-    borderRadius: borderRadius.button,
-    alignItems: 'center',
+  answerCharCount: {
+    ...typography.small,
+    color: colors.textTertiary,
+    textAlign: 'right',
+    marginTop: spacing.xs,
   },
-  saveButtonDisabled: { opacity: 0.6 },
-  saveButtonText: { ...typography.button, color: colors.white },
+
+  // Save
+  saveContainer: {
+    backgroundColor: colors.white,
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.md,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: colors.gray100,
+    ...shadows.sm,
+  },
+  saveButton: {
+    borderRadius: borderRadius.button,
+    overflow: 'hidden',
+  },
+  saveButtonDisabled: {},
+  saveGradient: {
+    paddingVertical: spacing.md,
+    alignItems: 'center',
+    borderRadius: borderRadius.button,
+  },
+  saveGradientDisabled: {
+    opacity: 0.5,
+  },
+  saveButtonText: {
+    ...typography.button,
+    color: colors.white,
+  },
 });

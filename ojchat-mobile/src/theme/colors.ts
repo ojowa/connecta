@@ -33,4 +33,8 @@ export const colors = {
   whiteOverlaySoft: 'rgba(255,255,255,0.7)',
   whiteOverlaySofter: 'rgba(255,255,255,0.4)',
   primaryOverlay: '#FFF5F5',
+  gradientStart: '#FF6B6B',
+  gradientEnd: '#E85555',
+  cardBackground: '#FFFFFF',
+  cardBorder: '#F3F4F6',
 };

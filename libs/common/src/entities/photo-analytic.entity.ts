@@ -12,7 +12,7 @@ export class PhotoAnalytic {
   @Column({ type: 'int', default: 0 }) passesAfterView: number;
   @Column({ type: 'decimal', precision: 5, scale: 4, default: 0 }) conversionRate: number;
   @Column({ type: 'int', default: 0 }) superLikesReceived: number;
-  @Column({ type: 'decimal', precision: 5, distance: 2, default: 0 }) avgViewDurationMs: number;
+  @Column({ type: 'decimal', precision: 5, scale: 2, default: 0 }) avgViewDurationMs: number;
   @Column({ type: 'int', default: 0 }) order: number;
   @CreateDateColumn() createdAt: Date;
   @Column() updatedAt: Date;
