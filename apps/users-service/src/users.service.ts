@@ -1,7 +1,7 @@
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { User, Profile, UserPreference, Block, Report, Photo, UserPrompt, ProfilePrompt, Appeal, VerificationRequest } from '@app/common/entities';
+import { User, Profile, UserPreference, Block, Report, Photo, UserPrompt, ProfilePrompt, Appeal, VerificationRequest, DailyStreak } from '@app/common/entities';
 
 @Injectable()
 export class UsersService {
@@ -16,6 +16,7 @@ export class UsersService {
     @InjectRepository(ProfilePrompt) private profilePromptRepo: Repository<ProfilePrompt>,
     @InjectRepository(Appeal) private appealRepo: Repository<Appeal>,
     @InjectRepository(VerificationRequest) private verificationRepo: Repository<VerificationRequest>,
+    @InjectRepository(DailyStreak) private streakRepo: Repository<DailyStreak>,
   ) {}
 
   async getMe(userId: string) {
@@ -258,7 +259,11 @@ export class UsersService {
     return { appeals };
   }
 
-  async requestVerification(userId: string, selfieUrl: string) {
+  async requestVerification(userId: string, selfieUrl: string, faceMetadata?: {
+    faceWidth?: number; faceHeight?: number; faceConfidence?: number;
+    livenessScore?: number; imageWidth?: number; imageHeight?: number;
+    fileSize?: number; faceLandmarks?: Record<string, unknown>;
+  }) {
     const existing = await this.verificationRepo.findOne({
       where: { userId, status: 'pending' },
     });
@@ -266,7 +271,11 @@ export class UsersService {
       return { request: existing, message: 'Verification already pending' };
     }
 
-    const request = this.verificationRepo.create({ userId, selfieUrl });
+    const request = this.verificationRepo.create({
+      userId,
+      selfieUrl,
+      ...faceMetadata,
+    });
     const saved = await this.verificationRepo.save(request);
     return { request: saved };
   }
@@ -279,6 +288,134 @@ export class UsersService {
     return {
       status: request?.status || 'none',
       request: request || null,
+    };
+  }
+
+  private getStartOfWeek(date: Date): Date {
+    const d = new Date(date);
+    const day = d.getDay();
+    const diff = d.getDate() - day + (day === 0 ? -6 : 1);
+    d.setDate(diff);
+    d.setHours(0, 0, 0, 0);
+    return d;
+  }
+
+  private isYesterday(lastCheckIn: Date): boolean {
+    const yesterday = new Date();
+    yesterday.setDate(yesterday.getDate() - 1);
+    yesterday.setHours(0, 0, 0, 0);
+    const last = new Date(lastCheckIn);
+    last.setHours(0, 0, 0, 0);
+    return last.getTime() === yesterday.getTime();
+  }
+
+  private isToday(lastCheckIn: Date): boolean {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const last = new Date(lastCheckIn);
+    last.setHours(0, 0, 0, 0);
+    return last.getTime() === today.getTime();
+  }
+
+  async getStreak(userId: string) {
+    let streak = await this.streakRepo.findOne({ where: { userId } });
+    if (!streak) {
+      streak = this.streakRepo.create({ userId, currentStreak: 0, longestStreak: 0, totalCheckIns: 0, claimedRewards: [] });
+      streak = await this.streakRepo.save(streak);
+    }
+
+    const todayCheckedIn = streak.lastCheckInAt ? this.isToday(streak.lastCheckInAt) : false;
+    const weekStart = this.getStartOfWeek(new Date());
+
+    const weekCheckIns: boolean[] = [];
+    for (let i = 0; i < 7; i++) {
+      const day = new Date(weekStart);
+      day.setDate(day.getDate() + i);
+      day.setHours(0, 0, 0, 0);
+      const nextDay = new Date(day);
+      nextDay.setDate(nextDay.getDate() + 1);
+      if (streak.lastCheckInAt) {
+        const last = new Date(streak.lastCheckInAt);
+        weekCheckIns.push(last >= day && last < nextDay);
+      } else {
+        weekCheckIns.push(false);
+      }
+    }
+
+    return {
+      currentStreak: streak.currentStreak,
+      longestStreak: streak.longestStreak,
+      totalCheckIns: streak.totalCheckIns,
+      todayCheckedIn,
+      weekCheckIns,
+      lastCheckInAt: streak.lastCheckInAt,
+      claimedRewards: streak.claimedRewards || [],
+    };
+  }
+
+  async checkIn(userId: string) {
+    let streak = await this.streakRepo.findOne({ where: { userId } });
+    if (!streak) {
+      streak = this.streakRepo.create({ userId, currentStreak: 0, longestStreak: 0, totalCheckIns: 0, claimedRewards: [] });
+    }
+
+    if (streak.lastCheckInAt && this.isToday(streak.lastCheckInAt)) {
+      return { message: 'Already checked in today', currentStreak: streak.currentStreak, todayCheckedIn: true };
+    }
+
+    if (streak.lastCheckInAt && this.isYesterday(streak.lastCheckInAt)) {
+      streak.currentStreak += 1;
+    } else {
+      streak.currentStreak = 1;
+    }
+
+    streak.totalCheckIns += 1;
+    streak.lastCheckInAt = new Date();
+    if (streak.currentStreak > streak.longestStreak) {
+      streak.longestStreak = streak.currentStreak;
+    }
+
+    const saved = await this.streakRepo.save(streak);
+
+    const STREAK_REWARDS: Record<number, string> = {
+      3: 'super_like',
+      5: 'credits_10',
+      7: 'boost',
+      14: 'super_like_3',
+      30: 'premium_day',
+    };
+
+    let newReward: string | null = null;
+    const milestone = STREAK_REWARDS[saved.currentStreak];
+    if (milestone && !(saved.claimedRewards || []).includes(milestone)) {
+      newReward = milestone;
+      saved.claimedRewards = [...(saved.claimedRewards || []), milestone];
+      await this.streakRepo.save(saved);
+    }
+
+    const todayCheckedIn = true;
+    const weekStart = this.getStartOfWeek(new Date());
+    const weekCheckIns: boolean[] = [];
+    for (let i = 0; i < 7; i++) {
+      const day = new Date(weekStart);
+      day.setDate(day.getDate() + i);
+      day.setHours(0, 0, 0, 0);
+      const nextDay = new Date(day);
+      nextDay.setDate(nextDay.getDate() + 1);
+      const last = new Date(saved.lastCheckInAt);
+      weekCheckIns.push(last >= day && last < nextDay);
+    }
+
+    return {
+      message: 'Checked in successfully',
+      currentStreak: saved.currentStreak,
+      longestStreak: saved.longestStreak,
+      totalCheckIns: saved.totalCheckIns,
+      todayCheckedIn,
+      weekCheckIns,
+      lastCheckInAt: saved.lastCheckInAt,
+      claimedRewards: saved.claimedRewards || [],
+      newReward,
     };
   }
 }

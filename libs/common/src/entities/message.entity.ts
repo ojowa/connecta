@@ -22,6 +22,7 @@ export class Message {
   @Column({ nullable: true }) encryptedContent: string;
   @Column({ nullable: true }) replyToId: string;
   @Column({ default: 'sent' }) status: string;
+  @Column({ type: 'int', nullable: true }) duration: number;
   @Column({ default: false }) isDeleted: boolean;
   @Column({ nullable: true }) deletedAt: Date;
   @ManyToOne(() => Conversation, { onDelete: 'CASCADE' })

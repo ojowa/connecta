@@ -1,10 +1,11 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, FlatList, Image, TouchableOpacity } from 'react-native';
+import React, { useState, useEffect, useRef } from 'react';
+import { View, Text, StyleSheet, FlatList, Image, TouchableOpacity, AppState } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useQuery } from '@tanstack/react-query';
 import { apiClient } from '../../services/api/apiClient';
 import { ENDPOINTS } from '../../constants/endpoints';
+import { usePlanInfo } from '../../hooks/useMatch';
 import { colors } from '../../theme/colors';
 import { typography } from '../../theme/typography';
 import { spacing } from '../../theme/spacing';
@@ -22,13 +23,9 @@ interface ProfileViewer {
 export const WhoViewedScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
   const [viewers, setViewers] = useState<ProfileViewer[]>([]);
   const [loading, setLoading] = useState(true);
-
-  const { data: me } = useQuery({
-    queryKey: ['me'],
-    queryFn: () => apiClient.get('/users/me').then((r) => r.data),
-  });
-
-  const isPremium = me?.plan && me.plan !== 'free';
+  const appState = useRef(AppState.currentState);
+  const { data: planInfo, refetch: refetchPlan } = usePlanInfo();
+  const isPremium = planInfo?.isPremium;
 
   const fetchViewers = () => {
     setLoading(true);
@@ -51,6 +48,23 @@ export const WhoViewedScreen: React.FC<{ navigation: any }> = ({ navigation }) =
   useEffect(() => {
     fetchViewers();
   }, []);
+
+  useEffect(() => {
+    const sub = AppState.addEventListener('change', (next) => {
+      if (appState.current.match(/inactive|background/) && next === 'active') {
+        refetchPlan();
+      }
+      appState.current = next;
+    });
+    return () => sub.remove();
+  }, [refetchPlan]);
+
+  useEffect(() => {
+    const unsub = navigation?.addListener?.('focus', () => {
+      refetchPlan();
+    });
+    return unsub;
+  }, [navigation, refetchPlan]);
 
   if (loading) return <LoadingSpinner />;
 

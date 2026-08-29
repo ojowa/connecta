@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Put, Body, Query, Param, Headers, UnauthorizedException } from '@nestjs/common';
+import { Controller, Get, Post, Put, Delete, Body, Query, Param, Headers, UnauthorizedException } from '@nestjs/common';
 import { ApiTags, ApiOperation } from '@nestjs/swagger';
 import { AdminService } from './admin.service';
 
@@ -195,6 +195,34 @@ export class AdminController {
     return this.adminService.getNotificationDetail(id);
   }
 
+  @Get('plans')
+  @ApiOperation({ summary: 'Get all subscription plans' })
+  getPlans(@Headers('authorization') auth: string) {
+    this.verifyAuth(auth);
+    return this.adminService.getAllPlans();
+  }
+
+  @Post('plans')
+  @ApiOperation({ summary: 'Create a plan' })
+  createPlan(@Headers('authorization') auth: string, @Body() body: any) {
+    this.verifyAuth(auth);
+    return this.adminService.createPlan(body);
+  }
+
+  @Put('plans/:id')
+  @ApiOperation({ summary: 'Update a plan' })
+  updatePlan(@Headers('authorization') auth: string, @Param('id') id: string, @Body() body: any) {
+    this.verifyAuth(auth);
+    return this.adminService.updatePlan(id, body);
+  }
+
+  @Delete('plans/:id')
+  @ApiOperation({ summary: 'Delete a plan' })
+  deletePlan(@Headers('authorization') auth: string, @Param('id') id: string) {
+    this.verifyAuth(auth);
+    return this.adminService.deletePlan(id);
+  }
+
   @Get('subscriptions')
   @ApiOperation({ summary: 'Get all subscriptions' })
   getSubscriptions(
@@ -214,13 +242,6 @@ export class AdminController {
   getSubscriptionAnalytics(@Headers('authorization') auth: string, @Query('period') period?: string) {
     this.verifyAuth(auth);
     return this.adminService.getSubscriptionAnalytics(period);
-  }
-
-  @Get('subscriptions/plans')
-  @ApiOperation({ summary: 'Get all plans' })
-  getPlans(@Headers('authorization') auth: string) {
-    this.verifyAuth(auth);
-    return this.adminService.getAllPlans();
   }
 
   @Get('subscriptions/:id')
@@ -272,5 +293,60 @@ export class AdminController {
   ) {
     const payload = this.verifyAuth(auth);
     return this.adminService.reviewAppeal(id, body, payload.sub);
+  }
+
+  @Get('moments')
+  @ApiOperation({ summary: 'Get all moments (admin moderation)' })
+  getMoments(@Headers('authorization') auth: string, @Query('page') page?: string, @Query('limit') limit?: string, @Query('userId') userId?: string) {
+    this.verifyAuth(auth);
+    return this.adminService.getMoments(page ? parseInt(page) : 1, limit ? parseInt(limit) : 50, userId);
+  }
+
+  @Get('moments/stats')
+  @ApiOperation({ summary: 'Get moments statistics' })
+  getMomentStats(@Headers('authorization') auth: string) {
+    this.verifyAuth(auth);
+    return this.adminService.getMomentStats();
+  }
+
+  @Delete('moments/:id')
+  @ApiOperation({ summary: 'Delete a moment (admin moderation)' })
+  deleteMoment(@Headers('authorization') auth: string, @Param('id') id: string) {
+    this.verifyAuth(auth);
+    return this.adminService.deleteMoment(id);
+  }
+
+  @Get('verification')
+  @ApiOperation({ summary: 'Get verification requests' })
+  getVerificationRequests(
+    @Headers('authorization') auth: string,
+    @Query('page') page?: string,
+    @Query('limit') limit?: string,
+    @Query('status') status?: string,
+  ) {
+    this.verifyAuth(auth);
+    return this.adminService.getVerificationRequests(
+      page ? parseInt(page) : 1,
+      limit ? parseInt(limit) : 20,
+      status,
+    );
+  }
+
+  @Get('verification/stats')
+  @ApiOperation({ summary: 'Get verification statistics' })
+  getVerificationStats(@Headers('authorization') auth: string) {
+    this.verifyAuth(auth);
+    return this.adminService.getVerificationStats();
+  }
+
+  @Post('verification/:id/review')
+  @ApiOperation({ summary: 'Approve or reject verification request' })
+  reviewVerification(
+    @Headers('authorization') auth: string,
+    @Param('id') id: string,
+    @Body() body: { action: 'approved' | 'rejected'; reason?: string },
+  ) {
+    const payload = this.verifyAuth(auth);
+    return this.adminService.reviewVerification(id, payload.sub, body.action, body.reason);
   }
 }

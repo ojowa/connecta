@@ -16,6 +16,7 @@ import { IcebreakerGenerator } from './ai/icebreaker.generator';
 import { MatchmakingEngine } from './ai/matchmaking.engine';
 import { ToxicityDetector } from './ai/toxicity.detector';
 import { FakeProfileDetector } from './ai/fake-profile.detector';
+import { MatchEventsHandler } from './events/match-events.handler';
 
 @Module({
   imports: [
@@ -39,6 +40,7 @@ import { FakeProfileDetector } from './ai/fake-profile.detector';
     MatchmakingEngine,
     ToxicityDetector,
     FakeProfileDetector,
+    MatchEventsHandler,
   ],
   exports: [MatchingEnhancementService],
 })

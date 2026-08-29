@@ -11,6 +11,7 @@ import {
   NativeSyntheticEvent,
   NativeScrollEvent,
   Animated,
+  Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -25,6 +26,7 @@ import { borderRadius } from '../../theme/borderRadius';
 import { shadows } from '../../theme/shadows';
 import { LoadingSpinner } from '../../components/common/LoadingSpinner';
 import { useConversations } from '../../hooks/useChat';
+import { usePlanInfo } from '../../hooks/useMatch';
 import { useAppStore } from '../../store';
 
 function calculateAge(dob: string): number {
@@ -48,6 +50,8 @@ export const UserProfileScreen: React.FC<{ navigation: any; route: any }> = ({ n
   );
   const isMatched = routeIsMatched || !!conversation;
   const conversationId = conversation?.id;
+  const { data: planInfo } = usePlanInfo();
+  const canMessageAnyone = planInfo?.planId === 'platinum';
 
   const [activePhotoIndex, setActivePhotoIndex] = useState(0);
   const likeScale = useRef(new Animated.Value(1)).current;
@@ -107,7 +111,10 @@ export const UserProfileScreen: React.FC<{ navigation: any; route: any }> = ({ n
           otherName: p.firstName,
           otherAvatar: photos[0]?.url,
         });
-      } catch {}
+      } catch (e: any) {
+        const msg = e?.response?.data?.message || 'Failed to start conversation';
+        Alert.alert('Cannot Message', msg);
+      }
     }
   };
 
@@ -196,6 +203,10 @@ export const UserProfileScreen: React.FC<{ navigation: any; route: any }> = ({ n
               <Ionicons name="videocam-outline" size={20} color={colors.primary} />
             </TouchableOpacity>
           </View>
+        ) : canMessageAnyone ? (
+          <TouchableOpacity style={styles.headerIcon} onPress={handleChatPress}>
+            <Ionicons name="chatbubble-outline" size={20} color={colors.primary} />
+          </TouchableOpacity>
         ) : (
           <View style={{ width: 40 }} />
         )}

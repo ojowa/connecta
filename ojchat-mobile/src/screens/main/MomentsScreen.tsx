@@ -16,6 +16,7 @@ import {
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiClient } from '../../services/api/apiClient';
+import { ENDPOINTS } from '../../constants/endpoints';
 import { colors } from '../../theme/colors';
 import { typography } from '../../theme/typography';
 import { spacing } from '../../theme/spacing';
@@ -45,7 +46,7 @@ const useMoments = () =>
   useQuery<Moment[]>({
     queryKey: ['moments'],
     queryFn: async () => {
-      const { data } = await apiClient.get<Moment[]>('/matching/moments');
+      const { data } = await apiClient.get<Moment[]>(ENDPOINTS.MATCHING.MOMENTS);
       return data;
     },
     refetchInterval: 60000,
@@ -53,8 +54,8 @@ const useMoments = () =>
 
 const useCreateMoment = () =>
   useMutation({
-    mutationFn: async (payload: { caption?: string; mediaUrl?: string }) => {
-      const { data } = await apiClient.post<Moment>('/matching/moments', payload);
+    mutationFn: async (payload: { caption?: string; mediaUrl?: string; mediaType?: string }) => {
+      const { data } = await apiClient.post<Moment>(ENDPOINTS.MATCHING.MOMENTS, payload);
       return data;
     },
   });
@@ -62,14 +63,14 @@ const useCreateMoment = () =>
 const useDeleteMoment = () =>
   useMutation({
     mutationFn: async (id: string) => {
-      await apiClient.delete(`/matching/moments/${id}`);
+      await apiClient.delete(ENDPOINTS.MATCHING.MOMENT_DELETE(id));
     },
   });
 
 const useViewMoment = () =>
   useMutation({
     mutationFn: async (id: string) => {
-      await apiClient.post(`/matching/moments/${id}/view`);
+      await apiClient.post(ENDPOINTS.MATCHING.MOMENT_VIEW(id));
     },
   });
 
@@ -171,25 +172,28 @@ const MomentCard: React.FC<{
 const CreateMomentModal: React.FC<{
   visible: boolean;
   onClose: () => void;
-  onSubmit: (caption: string, mediaUrl?: string) => void;
+  onSubmit: (caption: string, mediaUrl?: string, mediaType?: string) => void;
   isPending: boolean;
 }> = ({ visible, onClose, onSubmit, isPending }) => {
   const [caption, setCaption] = useState('');
   const [mediaUri, setMediaUri] = useState<string | null>(null);
+  const [mediaType, setMediaType] = useState<'image' | 'video'>('image');
 
-  const pickImage = async () => {
+  const pickMedia = async () => {
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (status !== 'granted') {
       Alert.alert('Permission needed', 'Please grant camera roll access to add moments.');
       return;
     }
     const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ['images'],
+      mediaTypes: ['images', 'videos'],
       quality: 0.8,
       allowsEditing: true,
+      videoMaxDuration: 60,
     });
     if (!result.canceled && result.assets[0]) {
       setMediaUri(result.assets[0].uri);
+      setMediaType(result.assets[0].type === 'video' ? 'video' : 'image');
     }
   };
 
@@ -197,13 +201,14 @@ const CreateMomentModal: React.FC<{
     if (Platform.OS === 'web') {
       const input = document.createElement('input');
       input.type = 'file';
-      input.accept = 'image/*';
+      input.accept = 'image/*,video/*';
       input.capture = 'environment';
       input.onchange = (e: any) => {
         const file = e.target.files?.[0];
         if (file) {
           const uri = URL.createObjectURL(file);
           setMediaUri(uri);
+          setMediaType(file.type.startsWith('video/') ? 'video' : 'image');
         }
       };
       input.click();
@@ -217,10 +222,12 @@ const CreateMomentModal: React.FC<{
     const result = await ImagePicker.launchCameraAsync({
       quality: 0.8,
       allowsEditing: true,
-      mediaTypes: ['images'],
+      mediaTypes: ['images', 'videos'],
+      videoMaxDuration: 60,
     });
     if (!result.canceled && result.assets[0]) {
       setMediaUri(result.assets[0].uri);
+      setMediaType(result.assets[0].type === 'video' ? 'video' : 'image');
     }
   };
 
@@ -229,14 +236,16 @@ const CreateMomentModal: React.FC<{
       Alert.alert('Empty moment', 'Add a photo or caption to share.');
       return;
     }
-    onSubmit(caption.trim(), mediaUri || undefined);
+    onSubmit(caption.trim(), mediaUri || undefined, mediaType);
     setCaption('');
     setMediaUri(null);
+    setMediaType('image');
   };
 
   const handleClose = () => {
     setCaption('');
     setMediaUri(null);
+    setMediaType('image');
     onClose();
   };
 
@@ -264,7 +273,7 @@ const CreateMomentModal: React.FC<{
             </View>
           ) : (
             <View style={styles.mediaButtons}>
-              <TouchableOpacity style={styles.mediaButton} onPress={pickImage}>
+              <TouchableOpacity style={styles.mediaButton} onPress={pickMedia}>
                 <Text style={styles.mediaButtonIcon}>🖼️</Text>
                 <Text style={styles.mediaButtonText}>Gallery</Text>
               </TouchableOpacity>
@@ -356,17 +365,22 @@ const MomentsScreen: React.FC = () => {
   }, [refetch]);
 
   const handleCreateMoment = useCallback(
-    async (caption: string, mediaUri?: string) => {
+    async (caption: string, mediaUri?: string, type?: string) => {
       let uploadedUrl: string | undefined;
       if (mediaUri) {
         try {
           const formData = new FormData();
+          const isVideo = type === 'video' || mediaUri.endsWith('.mp4') || mediaUri.endsWith('.mov');
           if (Platform.OS === 'web' && mediaUri.startsWith('blob:')) {
             const res = await fetch(mediaUri);
             const blob = await res.blob();
-            formData.append('photo', blob, 'moment.jpg');
+            formData.append('photo', blob, isVideo ? 'moment.mp4' : 'moment.jpg');
           } else {
-            formData.append('photo', { uri: mediaUri, type: 'image/jpeg', name: 'moment.jpg' } as any);
+            formData.append('photo', {
+              uri: mediaUri,
+              type: isVideo ? 'video/mp4' : 'image/jpeg',
+              name: isVideo ? 'moment.mp4' : 'moment.jpg',
+            } as any);
           }
           const uploadRes = await apiClient.post('/media/upload', formData, {
             headers: { 'Content-Type': 'multipart/form-data' },
@@ -374,12 +388,12 @@ const MomentsScreen: React.FC = () => {
           const uploaded = uploadRes.data?.data || uploadRes.data;
           uploadedUrl = uploaded?.url;
         } catch {
-          Alert.alert('Error', 'Failed to upload image. Please try again.');
+          Alert.alert('Error', 'Failed to upload media. Please try again.');
           return;
         }
       }
       createMoment.mutate(
-        { caption: caption || undefined, mediaUrl: uploadedUrl },
+        { caption: caption || undefined, mediaUrl: uploadedUrl, mediaType: type || 'image' },
         {
           onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['moments'] });

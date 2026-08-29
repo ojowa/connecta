@@ -45,6 +45,7 @@ import { UserBehavior } from './user-behavior.entity';
 import { EloScore } from './elo-score.entity';
 import { PhotoAnalytic } from './photo-analytic.entity';
 import { ConversationSignal } from './conversation-signal.entity';
+import { DailyStreak } from './daily-streak.entity';
 
 export { User, UserRole, UserStatus } from './user.entity';
 export { Session } from './session.entity';
@@ -93,6 +94,7 @@ export { UserBehavior } from './user-behavior.entity';
 export { EloScore } from './elo-score.entity';
 export { PhotoAnalytic } from './photo-analytic.entity';
 export { ConversationSignal } from './conversation-signal.entity';
+export { DailyStreak } from './daily-streak.entity';
 
 export const allEntities = [
   User,
@@ -142,4 +144,5 @@ export const allEntities = [
   EloScore,
   PhotoAnalytic,
   ConversationSignal,
+  DailyStreak,
 ];

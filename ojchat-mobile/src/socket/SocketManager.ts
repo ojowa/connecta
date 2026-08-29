@@ -156,6 +156,10 @@ class SocketManager {
   get isCallsConnected(): boolean {
     return this.callsSocket?.connected ?? false;
   }
+
+  getCallHandler(): CallHandler {
+    return this.callHandler;
+  }
 }
 
 export default SocketManager;

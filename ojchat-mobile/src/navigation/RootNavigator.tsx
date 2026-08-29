@@ -42,10 +42,13 @@ import { MyLikesScreen } from '../screens/matches/MyLikesScreen';
 import { UserProfileScreen } from '../screens/profile/UserProfileScreen';
 import { DailyStreakScreen } from '../screens/gamification/DailyStreakScreen';
 
+import { useIncomingCalls } from '../hooks/useIncomingCalls';
+
 const Stack = createNativeStackNavigator();
 
 export const RootNavigator: React.FC = () => {
   const isAuthenticated = useAppStore((s) => s.isAuthenticated);
+  useIncomingCalls();
   return (
     <NavigationContainer>
       <Stack.Navigator screenOptions={{ headerShown: false }}>

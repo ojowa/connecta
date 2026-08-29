@@ -5,6 +5,7 @@ export class Media {
   @PrimaryGeneratedColumn('uuid') id: string;
   @Column() userId: string;
   @Column() url: string;
+  @Column({ nullable: true }) key: string;
   @Column({ nullable: true }) thumbnailUrl: string;
   @Column() mimeType: string;
   @Column() sizeBytes: number;

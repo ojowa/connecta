@@ -20,6 +20,10 @@ export class UserPreference {
   @Column({ type: 'decimal', precision: 10, scale: 7, nullable: true }) passportLatitude: number;
   @Column({ type: 'decimal', precision: 10, scale: 7, nullable: true }) passportLongitude: number;
   @Column({ default: false }) passportEnabled: boolean;
+  @Column({ default: 'any' }) relationshipGoal: string;
+  @Column({ type: 'int', nullable: true }) minHeight: number;
+  @Column({ type: 'int', nullable: true }) maxHeight: number;
+  @Column({ default: 'any' }) educationLevel: string;
   @CreateDateColumn() createdAt: Date;
   @UpdateDateColumn() updatedAt: Date;
 }

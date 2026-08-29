@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   View,
   Text,
@@ -6,10 +6,12 @@ import {
   TouchableOpacity,
   Alert,
   ActivityIndicator,
+  AppState,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiClient } from '../../services/api/apiClient';
+import { usePlanInfo } from '../../hooks/useMatch';
 import { colors } from '../../theme/colors';
 import { typography } from '../../theme/typography';
 import { spacing } from '../../theme/spacing';
@@ -42,6 +44,9 @@ export default function BoostScreen() {
   const navigation = useNavigation<NativeStackNavigationProp<any>>();
   const queryClient = useQueryClient();
   const [countdown, setCountdown] = useState('00:00');
+  const appState = useRef(AppState.currentState);
+  const { data: planInfo, refetch: refetchPlan } = usePlanInfo();
+  const isPremium = planInfo?.isPremium;
 
   const { data: boostData, isLoading } = useQuery({
     queryKey: ['boost'],
@@ -49,20 +54,47 @@ export default function BoostScreen() {
     refetchInterval: 30000,
   });
 
-  const { data: me } = useQuery({
-    queryKey: ['me'],
-    queryFn: () => apiClient.get('/users/me').then((r) => r.data),
-  });
+  useEffect(() => {
+    const sub = AppState.addEventListener('change', (next) => {
+      if (appState.current.match(/inactive|background/) && next === 'active') {
+        refetchPlan();
+      }
+      appState.current = next;
+    });
+    return () => sub.remove();
+  }, [refetchPlan]);
 
-  const isPremium = me?.plan && me.plan !== 'free';
+  useEffect(() => {
+    const unsub = navigation?.addListener?.('focus', () => {
+      refetchPlan();
+    });
+    return unsub;
+  }, [navigation, refetchPlan]);
 
   const activateMutation = useMutation({
-    mutationFn: () => apiClient.post('/matching/boost'),
+    mutationFn: async () => {
+      const latestPlan = await refetchPlan();
+      if (!latestPlan.data?.isPremium) {
+        throw new Error('NOT_PREMIUM');
+      }
+      return apiClient.post('/matching/boost');
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['boost'] });
       Alert.alert('Boost Activated!', 'Your profile is now boosted for 30 minutes.');
     },
-    onError: () => Alert.alert('Error', 'Failed to activate boost. Please try again.'),
+    onError: (error: any) => {
+      if (error?.message === 'NOT_PREMIUM') {
+        Alert.alert(
+          'Premium Required',
+          'Your subscription may have expired. Please renew to use Boost.',
+          [{ text: 'OK' }],
+        );
+        refetchPlan();
+      } else {
+        Alert.alert('Error', 'Failed to activate boost. Please try again.');
+      }
+    },
   });
 
   useEffect(() => {

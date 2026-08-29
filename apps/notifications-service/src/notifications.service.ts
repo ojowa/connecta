@@ -1,10 +1,14 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Repository, In, LessThan } from 'typeorm';
 import { Notification, NotificationPreference, DeviceToken, NotificationDelivery } from '@app/common/entities';
+import { Expo, ExpoPushMessage } from 'expo-server-sdk';
 
 @Injectable()
 export class NotificationsService {
+  private readonly expo = new Expo();
+  private readonly logger = new Logger(NotificationsService.name);
+
   constructor(
     @InjectRepository(Notification) private notifRepo: Repository<Notification>,
     @InjectRepository(NotificationPreference) private prefRepo: Repository<NotificationPreference>,
@@ -83,5 +87,77 @@ export class NotificationsService {
   async markFailed(id: string, reason: string) {
     await this.deliveryRepo.update(id, { status: 'failed', failureReason: reason });
     return { updated: true };
+  }
+
+  async createAndPush(userId: string, type: string, title: string, body: string, data?: any) {
+    const prefs = await this.prefRepo.findOne({ where: { userId } });
+    if (prefs) {
+      if (type === 'new_match' && !prefs.matchNotify) return null;
+      if (type === 'new_message' && !prefs.messageNotify) return null;
+      if (type === 'new_like' && !prefs.likeNotify) return null;
+      if (type === 'super_like' && !prefs.superLikeNotify) return null;
+      if (type === 'incoming_call' && !prefs.callNotify) return null;
+
+      if (prefs.quietHoursStart && prefs.quietHoursEnd) {
+        const now = new Date();
+        const currentMinutes = now.getHours() * 60 + now.getMinutes();
+        const [startH, startM] = prefs.quietHoursStart.split(':').map(Number);
+        const [endH, endM] = prefs.quietHoursEnd.split(':').map(Number);
+        const startMinutes = startH * 60 + startM;
+        const endMinutes = endH * 60 + endM;
+        if (startMinutes > endMinutes) {
+          if (currentMinutes >= startMinutes || currentMinutes < endMinutes) return null;
+        } else {
+          if (currentMinutes >= startMinutes && currentMinutes < endMinutes) return null;
+        }
+      }
+    }
+
+    const notification = this.notifRepo.create({ userId, type, title, body, data, channel: 'push' });
+    const saved = await this.notifRepo.save(notification);
+
+    await this.sendPushToUser(userId, { title, body, data: { ...data, notificationId: saved.id, type } });
+
+    return saved;
+  }
+
+  async sendPushToUser(userId: string, payload: { title: string; body: string; data?: any }) {
+    const tokens = await this.tokenRepo.find({ where: { userId, active: true } });
+    if (tokens.length === 0) return;
+
+    const messages: ExpoPushMessage[] = tokens
+      .filter((t) => Expo.isExpoPushToken(t.token))
+      .map((t) => ({
+        to: t.token,
+        title: payload.title,
+        body: payload.body,
+        data: payload.data || {},
+        sound: 'default',
+        priority: 'high',
+      }));
+
+    if (messages.length === 0) return;
+
+    const chunks = this.expo.chunkPushNotifications(messages);
+    for (const chunk of chunks) {
+      try {
+        const receipts = await this.expo.sendPushNotificationsAsync(chunk);
+        for (let i = 0; i < receipts.length; i++) {
+          const receipt = receipts[i];
+          const token = tokens[i];
+          if (receipt.status === 'error' && receipt.message?.includes('DeviceNotRegistered')) {
+            await this.tokenRepo.update(token.id, { active: false });
+          }
+        }
+      } catch (error) {
+        this.logger.error(`Push send error: ${error}`);
+      }
+    }
+  }
+
+  async cleanupOldNotifications() {
+    const thirtyDaysAgo = new Date();
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+    await this.notifRepo.delete({ createdAt: LessThan(thirtyDaysAgo), readAt: LessThan(thirtyDaysAgo) });
   }
 }

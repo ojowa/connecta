@@ -3,18 +3,27 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { CallSession } from '@app/common/entities';
+import { CallsGateway } from './calls.gateway';
 
 @Injectable()
 export class CallsService {
   constructor(
     @InjectRepository(CallSession) private callRepo: Repository<CallSession>,
     private readonly eventEmitter: EventEmitter2,
+    private readonly gateway: CallsGateway,
   ) {}
 
   async startCall(callerId: string, data: any) {
     const call = this.callRepo.create({ callerId, calleeId: data.recipientId, callType: data.callType || 'voice', status: 'ringing' });
     const saved = await this.callRepo.save(call);
     this.eventEmitter.emit('call.started', { callId: saved.id, callerId, recipientId: data.recipientId, callType: data.callType });
+    this.eventEmitter.emit('notification.send', {
+      userId: data.recipientId,
+      type: 'incoming_call',
+      title: 'Incoming Call',
+      body: `${data.callType === 'video' ? 'Video' : 'Voice'} call`,
+      data: { callId: saved.id, callerId, callType: data.callType },
+    });
     return saved;
   }
 

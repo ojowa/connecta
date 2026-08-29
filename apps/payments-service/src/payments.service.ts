@@ -2,21 +2,41 @@ import { Injectable, NotFoundException, BadRequestException } from '@nestjs/comm
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { EventEmitter2 } from '@nestjs/event-emitter';
-import { Plan, Subscription, Transaction, User } from '@app/common/entities';
+import { Plan, Subscription, Transaction, User, SystemSetting } from '@app/common/entities';
 
 @Injectable()
 export class PaymentsService {
+  private readonly SETTINGS_KEY = 'platform_settings';
+
   constructor(
     @InjectRepository(Plan) private planRepo: Repository<Plan>,
     @InjectRepository(Subscription) private subRepo: Repository<Subscription>,
     @InjectRepository(Transaction) private txnRepo: Repository<Transaction>,
     @InjectRepository(User) private userRepo: Repository<User>,
+    @InjectRepository(SystemSetting) private settingsRepo: Repository<SystemSetting>,
     private readonly eventEmitter: EventEmitter2,
   ) {}
 
+  async getPaymentConfig() {
+    const record = await this.settingsRepo.findOne({ where: { key: this.SETTINGS_KEY } });
+    const settings = record?.value || {};
+    return {
+      activePlatform: settings.paymentPlatform || 'paystack',
+      paystack: { configured: !!(settings.paystack?.secretKey), publicKey: settings.paystack?.publicKey ? `${settings.paystack.publicKey.substring(0, 8)}...` : '' },
+      flutterwave: { configured: !!(settings.flutterwave?.secretKey), publicKey: settings.flutterwave?.publicKey ? `${settings.flutterwave.publicKey.substring(0, 8)}...` : '' },
+    };
+  }
+
+  async getActiveGatewayConfig() {
+    const record = await this.settingsRepo.findOne({ where: { key: this.SETTINGS_KEY } });
+    const settings = record?.value || {};
+    const platform = settings.paymentPlatform || 'paystack';
+    return { platform, config: settings[platform] || {} };
+  }
+
   async getPlans(country?: string, currency?: string) {
     const plans = await this.planRepo.find({ where: { isActive: true }, order: { sortOrder: 'ASC' } });
-    return { plans: plans.map((p) => ({ planId: p.id, name: p.displayName, price: p.priceMonthly, currency: p.currency, interval: 'month', features: p.features, limits: { dailyLikes: p.dailyLikes, superLikesPerDay: p.dailySuperLikes } })) };
+    return { plans: plans.map((p) => ({ planId: p.id, name: p.displayName, tagline: p.tagline, isPopular: p.isPopular, price: p.priceMonthly, priceYearly: p.priceYearly, currency: p.currency, interval: 'month', features: p.features, limits: { dailyLikes: p.dailyLikes, superLikesPerDay: p.dailySuperLikes } })) };
   }
 
   async subscribe(userId: string, data: any) {
@@ -24,11 +44,12 @@ export class PaymentsService {
     if (!plan) throw new BadRequestException('Invalid plan');
     const existing = await this.subRepo.findOne({ where: { userId, status: 'active' } });
     if (existing) throw new BadRequestException('Already subscribed');
+    const { platform } = await this.getActiveGatewayConfig();
     const now = new Date();
     const periodEnd = new Date(now);
     if (data.billingPeriod === 'yearly') periodEnd.setFullYear(periodEnd.getFullYear() + 1); else periodEnd.setMonth(periodEnd.getMonth() + 1);
     const sub = await this.subRepo.save(this.subRepo.create({ userId, planId: plan.id, status: 'active', billingPeriod: data.billingPeriod || 'monthly', startedAt: now, currentPeriodStart: now, currentPeriodEnd: periodEnd, autoRenew: true }));
-    const txn = await this.txnRepo.save(this.txnRepo.create({ userId, subscriptionId: sub.id, type: 'subscription', amount: data.billingPeriod === 'yearly' ? plan.priceYearly : plan.priceMonthly, currency: plan.currency, status: 'completed', paymentMethod: data.paymentMethod, gateway: 'paystack' }));
+    const txn = await this.txnRepo.save(this.txnRepo.create({ userId, subscriptionId: sub.id, type: 'subscription', amount: data.billingPeriod === 'yearly' ? plan.priceYearly : plan.priceMonthly, currency: plan.currency, status: 'completed', paymentMethod: data.paymentMethod, gateway: platform }));
     return { subscription: { subscriptionId: sub.id, planId: plan.id, planName: plan.displayName, status: 'active', price: plan.priceMonthly, currency: plan.currency, interval: sub.billingPeriod, currentPeriodStart: sub.currentPeriodStart, currentPeriodEnd: sub.currentPeriodEnd, payment: { transactionId: txn.id, status: 'successful', paymentMethod: data.paymentMethod } } };
   }
 
@@ -50,10 +71,19 @@ export class PaymentsService {
   }
 
   async initializePayment(userId: string, data: any) {
+    const { platform, config } = await this.getActiveGatewayConfig();
     const amountKobo = Math.round(parseFloat(data.amount) * 100);
     const ref = `CKA-${Date.now()}-${Math.random().toString(36).substring(2, 8)}`;
-    const txn = await this.txnRepo.save(this.txnRepo.create({ userId, type: data.purpose || 'one_time', amount: amountKobo, currency: data.currency || 'NGN', status: 'pending', gateway: 'paystack', reference: ref, metadata: data.metadata }));
-    return { transactionId: txn.id, authorization_url: `https://checkout.paystack.com/${ref}`, reference: ref, amount: data.amount, currency: data.currency || 'NGN', expiresAt: new Date(Date.now() + 30 * 60 * 1000) };
+    const txn = await this.txnRepo.save(this.txnRepo.create({ userId, type: data.purpose || 'one_time', amount: amountKobo, currency: data.currency || 'NGN', status: 'pending', gateway: platform, reference: ref, metadata: data.metadata }));
+
+    let authorizationUrl = '';
+    if (platform === 'paystack') {
+      authorizationUrl = config.publicKey ? `https://checkout.paystack.com/${ref}` : '';
+    } else if (platform === 'flutterwave') {
+      authorizationUrl = config.publicKey ? `https://checkout.flutterwave.com/v3/hosted/pay?reference=${ref}` : '';
+    }
+
+    return { transactionId: txn.id, authorization_url: authorizationUrl, reference: ref, amount: data.amount, currency: data.currency || 'NGN', gateway: platform, expiresAt: new Date(Date.now() + 30 * 60 * 1000) };
   }
 
   async verifyPayment(userId: string, reference: string) {
@@ -82,7 +112,10 @@ export class PaymentsService {
   }
 
   async getPaymentOptions(userId: string) {
-    return { methods: [{ id: 'card', name: 'Credit/Debit Card', enabled: true, icon: 'credit-card' }, { id: 'bank_transfer', name: 'Bank Transfer', enabled: true, icon: 'bank' }, { id: 'ussd', name: 'USSD', enabled: true, icon: 'phone' }], currencies: ['NGN', 'GHS', 'KES', 'ZAR'], defaultCurrency: 'NGN' };
+    const { platform } = await this.getActiveGatewayConfig();
+    const config = await this.getPaymentConfig();
+    const platformConfig = config[platform as 'paystack' | 'flutterwave'];
+    return { activePlatform: platform, configured: platformConfig?.configured || false, methods: [{ id: 'card', name: 'Credit/Debit Card', enabled: true, icon: 'credit-card' }, { id: 'bank_transfer', name: 'Bank Transfer', enabled: true, icon: 'bank' }, { id: 'ussd', name: 'USSD', enabled: true, icon: 'phone' }], currencies: ['NGN', 'GHS', 'KES', 'ZAR'], defaultCurrency: 'NGN' };
   }
 
   async requestRefund(userId: string, transactionId: string, data: any) {

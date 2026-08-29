@@ -51,13 +51,15 @@ class WebRTCManager {
       this.notifyStateChange();
 
       SocketManager.getInstance().emit('call.initiated', {
+        callId,
         calleeId: peerId,
         callType: type,
       });
 
       SocketManager.getInstance().emit('sdp.offer', {
         callId,
-        offer,
+        sdp: offer,
+        targetUserId: peerId,
       });
 
       this.startQualityMonitoring();
@@ -68,7 +70,7 @@ class WebRTCManager {
     }
   }
 
-  async acceptCall(callId: string, offer: any, callType: 'audio' | 'video' = 'video'): Promise<void> {
+  async acceptCall(callId: string, offer: any, callType: 'audio' | 'video' = 'video', callerId: string = ''): Promise<void> {
     const localStream = await this.fetchLocalStream(callType);
     const peerConnection = this.createPeerConnection();
 
@@ -79,7 +81,7 @@ class WebRTCManager {
 
     this.state = {
       callId,
-      peerId: '',
+      peerId: callerId,
       isInitiator: false,
       localStream,
       remoteStream: null,
@@ -98,7 +100,8 @@ class WebRTCManager {
 
     SocketManager.getInstance().emit('sdp.answer', {
       callId,
-      answer,
+      sdp: answer,
+      targetUserId: this.state.peerId,
     });
 
     SocketManager.getInstance().emit('call.answered', { callId });
@@ -129,10 +132,11 @@ class WebRTCManager {
       const pc = new RTCPeerConnection(WEBRTC_CONFIG);
 
       (pc as any).onicecandidate = (event: any) => {
-        if (event.candidate) {
+        if (event.candidate && this.state?.peerId) {
           SocketManager.getInstance().emit('ice.candidate', {
             callId: this.state?.callId,
             candidate: event.candidate,
+            targetUserId: this.state.peerId,
           });
         }
       };

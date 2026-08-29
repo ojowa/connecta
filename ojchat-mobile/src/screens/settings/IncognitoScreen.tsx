@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useRef, useEffect } from 'react';
 import {
   View,
   Text,
@@ -6,25 +6,55 @@ import {
   Switch,
   ActivityIndicator,
   Alert,
+  TouchableOpacity,
+  AppState,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { Ionicons } from '@expo/vector-icons';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiClient } from '../../services/api/apiClient';
+import { usePlanInfo } from '../../hooks/useMatch';
 import { colors } from '../../theme/colors';
 import { typography } from '../../theme/typography';
 import { spacing } from '../../theme/spacing';
 import { borderRadius } from '../../theme/borderRadius';
 
-export default function IncognitoScreen() {
+export default function IncognitoScreen({ navigation }: any) {
   const queryClient = useQueryClient();
+  const appState = useRef(AppState.currentState);
+  const { data: planInfo, refetch: refetchPlan } = usePlanInfo();
+  const isPremium = planInfo?.isPremium;
 
   const { data: me, isLoading } = useQuery({
     queryKey: ['me'],
     queryFn: () => apiClient.get('/users/me').then((r) => r.data),
   });
 
+  useEffect(() => {
+    const sub = AppState.addEventListener('change', (next) => {
+      if (appState.current.match(/inactive|background/) && next === 'active') {
+        refetchPlan();
+      }
+      appState.current = next;
+    });
+    return () => sub.remove();
+  }, [refetchPlan]);
+
+  useEffect(() => {
+    const unsub = navigation?.addListener?.('focus', () => {
+      refetchPlan();
+    });
+    return unsub;
+  }, [navigation, refetchPlan]);
+
   const toggleMutation = useMutation({
-    mutationFn: () => apiClient.post('/matching/incognito/toggle'),
+    mutationFn: async () => {
+      const latestPlan = await refetchPlan();
+      if (!latestPlan.data?.isPremium) {
+        throw new Error('NOT_PREMIUM');
+      }
+      return apiClient.post('/matching/incognito/toggle');
+    },
     onSuccess: (response) => {
       queryClient.invalidateQueries({ queryKey: ['me'] });
       const newStatus = response.data?.incognito ?? response.data?.incognitoMode;
@@ -33,7 +63,18 @@ export default function IncognitoScreen() {
         newStatus ? 'You are now incognito. You won\'t appear in anyone\'s feed.' : 'Incognito mode disabled. You\'re back in the feed.'
       );
     },
-    onError: () => Alert.alert('Error', 'Failed to toggle incognito mode.'),
+    onError: (error: any) => {
+      if (error?.message === 'NOT_PREMIUM') {
+        Alert.alert(
+          'Premium Required',
+          'Your subscription may have expired. Please renew to use Incognito Mode.',
+          [{ text: 'OK' }],
+        );
+        refetchPlan();
+      } else {
+        Alert.alert('Error', 'Failed to toggle incognito mode.');
+      }
+    },
   });
 
   if (isLoading) {
@@ -47,6 +88,35 @@ export default function IncognitoScreen() {
   }
 
   const isIncognito = me?.incognito ?? me?.incognitoMode ?? false;
+
+  if (!isPremium) {
+    return (
+      <SafeAreaView style={styles.safeArea} edges={['bottom' as any]}>
+        <View style={styles.header}>
+          <TouchableOpacity onPress={() => navigation.goBack()}>
+            <Ionicons name="arrow-back" size={24} color={colors.textPrimary} />
+          </TouchableOpacity>
+          <Text style={styles.headerTitle}>Incognito Mode</Text>
+          <View style={{ width: 24 }} />
+        </View>
+        <View style={styles.center}>
+          <Text style={{ fontSize: 56, marginBottom: spacing.md }}>🕵️</Text>
+          <Text style={typography.h2}>Premium Feature</Text>
+          <Text style={[typography.body, { color: colors.textSecondary, textAlign: 'center', marginTop: spacing.sm, marginBottom: spacing.xl }]}>
+            Upgrade to Premium to use Incognito Mode and browse profiles privately.
+          </Text>
+          <TouchableOpacity
+            style={styles.upgradeButton}
+            onPress={() => navigation.navigate('Subscription')}
+            activeOpacity={0.7}
+          >
+            <Ionicons name="diamond" size={20} color={colors.white} />
+            <Text style={styles.upgradeButtonText}>Upgrade to Premium</Text>
+          </TouchableOpacity>
+        </View>
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView style={styles.safeArea} edges={['bottom' as any]}>
@@ -207,5 +277,29 @@ const styles = StyleSheet.create({
     color: colors.primary,
     textAlign: 'center',
     fontWeight: '500',
+  },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    padding: spacing.md,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
+  },
+  headerTitle: {
+    ...typography.h3,
+  },
+  upgradeButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    backgroundColor: colors.primary,
+    paddingHorizontal: spacing.xl,
+    paddingVertical: spacing.md,
+    borderRadius: borderRadius.button,
+  },
+  upgradeButtonText: {
+    ...typography.button,
+    color: colors.white,
   },
 });

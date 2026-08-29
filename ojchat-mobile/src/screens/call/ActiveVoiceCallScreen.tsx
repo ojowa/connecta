@@ -13,17 +13,19 @@ interface ActiveVoiceCallScreenProps {
   navigation?: any;
   route?: {
     params?: {
+      callId?: string;
       callerId: string;
       callerName: string;
       callerAvatar?: string;
       callType: 'audio' | 'video';
       conversationId?: string;
+      isInitiator?: boolean;
     };
   };
 }
 
 export const ActiveVoiceCallScreen: React.FC<ActiveVoiceCallScreenProps> = ({ navigation, route }) => {
-  const { callerId = '', callerName = '', conversationId } = route?.params || {};
+  const { callId, callerId = '', callerName = '', conversationId, isInitiator = true } = route?.params || {};
   const [callError, setCallError] = useState<string | null>(null);
   const {
     formattedDuration, isMuted, isSpeakerEnabled, connectionState,
@@ -31,7 +33,7 @@ export const ActiveVoiceCallScreen: React.FC<ActiveVoiceCallScreenProps> = ({ na
   } = useWebRTC();
 
   useEffect(() => {
-    if (callerId) {
+    if (isInitiator && callerId) {
       startCall(callerId, 'audio').catch((err: any) => {
         setCallError(err.message || 'Failed to start call');
         Alert.alert('Call Failed', err.message || 'Could not initialize call. Please check your connection.', [
@@ -39,7 +41,7 @@ export const ActiveVoiceCallScreen: React.FC<ActiveVoiceCallScreenProps> = ({ na
         ]);
       });
     }
-  }, [callerId]);
+  }, [callerId, isInitiator]);
 
   const handleEndCall = useCallback(() => {
     endCall();

@@ -13,6 +13,11 @@ interface ConversationsResponse {
 }
 
 export const chatApi = {
+  async createConversation(otherUserId: string) {
+    const response = await apiClient.post(ENDPOINTS.CHAT.CONVERSATIONS, { otherUserId });
+    return response.data as { id: string; alreadyExisted: boolean };
+  },
+
   async getConversations(page = 1, limit = 20) {
     const response = await apiClient.get(ENDPOINTS.CHAT.CONVERSATIONS, { params: { page, limit } });
     return response.data as ConversationsResponse;
@@ -23,8 +28,8 @@ export const chatApi = {
     return response.data as MessagesResponse;
   },
 
-  async sendMessage(conversationId: string, content: string, type = 'text') {
-    const response = await apiClient.post(ENDPOINTS.CHAT.SEND(conversationId), { content, type });
+  async sendMessage(conversationId: string, content: string, type = 'text', duration?: number) {
+    const response = await apiClient.post(ENDPOINTS.CHAT.SEND(conversationId), { content, type, duration });
     return response.data as Message;
   },
 

@@ -23,8 +23,8 @@ export function useMessages(conversationId: string, page = 1) {
 export function useSendMessage() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: ({ conversationId, content, type }: { conversationId: string; content: string; type?: string }) =>
-      chatApi.sendMessage(conversationId, content, type),
+    mutationFn: ({ conversationId, content, type, duration }: { conversationId: string; content: string; type?: string; duration?: number }) =>
+      chatApi.sendMessage(conversationId, content, type, duration),
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ['messages', variables.conversationId] });
       queryClient.invalidateQueries({ queryKey: ['conversations'] });

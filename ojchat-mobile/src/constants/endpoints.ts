@@ -27,6 +27,8 @@ export const ENDPOINTS = {
     SYNC: '/users/sync',
     SUBMIT_APPEAL: '/users/me/appeal',
     MY_APPEALS: '/users/me/appeals',
+    STREAK: '/users/me/streak',
+    STREAK_CHECK_IN: '/users/me/streak/check-in',
   },
   PROFILES: {
     PHOTOS: '/users/me/photos',
@@ -66,6 +68,7 @@ export const ENDPOINTS = {
     SCAM_CHECK: (userId: string) => `/matching/scam-check/${userId}`,
     PREFERENCE_MODEL: '/matching/preference-model',
     ELO_SCORE: '/matching/elo-score',
+    PLAN_INFO: '/matching/plan-info',
   },
   CHAT: {
     CONVERSATIONS: '/chat/conversations',

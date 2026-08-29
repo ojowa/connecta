@@ -15,17 +15,19 @@ interface ActiveVideoCallScreenProps {
   navigation?: any;
   route?: {
     params?: {
+      callId?: string;
       callerId: string;
       callerName: string;
       callerAvatar?: string;
       callType: 'audio' | 'video';
       conversationId?: string;
+      isInitiator?: boolean;
     };
   };
 }
 
 export const ActiveVideoCallScreen: React.FC<ActiveVideoCallScreenProps> = ({ navigation, route }) => {
-  const { callerId = '', callerName = '', conversationId } = route?.params || {};
+  const { callId, callerId = '', callerName = '', conversationId, isInitiator = true } = route?.params || {};
   const { width: screenWidth, height: screenHeight } = useWindowDimensions();
   const [callError, setCallError] = useState<string | null>(null);
   const pipWidth = Math.min(120, screenWidth * 0.3);
@@ -37,7 +39,7 @@ export const ActiveVideoCallScreen: React.FC<ActiveVideoCallScreenProps> = ({ na
   } = useWebRTC();
 
   useEffect(() => {
-    if (callerId) {
+    if (isInitiator && callerId) {
       startCall(callerId, 'video').catch((err: any) => {
         setCallError(err.message || 'Failed to start call');
         Alert.alert('Call Failed', err.message || 'Could not initialize video call. Please check your connection.', [
@@ -45,7 +47,7 @@ export const ActiveVideoCallScreen: React.FC<ActiveVideoCallScreenProps> = ({ na
         ]);
       });
     }
-  }, [callerId]);
+  }, [callerId, isInitiator]);
 
   const handleEndCall = useCallback(() => {
     endCall();

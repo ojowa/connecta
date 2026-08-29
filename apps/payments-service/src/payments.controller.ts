@@ -83,6 +83,12 @@ export class PaymentsController {
     return this.paymentsService.requestRefund(userId, txnId, body);
   }
 
+  @Get('config')
+  @ApiOperation({ summary: 'Get payment platform configuration status' })
+  getConfig() {
+    return this.paymentsService.getPaymentConfig();
+  }
+
   @Post('webhook/paystack')
   @ApiOperation({ summary: 'Paystack webhook' })
   webhook(@Body() payload: any, @Query('signature') signature?: string) {

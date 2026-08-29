@@ -16,6 +16,8 @@ export interface Message {
   content: string;
   type: 'text' | 'image' | 'voice' | 'video' | 'gif' | 'call';
   status: 'pending' | 'sent' | 'delivered' | 'read';
+  mediaUrl?: string;
+  duration?: number;
   reactions?: Reaction[];
   replyTo?: { id: string; content: string } | string;
   createdAt: string;

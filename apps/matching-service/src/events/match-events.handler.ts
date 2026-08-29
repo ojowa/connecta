@@ -1,6 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
+import { OnEvent } from '@nestjs/event-emitter';
 import {
   Match,
   Like,
@@ -10,7 +11,6 @@ import {
   Profile,
   Notification,
 } from '@app/common/entities';
-import { MATCH_EVENTS } from '@app/common/constants/events';
 
 @Injectable()
 export class MatchEventsHandler {
@@ -33,11 +33,12 @@ export class MatchEventsHandler {
     private notificationRepository: Repository<Notification>,
   ) {}
 
+  @OnEvent('match.created')
   async handleMatchCreated(payload: {
     matchId: string;
     user1Id: string;
     user2Id: string;
-    matchedVia: string;
+    matchedVia?: string;
   }) {
     this.logger.log(`Handling match.created: ${payload.matchId}`);
 
@@ -91,6 +92,7 @@ export class MatchEventsHandler {
     }
   }
 
+  @OnEvent('match.mutual')
   async handleMatchMutual(payload: { matchId: string; user1Id: string; user2Id: string }) {
     this.logger.log(`Handling match.mutual: ${payload.matchId}`);
 
@@ -102,6 +104,7 @@ export class MatchEventsHandler {
     }
   }
 
+  @OnEvent('super_like.sent')
   async handleSuperLikeSent(payload: { fromUserId: string; toUserId: string; matchId?: string }) {
     this.logger.log(`Handling super_like.sent from ${payload.fromUserId} to ${payload.toUserId}`);
 
@@ -118,6 +121,7 @@ export class MatchEventsHandler {
     );
   }
 
+  @OnEvent('match.unmatch')
   async handleUnmatch(payload: { matchId: string; userId: string }) {
     this.logger.log(`Handling unmatch: ${payload.matchId}`);
 

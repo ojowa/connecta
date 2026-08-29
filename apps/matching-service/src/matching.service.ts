@@ -1,8 +1,8 @@
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, In, MoreThan } from 'typeorm';
+import { Repository, In, MoreThan, LessThan } from 'typeorm';
 import { EventEmitter2 } from '@nestjs/event-emitter';
-import { User, Profile, Like, Pass, Match, DailyLike, Photo, UserPreference, Block, Interest, ProfileInterest, Boost, PhotoLike, Moment, MomentView, ProfileView } from '@app/common/entities';
+import { User, Profile, Like, Pass, Match, DailyLike, Photo, UserPreference, Block, Interest, ProfileInterest, Boost, PhotoLike, Moment, MomentView, ProfileView, Plan, Subscription, Notification } from '@app/common/entities';
 import { MatchmakingEngine } from './ai/matchmaking.engine';
 import { CompatibilityEngine } from './ai/compatibility.engine';
 import { ScamDetector } from './ai/scam.detector';
@@ -31,6 +31,9 @@ export class MatchingService {
     @InjectRepository(Moment) private momentRepo: Repository<Moment>,
     @InjectRepository(MomentView) private momentViewRepo: Repository<MomentView>,
     @InjectRepository(ProfileView) private profileViewRepo: Repository<ProfileView>,
+    @InjectRepository(Plan) private planRepo: Repository<Plan>,
+    @InjectRepository(Subscription) private subscriptionRepo: Repository<Subscription>,
+    @InjectRepository(Notification) private notifRepo: Repository<Notification>,
     private readonly eventEmitter: EventEmitter2,
     private readonly matchmakingEngine: MatchmakingEngine,
     private readonly compatibilityEngine: CompatibilityEngine,
@@ -46,6 +49,31 @@ export class MatchingService {
     if (!userId || userId === '' || !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(userId)) {
       throw new BadRequestException('Valid user ID is required');
     }
+  }
+
+  async getUserPlanInfo(userId: string) {
+    const subscription = await this.subscriptionRepo.findOne({
+      where: { userId, status: 'active' },
+      relations: ['plan'],
+    });
+    const plan = subscription?.plan;
+    const dailyLikesLimit = plan?.dailyLikes ?? 10;
+    const dailySuperLikesLimit = plan?.dailySuperLikes ?? 1;
+
+    const today = new Date().toISOString().split('T')[0];
+    const dailyLike = await this.dailyLikeRepo.findOne({ where: { userId, date: today as any } });
+
+    return {
+      planId: plan?.name || 'free',
+      planName: plan?.displayName || 'Free',
+      dailyLikes: dailyLike?.likesGiven ?? 0,
+      dailyLikesLimit,
+      dailySuperLikes: dailyLike?.superLikesGiven ?? 0,
+      dailySuperLikesLimit,
+      isPremium: !!subscription && subscription.status === 'active' && plan?.name !== 'free',
+      hasBoost: !!(await this.boostRepo.findOne({ where: { userId, isActive: true, expiresAt: MoreThan(new Date()) } })),
+      hasIncognito: !!(await this.userRepo.findOne({ where: { id: userId, incognitoMode: true } })),
+    };
   }
 
   async getFeed(userId: string, page = 1, limit = 20) {
@@ -76,6 +104,39 @@ export class MatchingService {
 
     if (pref?.showMe && pref.showMe !== 'everyone') {
       qb = qb.andWhere('u.gender = :gender', { gender: pref.showMe });
+    }
+
+    const sub = await this.subscriptionRepo.findOne({ where: { userId, status: 'active' }, relations: ['plan'] });
+    const isPremium = !!sub && sub.plan?.name !== 'free';
+
+    if (pref?.showVerifiedOnly && isPremium) {
+      const verifiedUserIds = (await this.profileRepo.find({ where: { verified: true }, select: ['userId'] })).map((p) => p.userId);
+      if (verifiedUserIds.length > 0) {
+        qb = qb.andWhere('u.id IN (:...verifiedIds)', { verifiedIds: verifiedUserIds });
+      } else {
+        qb = qb.andWhere('1 = 0');
+      }
+    }
+
+    if (pref?.relationshipGoal && pref.relationshipGoal !== 'any' && isPremium) {
+      const rgUserIds = (await this.profileRepo.find({ where: { relationshipGoal: pref.relationshipGoal }, select: ['userId'] })).map((p) => p.userId);
+      if (rgUserIds.length > 0) {
+        qb = qb.andWhere('u.id IN (:...rgIds)', { rgIds: rgUserIds });
+      } else {
+        qb = qb.andWhere('1 = 0');
+      }
+    }
+
+    if (pref?.showProfilesWithPhotosOnly && isPremium) {
+      const photoUserIds = (await this.photoRepo.createQueryBuilder('p')
+        .innerJoin('p.profile', 'prof')
+        .select('prof.userId')
+        .getRawMany()).map((r: any) => r.userId);
+      if (photoUserIds.length > 0) {
+        qb = qb.andWhere('u.id IN (:...photoUserIds)', { photoUserIds });
+      } else {
+        qb = qb.andWhere('1 = 0');
+      }
     }
 
     if (pref?.passportEnabled && pref.passportLatitude != null && pref.passportLongitude != null) {
@@ -112,6 +173,11 @@ export class MatchingService {
     const profileInterests = profileIds.length > 0 ? await this.profileInterestRepo.find({ where: { profileId: In(profileIds) } }) : [];
     const interestIds = [...new Set(profileInterests.map((pi) => pi.interestId))];
     const interests = interestIds.length > 0 ? await this.interestRepo.find({ where: { id: In(interestIds) } }) : [];
+
+    const myProfileRecord = await this.profileRepo.findOne({ where: { userId } });
+    const myInterestIds = new Set(
+      profileInterests.filter((pi) => pi.profileId === myProfileRecord?.id).map((pi) => pi.interestId)
+    );
 
     const profileMap = new Map(profiles.map((p) => [p.userId, p]));
     const photoMap = new Map<string, Photo[]>();
@@ -159,11 +225,34 @@ export class MatchingService {
       }),
     );
 
+    const candidateUserIds = enriched.map((c) => c.user.id);
+    const candidateSubs = candidateUserIds.length > 0
+      ? await this.subscriptionRepo.find({ where: candidateUserIds.map((id) => ({ userId: id, status: 'active' })), relations: ['plan'] })
+      : [];
+    const planTierMap = new Map<string, number>();
+    for (const sub of candidateSubs) {
+      const tier = sub.plan?.name === 'platinum' ? 4 : sub.plan?.name === 'gold' ? 3 : sub.plan?.name === 'premium' ? 2 : 1;
+      planTierMap.set(sub.userId, tier);
+    }
+
     enriched.sort((a, b) => {
       const aBoosted = boostedUserIds.includes(a.user.id) ? 1 : 0;
       const bBoosted = boostedUserIds.includes(b.user.id) ? 1 : 0;
       if (aBoosted !== bBoosted) return bBoosted - aBoosted;
-      return (b as any).overallScore - (a as any).overallScore;
+
+      const aInterestOverlap = myInterestIds.size > 0
+        ? (a.profile?.interests?.filter((i: any) => myInterestIds.has(i.id)).length || 0) / myInterestIds.size
+        : 0;
+      const bInterestOverlap = myInterestIds.size > 0
+        ? (b.profile?.interests?.filter((i: any) => myInterestIds.has(i.id)).length || 0) / myInterestIds.size
+        : 0;
+
+      const aPlanBonus = (planTierMap.get(a.user.id) || 0) * 0.03;
+      const bPlanBonus = (planTierMap.get(b.user.id) || 0) * 0.03;
+
+      const aScore = ((a as any).overallScore || 0) + aInterestOverlap * 0.15 + aPlanBonus;
+      const bScore = ((b as any).overallScore || 0) + bInterestOverlap * 0.15 + bPlanBonus;
+      return bScore - aScore;
     });
 
     return {
@@ -181,7 +270,11 @@ export class MatchingService {
       dailyLike = this.dailyLikeRepo.create({ userId: likerId, date: today as any, likesGiven: 0, superLikesGiven: 0 });
       await this.dailyLikeRepo.save(dailyLike);
     }
-    if (dailyLike.likesGiven >= 50) throw new BadRequestException('Daily like limit reached. Try again tomorrow.');
+
+    const planInfo = await this.getUserPlanInfo(likerId);
+    if (dailyLike.likesGiven >= planInfo.dailyLikesLimit) {
+      throw new BadRequestException(`Daily like limit reached (${planInfo.dailyLikesLimit}/${planInfo.dailyLikesLimit}). Upgrade your plan for more likes.`);
+    }
 
     const existing = await this.likeRepo.findOne({ where: { userId: likerId, likedUserId: likedId } });
     if (existing) return existing;
@@ -205,9 +298,18 @@ export class MatchingService {
       await this.enhancementService.updateEloOnMatch(likerId);
       await this.enhancementService.updateEloOnMatch(likedId);
       this.eventEmitter.emit('match.created', { matchId: match.id, user1Id: likerId, user2Id: likedId });
-      return { liked: true, matched: true, matchId: match.id };
+      const updatedMatch = await this.matchRepo.findOne({ where: { id: match.id } });
+      return { liked: true, matched: true, matchId: match.id, conversationId: updatedMatch?.conversationId };
     }
     this.eventEmitter.emit('user.liked', { likerId, likedId });
+    const liker = await this.userRepo.findOne({ where: { id: likerId } });
+    this.eventEmitter.emit('notification.send', {
+      userId: likedId,
+      type: 'new_like',
+      title: 'New Like',
+      body: `${liker?.fullName || 'Someone'} liked your profile`,
+      data: { likerId },
+    });
     return { liked: true, matched: false };
   }
 
@@ -238,7 +340,14 @@ export class MatchingService {
       dailyLike = this.dailyLikeRepo.create({ userId: likerId, date: today as any, likesGiven: 0, superLikesGiven: 0 });
       await this.dailyLikeRepo.save(dailyLike);
     }
-    if (dailyLike.superLikesGiven >= 3) throw new BadRequestException('Daily super like limit reached (3/day).');
+
+    const planInfo = await this.getUserPlanInfo(likerId);
+    if (dailyLike.superLikesGiven >= planInfo.dailySuperLikesLimit) {
+      throw new BadRequestException(`Daily super like limit reached (${planInfo.dailySuperLikesLimit}/${planInfo.dailySuperLikesLimit}). Upgrade your plan for more super likes.`);
+    }
+
+    const existing = await this.likeRepo.findOne({ where: { userId: likerId, likedUserId: likedId } });
+    if (existing) return existing;
 
     const like = this.likeRepo.create({ userId: likerId, likedUserId: likedId, isSuperLike: true });
     await this.likeRepo.save(like);
@@ -253,8 +362,27 @@ export class MatchingService {
       targetGender: likedUser?.gender,
     });
 
+    const mutual = await this.likeRepo.findOne({ where: { userId: likedId, likedUserId: likerId } });
+    if (mutual) {
+      const match = this.matchRepo.create({ user1Id: likerId, user2Id: likedId, matchedAt: new Date(), isActive: true });
+      await this.matchRepo.save(match);
+      await this.enhancementService.updateEloOnMatch(likerId);
+      await this.enhancementService.updateEloOnMatch(likedId);
+      this.eventEmitter.emit('match.created', { matchId: match.id, user1Id: likerId, user2Id: likedId });
+      const updatedMatch = await this.matchRepo.findOne({ where: { id: match.id } });
+      return { superLiked: true, matched: true, matchId: match.id, conversationId: updatedMatch?.conversationId };
+    }
+
     this.eventEmitter.emit('user.super_liked', { likerId, likedId });
-    return { superLiked: true };
+    const superLiker = await this.userRepo.findOne({ where: { id: likerId } });
+    this.eventEmitter.emit('notification.send', {
+      userId: likedId,
+      type: 'super_like',
+      title: 'Super Like!',
+      body: `${superLiker?.fullName || 'Someone'} super liked you!`,
+      data: { likerId },
+    });
+    return { superLiked: true, matched: false };
   }
 
   async undo(userId: string) {
@@ -282,6 +410,9 @@ export class MatchingService {
   }
 
   async rewind(userId: string) {
+    const planInfo = await this.getUserPlanInfo(userId);
+    if (!planInfo.isPremium) throw new BadRequestException('Rewind is a premium feature. Upgrade to unlock.');
+
     const lastLikes = await this.likeRepo.find({ where: { userId }, order: { createdAt: 'DESC' }, take: 5 });
     const lastPasses = await this.passRepo.find({ where: { userId }, order: { createdAt: 'DESC' }, take: 5 });
 
@@ -322,10 +453,24 @@ export class MatchingService {
   }
 
   async activateBoost(userId: string) {
+    const planInfo = await this.getUserPlanInfo(userId);
+    if (!planInfo.isPremium) throw new BadRequestException('Boost is a premium feature. Upgrade to unlock.');
+
     const existingActive = await this.boostRepo.findOne({
       where: { userId, isActive: true, expiresAt: MoreThan(new Date()) },
     });
     if (existingActive) throw new BadRequestException('Boost is already active');
+
+    const now = new Date();
+    const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+    const boostsThisMonth = await this.boostRepo.count({
+      where: { userId, activeAt: MoreThan(monthStart) },
+    });
+
+    const maxBoosts = planInfo.planId === 'platinum' ? 999 : planInfo.planId === 'gold' ? 3 : 0;
+    if (boostsThisMonth >= maxBoosts) {
+      throw new BadRequestException(`Monthly boost limit reached (${maxBoosts}/${maxBoosts}). ${planInfo.planId === 'gold' ? 'Upgrade to Platinum for unlimited boosts.' : ''}`);
+    }
 
     const expiresAt = new Date();
     expiresAt.setMinutes(expiresAt.getMinutes() + 30);
@@ -361,6 +506,9 @@ export class MatchingService {
   }
 
   async toggleIncognito(userId: string) {
+    const planInfo = await this.getUserPlanInfo(userId);
+    if (!planInfo.isPremium) throw new BadRequestException('Incognito mode is a premium feature. Upgrade to unlock.');
+
     const user = await this.userRepo.findOne({ where: { id: userId } });
     if (!user) throw new NotFoundException('User not found');
 
@@ -371,6 +519,9 @@ export class MatchingService {
   }
 
   async updatePassport(userId: string, latitude: number, longitude: number, enabled: boolean) {
+    const planInfo = await this.getUserPlanInfo(userId);
+    if (!planInfo.isPremium) throw new BadRequestException('Passport is a premium feature. Upgrade to unlock.');
+
     let pref = await this.prefRepo.findOne({ where: { userId } });
     if (!pref) {
       pref = this.prefRepo.create({ userId });
@@ -471,16 +622,15 @@ export class MatchingService {
   }
 
   async getLikedYou(userId: string, page = 1, limit = 20) {
+    const planInfo = await this.getUserPlanInfo(userId);
     const allLikes = await this.likeRepo.find({
       where: { likedUserId: userId },
       order: { createdAt: 'DESC' },
     });
 
     if (allLikes.length === 0) {
-      return { likes: [], meta: { page, limit, total: 0, hasMore: false } };
+      return { likes: [], total: 0, isBlurred: false };
     }
-
-    const allLikerIds = [...new Set(allLikes.map((l) => l.userId))];
 
     const matchedLikes = await this.matchRepo.find({
       where: [
@@ -489,9 +639,14 @@ export class MatchingService {
       ],
     });
     const matchedIds = new Set(matchedLikes.flatMap((m) => [m.user1Id, m.user2Id]));
-
     const pendingLikes = allLikes.filter((l) => !matchedIds.has(l.userId));
     const total = pendingLikes.length;
+    const isBlurred = !planInfo.isPremium;
+
+    if (isBlurred) {
+      return { likes: [], total, isBlurred: true };
+    }
+
     const paginatedLikes = pendingLikes.slice((page - 1) * limit, page * limit);
     const paginatedLikerIds = paginatedLikes.map((l) => l.userId);
 
@@ -522,7 +677,8 @@ export class MatchingService {
           } : null,
         };
       }),
-      meta: { page, limit, total, hasMore: total > page * limit },
+      total,
+      isBlurred: false,
     };
   }
 
@@ -711,9 +867,40 @@ export class MatchingService {
   }
 
   async createMoment(userId: string, mediaUrl: string, caption?: string, mediaType?: string) {
+    this.validateUserId(userId);
+
+    const now = new Date();
+    const oneHourAgo = new Date(now.getTime() - 60 * 60 * 1000);
+    const recentCount = await this.momentRepo.count({
+      where: { userId, createdAt: MoreThan(oneHourAgo) },
+    });
+    if (recentCount >= 10) {
+      throw new BadRequestException('Rate limit: maximum 10 moments per hour');
+    }
+
+    if (caption && caption.length > 300) {
+      throw new BadRequestException('Caption must be 300 characters or less');
+    }
+
+    if (caption) {
+      const toxicity = this.toxicityDetector.analyze(caption);
+      if (toxicity.isToxic && toxicity.action === 'block') {
+        throw new BadRequestException('Caption contains inappropriate content');
+      }
+    }
+
+    if (!mediaUrl && !caption) {
+      throw new BadRequestException('A moment must have either media or a caption');
+    }
+
+    const validMediaTypes = ['image', 'video'];
+    if (mediaType && !validMediaTypes.includes(mediaType)) {
+      throw new BadRequestException('Media type must be image or video');
+    }
+
     const expiresAt = new Date();
     expiresAt.setHours(expiresAt.getHours() + 24);
-    const moment = this.momentRepo.create({ userId, mediaUrl, caption, mediaType, expiresAt });
+    const moment = this.momentRepo.create({ userId, mediaUrl, caption, mediaType: mediaType || 'image', expiresAt });
     return this.momentRepo.save(moment);
   }
 
@@ -752,12 +939,24 @@ export class MatchingService {
     const moment = await this.momentRepo.findOne({ where: { id: momentId } });
     if (!moment) throw new NotFoundException('Moment not found');
     if (new Date(moment.expiresAt) <= new Date()) throw new BadRequestException('Moment has expired');
+    if (moment.userId === userId) return { viewed: true };
 
     const existing = await this.momentViewRepo.findOne({ where: { momentId, viewerId: userId } });
     if (!existing) {
       const view = this.momentViewRepo.create({ momentId, viewerId: userId });
       await this.momentViewRepo.save(view);
       await this.momentRepo.increment({ id: momentId }, 'viewCount', 1);
+
+      const viewer = await this.userRepo.findOne({ where: { id: userId } });
+      const notif = this.notifRepo.create({
+        userId: moment.userId,
+        type: 'moment_viewed',
+        title: 'Someone viewed your Moment',
+        body: `${viewer?.fullName || 'Someone'} viewed your Moment`,
+        data: { momentId, viewerId: userId },
+        channel: 'in_app',
+      });
+      await this.notifRepo.save(notif);
     }
     return { viewed: true };
   }
@@ -845,5 +1044,10 @@ export class MatchingService {
   async checkFakeProfile(userId: string) {
     this.validateUserId(userId);
     return this.fakeProfileDetector.analyze(userId);
+  }
+
+  async cleanupExpiredMoments() {
+    const result = await this.momentRepo.delete({ expiresAt: LessThan(new Date()) });
+    return { deleted: result.affected || 0 };
   }
 }

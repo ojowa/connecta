@@ -107,4 +107,9 @@ export const matchApi = {
     const response = await apiClient.get(ENDPOINTS.MATCHING.ELO_SCORE);
     return response.data;
   },
+
+  async getPlanInfo() {
+    const response = await apiClient.get(ENDPOINTS.MATCHING.PLAN_INFO);
+    return response.data;
+  },
 };

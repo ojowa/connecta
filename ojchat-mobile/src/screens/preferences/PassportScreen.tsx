@@ -1,7 +1,9 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, TextInput, StyleSheet, TouchableOpacity, Alert, ScrollView } from 'react-native';
+import React, { useState, useEffect, useRef } from 'react';
+import { View, Text, TextInput, StyleSheet, TouchableOpacity, Alert, ScrollView, AppState } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { Ionicons } from '@expo/vector-icons';
 import { apiClient } from '../../services/api/apiClient';
+import { usePlanInfo } from '../../hooks/useMatch';
 import { useAppStore } from '../../store';
 import { colors } from '../../theme/colors';
 import { typography } from '../../theme/typography';
@@ -10,6 +12,9 @@ import { borderRadius } from '../../theme/borderRadius';
 
 export default function PassportScreen({ navigation }: any) {
   const user = useAppStore((s) => s.user);
+  const appState = useRef(AppState.currentState);
+  const { data: planInfo, refetch: refetchPlan } = usePlanInfo();
+  const isPremium = planInfo?.isPremium;
   const [city, setCity] = useState('');
   const [enabled, setEnabled] = useState(false);
   const [latitude, setLatitude] = useState(0);
@@ -20,6 +25,23 @@ export default function PassportScreen({ navigation }: any) {
   useEffect(() => {
     fetchPassportStatus();
   }, []);
+
+  useEffect(() => {
+    const sub = AppState.addEventListener('change', (next) => {
+      if (appState.current.match(/inactive|background/) && next === 'active') {
+        refetchPlan();
+      }
+      appState.current = next;
+    });
+    return () => sub.remove();
+  }, [refetchPlan]);
+
+  useEffect(() => {
+    const unsub = navigation?.addListener?.('focus', () => {
+      refetchPlan();
+    });
+    return unsub;
+  }, [navigation, refetchPlan]);
 
   const fetchPassportStatus = async () => {
     try {
@@ -38,6 +60,15 @@ export default function PassportScreen({ navigation }: any) {
   };
 
   const handleSave = async () => {
+    if (!isPremium) {
+      Alert.alert(
+        'Premium Required',
+        'Your subscription may have expired. Please renew to use Passport.',
+        [{ text: 'OK' }],
+      );
+      refetchPlan();
+      return;
+    }
     if (!city.trim()) {
       Alert.alert('Error', 'Please enter a city name');
       return;
@@ -58,6 +89,35 @@ export default function PassportScreen({ navigation }: any) {
       setLoading(false);
     }
   };
+
+  if (!isPremium) {
+    return (
+      <SafeAreaView style={styles.safeArea}>
+        <View style={styles.header}>
+          <TouchableOpacity onPress={() => navigation.goBack()}>
+            <Ionicons name="arrow-back" size={24} color={colors.textPrimary} />
+          </TouchableOpacity>
+          <Text style={styles.headerTitle}>Passport</Text>
+          <View style={{ width: 24 }} />
+        </View>
+        <View style={styles.center}>
+          <Text style={{ fontSize: 56, marginBottom: spacing.md }}>🌍</Text>
+          <Text style={typography.h2}>Premium Feature</Text>
+          <Text style={[typography.body, { color: colors.textSecondary, textAlign: 'center', marginTop: spacing.sm, marginBottom: spacing.xl }]}>
+            Upgrade to Premium to use Passport and swipe in cities around the world.
+          </Text>
+          <TouchableOpacity
+            style={styles.upgradeButton}
+            onPress={() => navigation.navigate('Subscription')}
+            activeOpacity={0.7}
+          >
+            <Ionicons name="diamond" size={20} color={colors.white} />
+            <Text style={styles.upgradeButtonText}>Upgrade to Premium</Text>
+          </TouchableOpacity>
+        </View>
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -195,4 +255,34 @@ const styles = StyleSheet.create({
   },
   saveButtonDisabled: { opacity: 0.6 },
   saveButtonText: { ...typography.button, color: colors.white },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    padding: spacing.md,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
+  },
+  headerTitle: {
+    ...typography.h3,
+  },
+  center: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: spacing.xl,
+  },
+  upgradeButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    backgroundColor: colors.primary,
+    paddingHorizontal: spacing.xl,
+    paddingVertical: spacing.md,
+    borderRadius: borderRadius.button,
+  },
+  upgradeButtonText: {
+    ...typography.button,
+    color: colors.white,
+  },
 });

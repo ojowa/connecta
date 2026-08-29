@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Delete, Body, Param, Query, Headers } from '@nestjs/common';
+import { Controller, Get, Post, Delete, Body, Param, Query, Headers, HttpCode } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { MatchingService } from './matching.service';
 import { MatchingEnhancementService } from './matching-enhancement.service';
@@ -11,6 +11,12 @@ export class MatchingController {
     private readonly matchingService: MatchingService,
     private readonly enhancementService: MatchingEnhancementService,
   ) {}
+
+  @Get('plan-info')
+  @ApiOperation({ summary: 'Get user plan info and daily usage' })
+  getPlanInfo(@Headers('x-user-id') userId: string) {
+    return this.matchingService.getUserPlanInfo(userId);
+  }
 
   @Get('feed')
   @ApiOperation({ summary: 'Get discovery feed' })
@@ -143,9 +149,13 @@ export class MatchingController {
   }
 
   @Post('moments')
+  @HttpCode(201)
   @ApiOperation({ summary: 'Create a moment' })
-  createMoment(@Headers('x-user-id') userId: string, @Body() body: { mediaUrl: string; caption?: string; mediaType?: string }) {
-    return this.matchingService.createMoment(userId, body.mediaUrl, body.caption, body.mediaType);
+  createMoment(
+    @Headers('x-user-id') userId: string,
+    @Body() body: { mediaUrl?: string; caption?: string; mediaType?: string },
+  ) {
+    return this.matchingService.createMoment(userId, body.mediaUrl || '', body.caption, body.mediaType);
   }
 
   @Get('moments/mine')
@@ -170,6 +180,12 @@ export class MatchingController {
   @ApiOperation({ summary: 'Delete own moment' })
   deleteMoment(@Headers('x-user-id') userId: string, @Param('id') momentId: string) {
     return this.matchingService.deleteMoment(userId, momentId);
+  }
+
+  @Post('moments/cleanup')
+  @ApiOperation({ summary: 'Delete expired moments (admin/cron)' })
+  cleanupMoments(@Headers('x-user-id') userId: string) {
+    return this.matchingService.cleanupExpiredMoments();
   }
 
   @Get('scam-check/:userId')

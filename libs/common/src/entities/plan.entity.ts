@@ -6,6 +6,8 @@ export class Plan {
   @Column() name: string;
   @Column() displayName: string;
   @Column({ nullable: true }) description: string;
+  @Column({ nullable: true }) tagline: string;
+  @Column({ default: false }) isPopular: boolean;
   @Column({ type: 'decimal', precision: 10, scale: 2 }) priceMonthly: number;
   @Column({ type: 'decimal', precision: 10, scale: 2, nullable: true }) priceYearly: number;
   @Column({ default: 'NGN' }) currency: string;

@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { matchApi } from '../services/api/matchApi';
+import { useAppStore } from '../store';
 
 export function useMatchFeed(page = 1) {
   return useQuery({
@@ -11,9 +12,20 @@ export function useMatchFeed(page = 1) {
 
 export function useLike() {
   const queryClient = useQueryClient();
+  const addNewMatch = useAppStore((s) => s.addNewMatch);
   return useMutation({
     mutationFn: (targetUserId: string) => matchApi.like(targetUserId),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['matchFeed'] }),
+    onSuccess: (data: any) => {
+      queryClient.invalidateQueries({ queryKey: ['matchFeed'] });
+      if (data?.matched && data?.matchId) {
+        addNewMatch({
+          id: data.matchId,
+          conversationId: data.conversationId,
+          otherUser: { id: data.likerId || data.likedId },
+          matchedAt: new Date().toISOString(),
+        });
+      }
+    },
   });
 }
 
@@ -27,9 +39,20 @@ export function usePass() {
 
 export function useSuperLike() {
   const queryClient = useQueryClient();
+  const addNewMatch = useAppStore((s) => s.addNewMatch);
   return useMutation({
     mutationFn: (targetUserId: string) => matchApi.superLike(targetUserId),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['matchFeed'] }),
+    onSuccess: (data: any) => {
+      queryClient.invalidateQueries({ queryKey: ['matchFeed'] });
+      if (data?.matched && data?.matchId) {
+        addNewMatch({
+          id: data.matchId,
+          conversationId: data.conversationId,
+          otherUser: { id: data.likerId || data.likedId },
+          matchedAt: new Date().toISOString(),
+        });
+      }
+    },
   });
 }
 
@@ -78,5 +101,15 @@ export function useMyLikes(page = 1) {
     queryKey: ['myLikes', page],
     queryFn: () => matchApi.getMyLikes(page),
     staleTime: 30000,
+  });
+}
+
+export function usePlanInfo() {
+  return useQuery({
+    queryKey: ['planInfo'],
+    queryFn: () => matchApi.getPlanInfo(),
+    staleTime: 0,
+    refetchOnMount: true,
+    refetchOnWindowFocus: true,
   });
 }

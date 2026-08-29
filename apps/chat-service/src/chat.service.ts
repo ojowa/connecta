@@ -2,7 +2,7 @@ import { Injectable, NotFoundException, BadRequestException } from '@nestjs/comm
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, In } from 'typeorm';
 import { EventEmitter2 } from '@nestjs/event-emitter';
-import { Conversation, ConversationParticipant, Message, MessageReaction, ReadReceipt, User } from '@app/common/entities';
+import { Conversation, ConversationParticipant, Message, MessageReaction, ReadReceipt, User, Match, Subscription, Plan } from '@app/common/entities';
 
 @Injectable()
 export class ChatService {
@@ -13,6 +13,9 @@ export class ChatService {
     @InjectRepository(MessageReaction) private reactionRepo: Repository<MessageReaction>,
     @InjectRepository(ReadReceipt) private readRepo: Repository<ReadReceipt>,
     @InjectRepository(User) private userRepo: Repository<User>,
+    @InjectRepository(Match) private matchRepo: Repository<Match>,
+    @InjectRepository(Subscription) private subRepo: Repository<Subscription>,
+    @InjectRepository(Plan) private planRepo: Repository<Plan>,
     private readonly eventEmitter: EventEmitter2,
   ) {}
 
@@ -23,6 +26,21 @@ export class ChatService {
       if (other) {
         const conv = await this.convRepo.findOne({ where: { id: p.conversationId } });
         if (conv) return { id: conv.id, alreadyExisted: true };
+      }
+    }
+
+    const sub = await this.subRepo.findOne({ where: { userId, status: 'active' }, relations: ['plan'] });
+    const isPlatinum = sub?.plan?.name === 'platinum';
+
+    if (!isPlatinum) {
+      const match = await this.matchRepo.findOne({
+        where: [
+          { user1Id: userId, user2Id: otherUserId, isActive: true },
+          { user1Id: otherUserId, user2Id: userId, isActive: true },
+        ],
+      });
+      if (!match) {
+        throw new BadRequestException('You must match with this user before messaging. Upgrade to Platinum to message anyone!');
       }
     }
 
@@ -105,10 +123,28 @@ export class ChatService {
       content: data.content,
       type: data.type || 'text',
       mediaUrl: ['voice', 'video', 'gif'].includes(data.type) ? data.mediaUrl || data.content : undefined,
+      duration: data.duration || null,
     });
     const saved = await this.msgRepo.save(message);
     await this.partRepo.update({ conversationId, userId: { not: userId } as any }, { unreadCount: () => '"unreadCount" + 1' });
     this.eventEmitter.emit('chat.message_sent', { conversationId, message: saved });
+
+    const otherParticipants = await this.partRepo.find({
+      where: { conversationId },
+    });
+    const sender = await this.userRepo.findOne({ where: { id: userId } });
+    for (const p of otherParticipants) {
+      if (p.userId !== userId) {
+        this.eventEmitter.emit('notification.send', {
+          userId: p.userId,
+          type: 'new_message',
+          title: sender?.fullName || 'New Message',
+          body: data.type === 'text' ? (data.content?.length > 100 ? data.content.substring(0, 100) + '...' : data.content) : `Sent a ${data.type}`,
+          data: { conversationId, senderId: userId, messageId: saved.id },
+        });
+      }
+    }
+
     return saved;
   }
 

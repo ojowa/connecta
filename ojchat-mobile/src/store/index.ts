@@ -51,6 +51,8 @@ interface AppState {
   removeMessage: (id: string) => void;
   markMessagesRead: (conversationId: string) => void;
   addNewMatch: (match: any) => void;
+  pendingNewMatch: any | null;
+  clearPendingMatch: () => void;
   logout: () => void;
 }
 
@@ -67,6 +69,7 @@ export const useAppStore = create<AppState>()(
         activeChatId: null,
         unreadCounts: {},
         totalUnread: 0,
+        pendingNewMatch: null,
 
         setUser: (user) => set({ user }),
         setTokens: (token, refreshToken) => {
@@ -103,8 +106,9 @@ export const useAppStore = create<AppState>()(
         addNewMatch: (match) => set((state) => {
           const matches = (state as any).matches || [];
           if (matches.some((m: any) => m.id === match.id)) return {};
-          return { matches: [match, ...matches] } as any;
+          return { matches: [match, ...matches], pendingNewMatch: match } as any;
         }),
+        clearPendingMatch: () => set({ pendingNewMatch: null }),
         logout: () => {
           saveTokens(null, null);
           set({

@@ -1,7 +1,7 @@
-import { Injectable, UnauthorizedException, NotFoundException } from '@nestjs/common';
+import { Injectable, UnauthorizedException, NotFoundException, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, In, MoreThan } from 'typeorm';
-import { AdminUser, User, Report, Notification, Subscription, Transaction, Plan, Like, Match, Message, Session, NotificationDelivery, Appeal } from '@app/common/entities';
+import { AdminUser, User, Report, Notification, Subscription, Transaction, Plan, Like, Match, Message, Session, NotificationDelivery, Appeal, SystemSetting, Moment, MomentView, VerificationRequest, Profile, Photo } from '@app/common/entities';
 import * as bcrypt from 'bcryptjs';
 import * as jwt from 'jsonwebtoken';
 import { v4 as uuid } from 'uuid';
@@ -26,6 +26,12 @@ export class AdminService {
     @InjectRepository(Plan) private planRepo: Repository<Plan>,
     @InjectRepository(NotificationDelivery) private notifDeliveryRepo: Repository<NotificationDelivery>,
     @InjectRepository(Appeal) private appealRepo: Repository<Appeal>,
+    @InjectRepository(SystemSetting) private settingsRepo: Repository<SystemSetting>,
+    @InjectRepository(Moment) private momentRepo: Repository<Moment>,
+    @InjectRepository(MomentView) private momentViewRepo: Repository<MomentView>,
+    @InjectRepository(VerificationRequest) private verificationRepo: Repository<VerificationRequest>,
+    @InjectRepository(Profile) private profileRepo: Repository<Profile>,
+    @InjectRepository(Photo) private photoRepo: Repository<Photo>,
   ) {}
 
   async login(email: string, password: string) {
@@ -126,7 +132,9 @@ export class AdminService {
     return { totalUsers, activeUsers, totalSubscriptions, totalTransactions, totalReports };
   }
 
-  private defaultSettings = {
+  private readonly SETTINGS_KEY = 'platform_settings';
+
+  private readonly defaultSettings = {
     maintenanceMode: false,
     welcomeMessage: 'Welcome to OJChat!',
     minAge: 18,
@@ -135,14 +143,31 @@ export class AdminService {
     enableVoiceCalls: true,
     enableSuperLikes: true,
     maxFreeSuperLikes: 5,
+    paymentPlatform: 'paystack',
+    paystack: { secretKey: '', publicKey: '', webhookSecret: '' },
+    flutterwave: { secretKey: '', publicKey: '', webhookSecret: '' },
+    storageProvider: 'local',
+    storageLocal: { uploadDir: '', baseUrl: 'http://localhost:3006/media/files' },
+    storageS3: { region: '', accessKeyId: '', secretAccessKey: '', bucket: '', endpoint: '' },
+    storageR2: { accountId: '', accessKeyId: '', secretAccessKey: '', bucket: '', publicUrl: '' },
   };
 
   async getSettings() {
-    return { settings: this.defaultSettings };
+    const record = await this.settingsRepo.findOne({ where: { key: this.SETTINGS_KEY } });
+    const db = record?.value || {};
+    return { settings: { ...this.defaultSettings, ...db } };
   }
 
   async updateSettings(data: any) {
-    Object.assign(this.defaultSettings, data);
+    const record = await this.settingsRepo.findOne({ where: { key: this.SETTINGS_KEY } });
+    const current = record?.value || {};
+    const updated = { ...current, ...data };
+    if (record) {
+      record.value = updated;
+      await this.settingsRepo.save(record);
+    } else {
+      await this.settingsRepo.save(this.settingsRepo.create({ key: this.SETTINGS_KEY, value: updated, description: 'Platform settings managed by admin panel' }));
+    }
     return { updatedAt: new Date().toISOString() };
   }
 
@@ -669,6 +694,42 @@ export class AdminService {
     return this.planRepo.find({ order: { sortOrder: 'ASC' } });
   }
 
+  async createPlan(data: any) {
+    const plan = this.planRepo.create({
+      name: data.name,
+      displayName: data.displayName,
+      description: data.description,
+      tagline: data.tagline,
+      isPopular: data.isPopular || false,
+      priceMonthly: data.priceMonthly,
+      priceYearly: data.priceYearly,
+      currency: data.currency || 'NGN',
+      features: data.features || [],
+      dailyLikes: data.dailyLikes,
+      dailySuperLikes: data.dailySuperLikes,
+      isActive: data.isActive !== false,
+      sortOrder: data.sortOrder || 0,
+    });
+    return this.planRepo.save(plan);
+  }
+
+  async updatePlan(planId: string, data: any) {
+    const plan = await this.planRepo.findOne({ where: { id: planId } });
+    if (!plan) throw new NotFoundException('Plan not found');
+    Object.assign(plan, data);
+    return this.planRepo.save(plan);
+  }
+
+  async deletePlan(planId: string) {
+    const plan = await this.planRepo.findOne({ where: { id: planId } });
+    if (!plan) throw new NotFoundException('Plan not found');
+    if (plan.name === 'free') throw new BadRequestException('Cannot delete the free plan');
+    const activeSubs = await this.subRepo.count({ where: { planId, status: 'active' } });
+    if (activeSubs > 0) throw new BadRequestException(`Cannot delete plan with ${activeSubs} active subscribers. Deactivate it instead.`);
+    await this.planRepo.remove(plan);
+    return { deleted: true };
+  }
+
   async getAppeals(page = 1, limit = 20, status?: string) {
     const qb = this.appealRepo.createQueryBuilder('a');
     if (status) qb.where('a.status = :status', { status });
@@ -710,6 +771,125 @@ export class AdminService {
     }
 
     return { reviewed: true, decision, appealId };
+  }
+
+  async getMoments(page = 1, limit = 50, userId?: string) {
+    const where: any = userId ? { userId } : {};
+    const [moments, total] = await this.momentRepo.findAndCount({
+      where,
+      order: { createdAt: 'DESC' },
+      skip: (page - 1) * limit,
+      take: limit,
+    });
+
+    const userIds = [...new Set(moments.map((m) => m.userId))];
+    const users = userIds.length > 0 ? await this.userRepo.find({ where: { id: In(userIds) }, select: ['id', 'fullName', 'email'] }) : [];
+    const userMap = new Map(users.map((u) => [u.id, u]));
+
+    const momentIds = moments.map((m) => m.id);
+    const viewCounts = momentIds.length > 0
+      ? await this.momentViewRepo.createQueryBuilder('mv')
+        .select('mv."momentId"', 'momentId')
+        .addSelect('COUNT(*)', 'views')
+        .where('mv."momentId" IN (:...ids)', { ids: momentIds })
+        .groupBy('mv."momentId"')
+        .getRawMany()
+      : [];
+    const viewMap = new Map(viewCounts.map((v: any) => [v.momentId, parseInt(v.views)]));
+
+    return {
+      moments: moments.map((m) => ({
+        ...m,
+        user: userMap.get(m.userId) || null,
+        viewCount: viewMap.get(m.id) || 0,
+        expired: new Date(m.expiresAt) <= new Date(),
+      })),
+      meta: { page, limit, total, totalPages: Math.ceil(total / limit) },
+    };
+  }
+
+  async deleteMoment(momentId: string) {
+    const moment = await this.momentRepo.findOne({ where: { id: momentId } });
+    if (!moment) throw new NotFoundException('Moment not found');
+    await this.momentViewRepo.delete({ momentId });
+    await this.momentRepo.remove(moment);
+    return { deleted: true };
+  }
+
+  async getMomentStats() {
+    const total = await this.momentRepo.count();
+    const active = await this.momentRepo.count({ where: { expiresAt: MoreThan(new Date()) } });
+    const expired = total - active;
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const todayCount = await this.momentRepo.count({ where: { createdAt: MoreThan(today) } });
+
+    return { total, active, expired, todayCount };
+  }
+
+  async getVerificationRequests(page = 1, limit = 20, status?: string) {
+    const where: any = {};
+    if (status) where.status = status;
+
+    const [requests, total] = await this.verificationRepo.findAndCount({
+      where,
+      order: { createdAt: 'DESC' },
+      skip: (page - 1) * limit,
+      take: limit,
+    });
+
+    const userIds = [...new Set(requests.map((r) => r.userId))];
+    const users = await this.userRepo.find({ where: { id: In(userIds) } });
+    const profiles = await this.profileRepo.find({ where: { userId: In(userIds) } });
+    const userMap = new Map(users.map((u) => [u.id, u]));
+    const profileMap = new Map(profiles.map((p) => [p.userId, p]));
+
+    const requestsWithDetails = await Promise.all(requests.map(async (r) => {
+      const user = userMap.get(r.userId);
+      const profile = profileMap.get(r.userId);
+      const photos = await this.photoRepo.find({ where: { profileId: profile?.id || '' }, order: { order: 'ASC' } });
+      return {
+        ...r,
+        user: user ? { id: user.id, fullName: user.fullName, email: user.email } : null,
+        profilePhotos: photos.map((p) => p.url),
+      };
+    }));
+
+    return {
+      requests: requestsWithDetails,
+      meta: { page, limit, total, totalPages: Math.ceil(total / limit) },
+    };
+  }
+
+  async getVerificationStats() {
+    const total = await this.verificationRepo.count();
+    const pending = await this.verificationRepo.count({ where: { status: 'pending' } });
+    const approved = await this.verificationRepo.count({ where: { status: 'approved' } });
+    const rejected = await this.verificationRepo.count({ where: { status: 'rejected' } });
+    return { total, pending, approved, rejected };
+  }
+
+  async reviewVerification(requestId: string, adminId: string, action: 'approved' | 'rejected', reason?: string) {
+    const request = await this.verificationRepo.findOne({ where: { id: requestId } });
+    if (!request) throw new NotFoundException('Verification request not found');
+    if (request.status !== 'pending') throw new BadRequestException('Request already reviewed');
+
+    request.status = action;
+    request.reviewedBy = adminId;
+    request.reviewedAt = new Date();
+    if (reason) request.rejectionReason = reason;
+    await this.verificationRepo.save(request);
+
+    if (action === 'approved') {
+      const profile = await this.profileRepo.findOne({ where: { userId: request.userId } });
+      if (profile) {
+        profile.verified = true;
+        profile.verifiedAt = new Date();
+        await this.profileRepo.save(profile);
+      }
+    }
+
+    return { request, profileVerified: action === 'approved' };
   }
 }
 

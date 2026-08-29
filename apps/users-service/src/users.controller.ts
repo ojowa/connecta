@@ -148,13 +148,31 @@ export class UsersController {
 
   @Post('verification/request')
   @ApiOperation({ summary: 'Submit verification request' })
-  requestVerification(@Headers('x-user-id') userId: string, @Body() body: { selfieUrl: string }) {
-    return this.usersService.requestVerification(userId, body.selfieUrl);
+  requestVerification(@Headers('x-user-id') userId: string, @Body() body: {
+    selfieUrl: string;
+    faceWidth?: number; faceHeight?: number; faceConfidence?: number;
+    livenessScore?: number; imageWidth?: number; imageHeight?: number;
+    fileSize?: number; faceLandmarks?: Record<string, unknown>;
+  }) {
+    const { selfieUrl, ...faceMetadata } = body;
+    return this.usersService.requestVerification(userId, selfieUrl, faceMetadata);
   }
 
   @Get('verification')
   @ApiOperation({ summary: 'Get verification status' })
   getVerificationStatus(@Headers('x-user-id') userId: string) {
     return this.usersService.getVerificationStatus(userId);
+  }
+
+  @Get('me/streak')
+  @ApiOperation({ summary: 'Get daily streak info' })
+  getStreak(@Headers('x-user-id') userId: string) {
+    return this.usersService.getStreak(userId);
+  }
+
+  @Post('me/streak/check-in')
+  @ApiOperation({ summary: 'Check in for today' })
+  checkIn(@Headers('x-user-id') userId: string) {
+    return this.usersService.checkIn(userId);
   }
 }

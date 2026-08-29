@@ -6,6 +6,7 @@ import { allEntities } from '@app/common/entities';
 import { TypeOrmConfigService } from '@app/database/typeorm-config.service';
 import { NotificationsController } from './notifications.controller';
 import { NotificationsService } from './notifications.service';
+import { NotificationEventsHandler } from './notification-events.handler';
 
 @Module({
   imports: [
@@ -17,6 +18,6 @@ import { NotificationsService } from './notifications.service';
     EventEmitterModule.forRoot(),
   ],
   controllers: [NotificationsController],
-  providers: [NotificationsService],
+  providers: [NotificationsService, NotificationEventsHandler],
 })
 export class AppModule {}

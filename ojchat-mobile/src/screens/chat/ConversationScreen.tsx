@@ -146,7 +146,7 @@ export const ConversationScreen: React.FC<{ route: any; navigation: any }> = ({ 
     sendMessage.mutate({ conversationId, content });
   }, [conversationId, sendMessage]);
 
-  const handleSendVoice = useCallback(async (uri: string) => {
+  const handleSendVoice = useCallback(async (uri: string, duration?: number) => {
     if (!conversationId) return;
     try {
       const formData = new FormData();
@@ -156,7 +156,7 @@ export const ConversationScreen: React.FC<{ route: any; navigation: any }> = ({ 
       });
       const audioUrl = uploadRes?.data?.url || uploadRes?.data?.data?.url;
       if (audioUrl) {
-        await sendMessage.mutateAsync({ conversationId, content: audioUrl, type: 'voice' });
+        await sendMessage.mutateAsync({ conversationId, content: audioUrl, type: 'voice', duration });
       }
     } catch (err) {
       console.error('Failed to send voice message', err);

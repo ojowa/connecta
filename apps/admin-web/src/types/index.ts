@@ -81,12 +81,43 @@ export interface AnalyticsData {
 export interface SystemSettings {
   maintenanceMode?: boolean;
   welcomeMessage?: string;
+  currency?: string;
   minAge?: number;
   maxAge?: number;
   enableVideoCalls?: boolean;
   enableVoiceCalls?: boolean;
   enableSuperLikes?: boolean;
   maxFreeSuperLikes?: number;
+  paymentPlatform?: string;
+  paystack?: {
+    secretKey?: string;
+    publicKey?: string;
+    webhookSecret?: string;
+  };
+  flutterwave?: {
+    secretKey?: string;
+    publicKey?: string;
+    webhookSecret?: string;
+  };
+  storageProvider?: string;
+  storageLocal?: {
+    uploadDir?: string;
+    baseUrl?: string;
+  };
+  storageS3?: {
+    region?: string;
+    accessKeyId?: string;
+    secretAccessKey?: string;
+    bucket?: string;
+    endpoint?: string;
+  };
+  storageR2?: {
+    accountId?: string;
+    accessKeyId?: string;
+    secretAccessKey?: string;
+    bucket?: string;
+    publicUrl?: string;
+  };
 }
 
 export interface PaginatedMeta {

@@ -21,6 +21,9 @@ import {
   Bell,
   CreditCard,
   Scale,
+  Crown,
+  Sparkles,
+  ShieldCheck,
 } from "lucide-react";
 
 const navItems = [
@@ -28,13 +31,16 @@ const navItems = [
   { href: "/users", label: "Users", icon: Users },
   { href: "/reports", label: "Reports", icon: AlertTriangle },
   { href: "/appeals", label: "Appeals", icon: Scale },
+  { href: "/verification", label: "Verification", icon: ShieldCheck },
   { href: "/moderation", label: "Moderation", icon: Shield },
+  { href: "/moments", label: "Moments", icon: Sparkles },
   { href: "/activity", label: "Live Activity", icon: Activity },
   { href: "/match-analytics", label: "Match Analytics", icon: TrendingUp },
   { href: "/revenue", label: "Revenue", icon: DollarSign },
   { href: "/geographic", label: "Geographic", icon: Globe },
   { href: "/analytics", label: "Growth Analytics", icon: BarChart3 },
   { href: "/subscriptions", label: "Subscriptions", icon: CreditCard },
+  { href: "/plans", label: "Plans", icon: Crown },
   { href: "/notifications", label: "Notifications", icon: Bell },
   { href: "/system", label: "System Health", icon: Server },
   { href: "/broadcast", label: "Broadcast", icon: Radio },

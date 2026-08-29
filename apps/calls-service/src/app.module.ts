@@ -6,6 +6,7 @@ import { allEntities } from '@app/common/entities';
 import { TypeOrmConfigService } from '@app/database/typeorm-config.service';
 import { CallsController } from './calls.controller';
 import { CallsService } from './calls.service';
+import { CallsGateway } from './calls.gateway';
 
 @Module({
   imports: [
@@ -17,6 +18,7 @@ import { CallsService } from './calls.service';
     EventEmitterModule.forRoot(),
   ],
   controllers: [CallsController],
-  providers: [CallsService],
+  providers: [CallsService, CallsGateway],
+  exports: [CallsGateway],
 })
 export class AppModule {}

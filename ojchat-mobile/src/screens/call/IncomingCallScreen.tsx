@@ -1,10 +1,11 @@
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ImageBackground, useWindowDimensions } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import WebRTCManager from '../../webrtc/WebRTCManager';
+import SocketManager from '../../socket/SocketManager';
 import { colors } from '../../theme/colors';
 import { typography } from '../../theme/typography';
 import { spacing } from '../../theme/spacing';
+import { useAppStore } from '../../store';
 import { apiClient } from '../../services/api/apiClient';
 import { ENDPOINTS } from '../../constants/endpoints';
 
@@ -12,6 +13,7 @@ interface IncomingCallScreenProps {
   navigation?: any;
   route?: {
     params?: {
+      callId: string;
       callerId: string;
       callerName: string;
       callerAvatar?: string;
@@ -22,13 +24,15 @@ interface IncomingCallScreenProps {
 }
 
 export const IncomingCallScreen: React.FC<IncomingCallScreenProps> = ({ navigation, route }) => {
-  const { callerName = '', callerAvatar, callType = 'audio', conversationId } = route?.params || {};
+  const { callId, callerId, callerName = '', callerAvatar, callType = 'audio', conversationId } = route?.params || {};
   const { width: screenWidth } = useWindowDimensions();
   const avatarSize = Math.min(120, screenWidth * 0.3);
   const buttonSize = Math.min(70, screenWidth * 0.18);
 
   const handleDecline = () => {
-    WebRTCManager.getInstance().endCall();
+    if (callId) {
+      SocketManager.getInstance().emit('call.rejected', { callId, reason: 'declined' });
+    }
     if (conversationId) {
       const label = callType === 'video' ? 'Missed video call' : 'Missed voice call';
       apiClient.post(ENDPOINTS.CHAT.SEND(conversationId), { content: label, type: 'missed_call' }).catch(() => {});
@@ -37,10 +41,8 @@ export const IncomingCallScreen: React.FC<IncomingCallScreenProps> = ({ navigati
   };
 
   const handleAccept = () => {
-    const params: any = route?.params || {};
-    const callId = params.callId || '';
-    // acceptCall requires an SDP offer — in production this comes via socket signal
-    // For now, navigate to the active call screen which will handle the connection
+    SocketManager.getInstance().emit('call.answered', { callId });
+    const params: any = { ...route?.params, isInitiator: false };
     if (callType === 'video') {
       navigation.replace('ActiveVideoCall', params);
     } else {

@@ -15,35 +15,38 @@ import { colors } from '../../theme/colors';
 import { typography } from '../../theme/typography';
 import { spacing } from '../../theme/spacing';
 import { borderRadius } from '../../theme/borderRadius';
-
-type PlanId = 'free' | 'premium' | 'gold' | 'platinum';
+import { Ionicons } from '@expo/vector-icons';
 
 interface PlanFeature {
   label: string;
 }
 
-interface Plan {
-  id: PlanId;
+interface PlanData {
+  planId: string;
   name: string;
-  monthlyPrice: number;
-  yearlyPrice: number;
+  displayName: string;
   tagline: string;
-  features: PlanFeature[];
+  price: number;
+  currency: string;
+  features: (PlanFeature | string)[];
   isPopular?: boolean;
+  isFree?: boolean;
 }
 
-const Checkmark: React.FC = () => (
-  <Text style={styles.checkmark}>✓</Text>
-);
-
 const PlanCard: React.FC<{
-  plan: any;
+  plan: PlanData;
   isYearly: boolean;
   isSelected: boolean;
   onSelect: () => void;
 }> = ({ plan, isYearly, isSelected, onSelect }) => {
-  const price = plan.price;
-  const isFree = plan.planId === 'free';
+  const isFree = plan.isFree || plan.planId === 'free';
+  const price = isFree ? 0 : (plan.price || 0);
+
+  const formatPrice = (amount: number, currency: string) => {
+    if (currency === 'NGN') return `₦${amount.toLocaleString()}`;
+    if (currency === 'USD') return `$${amount.toFixed(2)}`;
+    return `${currency} ${amount.toFixed(2)}`;
+  };
 
   return (
     <TouchableOpacity
@@ -56,26 +59,31 @@ const PlanCard: React.FC<{
     >
       {plan.isPopular && (
         <View style={styles.popularBadge}>
+          <Ionicons name="star" size={12} color={colors.white} />
           <Text style={styles.popularBadgeText}>Most Popular</Text>
         </View>
       )}
 
-      <Text style={styles.planName}>{plan.name}</Text>
-
-      <View style={styles.priceRow}>
-        <Text style={styles.priceCurrency}>$</Text>
-        <Text style={styles.priceAmount}>
-          {isFree ? '0' : price.toFixed(2)}
-        </Text>
-        <Text style={styles.pricePeriod}>/month</Text>
+      <View style={styles.planHeader}>
+        <Text style={styles.planName}>{plan.displayName || plan.name}</Text>
+        {plan.tagline && <Text style={styles.planTagline}>{plan.tagline}</Text>}
       </View>
 
-      <Text style={styles.planTagline}>{plan.tagline}</Text>
+      <View style={styles.priceRow}>
+        {isFree ? (
+          <Text style={styles.priceAmount}>Free</Text>
+        ) : (
+          <>
+            <Text style={styles.priceAmount}>{formatPrice(price, plan.currency || 'NGN')}</Text>
+            <Text style={styles.pricePeriod}>/month</Text>
+          </>
+        )}
+      </View>
 
       <View style={styles.featureList}>
         {(plan.features || []).map((feature: any, index: number) => (
           <View key={index} style={styles.featureRow}>
-            <Checkmark />
+            <Ionicons name="checkmark-circle" size={16} color={colors.success} />
             <Text style={styles.featureLabel}>{typeof feature === 'string' ? feature : feature.label}</Text>
           </View>
         ))}
@@ -95,7 +103,7 @@ const PlanCard: React.FC<{
             isSelected ? styles.subscribeButtonTextPrimary : styles.subscribeButtonTextOutline,
           ]}
         >
-          {isSelected ? 'Current Plan' : 'Subscribe'}
+          {isSelected ? 'Current Plan' : isFree ? 'Free Plan' : 'Select Plan'}
         </Text>
       </TouchableOpacity>
     </TouchableOpacity>
@@ -121,6 +129,7 @@ const SubscriptionScreen: React.FC = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['plans'] });
       queryClient.invalidateQueries({ queryKey: ['wallet'] });
+      queryClient.invalidateQueries({ queryKey: ['planInfo'] });
       Alert.alert('Success', 'You are now subscribed!', [{ text: 'OK', onPress: () => navigation.goBack() }]);
     },
     onError: () => {
@@ -128,7 +137,12 @@ const SubscriptionScreen: React.FC = () => {
     },
   });
 
-  const plans = plansData || [];
+  const plans: PlanData[] = plansData || [];
+  const sortedPlans = [...plans].sort((a, b) => {
+    if (a.isFree && !b.isFree) return -1;
+    if (!a.isFree && b.isFree) return 1;
+    return (a.price || 0) - (b.price || 0);
+  });
 
   const handleSubscribe = () => {
     if (!selectedPlan) { Alert.alert('Select a plan', 'Please choose a plan first.'); return; }
@@ -143,11 +157,18 @@ const SubscriptionScreen: React.FC = () => {
         contentContainerStyle={styles.contentContainer}
       >
         <View style={styles.header}>
-          <Text style={styles.headerTitle}>Choose Your Plan</Text>
-          <Text style={styles.headerSubtitle}>
-            Unlock premium features to find your perfect match
-          </Text>
+          <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
+            <Ionicons name="arrow-back" size={24} color={colors.textPrimary} />
+          </TouchableOpacity>
+          <View style={styles.headerCenter}>
+            <Text style={styles.headerTitle}>Choose Your Plan</Text>
+          </View>
+          <View style={{ width: 40 }} />
         </View>
+
+        <Text style={styles.headerSubtitle}>
+          Unlock premium features to find your perfect match
+        </Text>
 
         <View style={styles.toggleContainer}>
           <TouchableOpacity
@@ -155,9 +176,7 @@ const SubscriptionScreen: React.FC = () => {
             onPress={() => setIsYearly(false)}
             activeOpacity={0.7}
           >
-            <Text
-              style={[styles.toggleText, !isYearly && styles.toggleTextActive]}
-            >
+            <Text style={[styles.toggleText, !isYearly && styles.toggleTextActive]}>
               Monthly
             </Text>
           </TouchableOpacity>
@@ -167,9 +186,7 @@ const SubscriptionScreen: React.FC = () => {
             onPress={() => setIsYearly(true)}
             activeOpacity={0.7}
           >
-            <Text
-              style={[styles.toggleText, isYearly && styles.toggleTextActive]}
-            >
+            <Text style={[styles.toggleText, isYearly && styles.toggleTextActive]}>
               Yearly
             </Text>
             {isYearly && (
@@ -180,9 +197,9 @@ const SubscriptionScreen: React.FC = () => {
           </TouchableOpacity>
         </View>
 
-        {plans.map((plan: any) => (
+        {sortedPlans.map((plan) => (
           <PlanCard
-            key={plan.planId}
+            key={plan.planId || plan.name}
             plan={plan}
             isYearly={isYearly}
             isSelected={selectedPlan === plan.planId}
@@ -190,16 +207,18 @@ const SubscriptionScreen: React.FC = () => {
           />
         ))}
 
-        <TouchableOpacity
-          style={[styles.subscribeNowButton, !selectedPlan && styles.subscribeNowButtonDisabled]}
-          onPress={handleSubscribe}
-          disabled={!selectedPlan || subscribeMutation.isPending}
-          activeOpacity={0.7}
-        >
-          <Text style={styles.subscribeNowButtonText}>
-            {subscribeMutation.isPending ? 'Subscribing...' : 'Subscribe Now'}
-          </Text>
-        </TouchableOpacity>
+        {selectedPlan && sortedPlans.find(p => p.planId === selectedPlan && !p.isFree) && (
+          <TouchableOpacity
+            style={[styles.subscribeNowButton]}
+            onPress={handleSubscribe}
+            disabled={subscribeMutation.isPending}
+            activeOpacity={0.7}
+          >
+            <Text style={styles.subscribeNowButtonText}>
+              {subscribeMutation.isPending ? 'Subscribing...' : 'Subscribe Now'}
+            </Text>
+          </TouchableOpacity>
+        )}
 
         <View style={styles.bottomSpacer} />
       </ScrollView>
@@ -222,24 +241,39 @@ const styles = StyleSheet.create({
     paddingBottom: spacing.xxl,
   },
   header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
     paddingHorizontal: spacing.lg,
     paddingTop: spacing.md,
     paddingBottom: spacing.sm,
     backgroundColor: colors.background,
   },
+  backBtn: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  headerCenter: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
   headerTitle: {
-    ...typography.h1,
+    ...typography.h2,
     color: colors.textPrimary,
   },
   headerSubtitle: {
     ...typography.body,
     color: colors.textSecondary,
-    marginTop: spacing.xs,
+    textAlign: 'center',
+    paddingHorizontal: spacing.lg,
+    marginBottom: spacing.md,
   },
   toggleContainer: {
     flexDirection: 'row',
     marginHorizontal: spacing.lg,
-    marginTop: spacing.lg,
     marginBottom: spacing.md,
     backgroundColor: colors.gray100,
     borderRadius: borderRadius.button,
@@ -294,32 +328,38 @@ const styles = StyleSheet.create({
   },
   popularBadge: {
     position: 'absolute',
-    top: -10,
+    top: -12,
     alignSelf: 'center',
+    flexDirection: 'row',
+    alignItems: 'center',
     backgroundColor: colors.secondary,
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.xs,
     borderRadius: borderRadius.full,
     zIndex: 1,
+    gap: 4,
   },
   popularBadgeText: {
     ...typography.small,
     color: colors.white,
     fontWeight: '600',
   },
+  planHeader: {
+    marginBottom: spacing.sm,
+  },
   planName: {
     ...typography.h3,
     color: colors.textPrimary,
-    marginBottom: spacing.sm,
+    marginBottom: 2,
+  },
+  planTagline: {
+    ...typography.caption,
+    color: colors.textSecondary,
   },
   priceRow: {
     flexDirection: 'row',
     alignItems: 'baseline',
-    marginBottom: spacing.xs,
-  },
-  priceCurrency: {
-    ...typography.h2,
-    color: colors.primary,
+    marginBottom: spacing.md,
   },
   priceAmount: {
     ...typography.h1,
@@ -331,11 +371,6 @@ const styles = StyleSheet.create({
     color: colors.textSecondary,
     marginLeft: spacing.xs,
   },
-  planTagline: {
-    ...typography.caption,
-    color: colors.textSecondary,
-    marginBottom: spacing.md,
-  },
   featureList: {
     marginBottom: spacing.lg,
   },
@@ -343,13 +378,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     marginBottom: spacing.sm,
-  },
-  checkmark: {
-    fontSize: 16,
-    color: colors.success,
-    fontWeight: '600',
-    marginRight: spacing.sm,
-    width: 20,
+    gap: spacing.sm,
   },
   featureLabel: {
     ...typography.body,
@@ -385,9 +414,6 @@ const styles = StyleSheet.create({
     borderRadius: borderRadius.button,
     backgroundColor: colors.primary,
     alignItems: 'center',
-  },
-  subscribeNowButtonDisabled: {
-    backgroundColor: colors.gray300,
   },
   subscribeNowButtonText: {
     ...typography.button,

@@ -50,8 +50,8 @@ export function useWebRTC() {
     await webrtcManager.current.startCall(peerId, type);
   }, []);
 
-  const acceptCall = useCallback(async (callId: string, offer: any, callType: 'audio' | 'video' = 'video') => {
-    await webrtcManager.current.acceptCall(callId, offer, callType);
+  const acceptCall = useCallback(async (callId: string, offer: any, callType: 'audio' | 'video' = 'video', callerId: string = '') => {
+    await webrtcManager.current.acceptCall(callId, offer, callType, callerId);
   }, []);
 
   const endCall = useCallback(async () => {

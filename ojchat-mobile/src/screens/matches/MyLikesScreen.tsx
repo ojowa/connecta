@@ -24,6 +24,7 @@ export const MyLikesScreen: React.FC<{ navigation: any }> = ({ navigation }) => 
   if (isLoading) return <LoadingSpinner />;
 
   const likes = data?.likes || [];
+  const totalCount = data?.meta?.total ?? likes.length;
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -31,15 +32,21 @@ export const MyLikesScreen: React.FC<{ navigation: any }> = ({ navigation }) => 
         <TouchableOpacity onPress={() => navigation.goBack()}>
           <Ionicons name="arrow-back" size={24} color={colors.textPrimary} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Your Likes</Text>
+        <View style={styles.headerCenter}>
+          <Text style={styles.headerTitle}>Your Likes</Text>
+          {totalCount > 0 && (
+            <View style={styles.countBadge}>
+              <Text style={styles.countBadgeText}>{totalCount}</Text>
+            </View>
+          )}
+        </View>
         <View style={{ width: 24 }} />
       </View>
 
-      <Text style={styles.subtitle}>People you liked who haven't liked you back</Text>
 
       <FlatList
         data={likes}
-        keyExtractor={(item: LikedUser, index: number) => item.user?.id || item.likedUserId || `like-${index}`}
+        keyExtractor={(item: any, index: number) => item.user?.id || item.likedUserId || `like-${index}`}
         contentContainerStyle={styles.list}
         ListEmptyComponent={
           <View style={styles.empty}>
@@ -91,7 +98,18 @@ function getTimeAgo(date: string): string {
 const styles = StyleSheet.create({
   safeArea: { flex: 1, backgroundColor: colors.background },
   header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: spacing.md },
+  headerCenter: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs },
   headerTitle: { ...typography.h3 },
+  countBadge: {
+    backgroundColor: colors.primary,
+    borderRadius: 11,
+    minWidth: 22,
+    height: 22,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 6,
+  },
+  countBadgeText: { color: colors.white, fontSize: 11, fontWeight: '700' },
   subtitle: { ...typography.caption, color: colors.textSecondary, paddingHorizontal: spacing.md, marginBottom: spacing.md },
   list: { padding: spacing.md },
   empty: { alignItems: 'center', paddingTop: 100 },

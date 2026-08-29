@@ -69,6 +69,8 @@ export const api = {
     request<T>(endpoint, { method: "POST", body: body ? JSON.stringify(body) : undefined, params }),
   put: <T>(endpoint: string, body?: unknown, params?: Record<string, string | number | undefined>) =>
     request<T>(endpoint, { method: "PUT", body: body ? JSON.stringify(body) : undefined, params }),
+  delete: <T>(endpoint: string, params?: Record<string, string | number | undefined>) =>
+    request<T>(endpoint, { method: "DELETE", params }),
 };
 
 export interface AdminUser {

@@ -5,6 +5,7 @@ import { typography } from '../../theme/typography';
 import { spacing } from '../../theme/spacing';
 import { borderRadius } from '../../theme/borderRadius';
 import { Message } from '../../types/chat';
+import { VoiceMessage } from './VoiceMessage';
 
 interface ChatBubbleProps {
   message: Message;
@@ -45,11 +46,13 @@ export const ChatBubble: React.FC<ChatBubbleProps> = ({ message, isOwn, onReply,
       return <Image source={{ uri: message.content }} style={styles.image} resizeMode="cover" />;
     }
     if (message.type === 'voice') {
+      const audioUrl = message.mediaUrl || message.content;
       return (
-        <View style={styles.voiceContainer}>
-          <Text style={[styles.voiceIcon, isOwn ? styles.ownText : styles.otherText]}>🎤</Text>
-          <Text style={[styles.text, isOwn ? styles.ownText : styles.otherText]}>Voice message</Text>
-        </View>
+        <VoiceMessage
+          url={audioUrl}
+          duration={message.duration}
+          isOwn={isOwn}
+        />
       );
     }
     if (message.type === 'video' && message.content.startsWith('http')) {
