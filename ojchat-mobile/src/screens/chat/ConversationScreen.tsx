@@ -14,6 +14,8 @@ import { spacing } from '../../theme/spacing';
 import { borderRadius } from '../../theme/borderRadius';
 import { Message, CallEvent } from '../../types/chat';
 import { apiClient } from '../../services/api/apiClient';
+import { matchApi } from '../../services/api/matchApi';
+import { Alert } from 'react-native';
 
 type FeedItem = Message | (CallEvent & { type: 'call'; senderId: string; conversationId: string; content: string });
 
@@ -88,6 +90,43 @@ export const ConversationScreen: React.FC<{ route: any; navigation: any }> = ({ 
       .catch(() => {});
   }, [otherUserId, userId]);
 
+  const showHeaderMenu = useCallback(() => {
+    Alert.alert(
+      'Options',
+      '',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Unmatch',
+          style: 'destructive',
+          onPress: async () => {
+            Alert.alert(
+              'Unmatch',
+              `Are you sure you want to unmatch ${otherName}? This cannot be undone.`,
+              [
+                { text: 'Cancel', style: 'cancel' },
+                {
+                  text: 'Unmatch',
+                  style: 'destructive',
+                  onPress: async () => {
+                    try {
+                      // Note: need matchId, which isn't directly available in conversation
+                      // For now, navigate to Matches tab to unmatch
+                      Alert.alert('Unmatch', 'Please use the Matches tab to unmatch this user.');
+                    } catch (err) {
+                      Alert.alert('Error', 'Failed to unmatch. Please try again.');
+                    }
+                  },
+                },
+              ]
+            );
+          },
+        },
+        { text: 'View Profile', onPress: () => navigation.navigate('UserProfile', { userId: otherUserId, isMatched: true }) },
+      ]
+    );
+  }, [navigation, otherName, otherUserId]);
+
   useLayoutEffect(() => {
     navigation.setOptions({
       headerRight: () => (
@@ -97,6 +136,9 @@ export const ConversationScreen: React.FC<{ route: any; navigation: any }> = ({ 
           </TouchableOpacity>
           <TouchableOpacity style={styles.headerButton} onPress={handleVideoCall}>
             <Text style={styles.headerButtonIcon}>📹</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.headerButton} onPress={showHeaderMenu}>
+            <Text style={styles.headerButtonIcon}>⋮</Text>
           </TouchableOpacity>
         </View>
       ),
