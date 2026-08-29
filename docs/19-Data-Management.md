@@ -2,7 +2,7 @@
 
 ## 1. Overview
 
-This document defines the data lifecycle, storage architecture, retention policies, backup strategies, and compliance measures for the Connecta platform. All data handling prioritizes user privacy and regulatory compliance across African markets.
+This document defines the data lifecycle, storage architecture, retention policies, backup strategies, and compliance measures for the OJChat platform. All data handling prioritizes user privacy and regulatory compliance across African markets.
 
 ## 2. Data Classification
 

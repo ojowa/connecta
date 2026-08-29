@@ -46,6 +46,8 @@
 
 ## 5. Server Deployment
 
+> **Note:** The `docker/` and `k8s/` directories in the repository are currently empty — containerization and Kubernetes deployment have not been implemented yet. The project currently runs via direct Node.js process execution.
+
 - **Environment**: AWS (primary), with Cloudflare for CDN and DNS
 - **Domain**: Production domain with SSL/TLS (Let's Encrypt or AWS ACM)
 - **CDN**: Cloudflare for static assets, API caching where appropriate
@@ -65,7 +67,7 @@
 ## 7. Support Infrastructure
 
 - **In-App Support**: Chat widget linking to help center
-- **Email Support**: support@connecta.app with SLA (24h response)
+- **Email Support**: support@ojchat.app with SLA (24h response)
 - **FAQ / Help Center**: Self-service articles for common issues
 - **Community**: Discord server for beta users, transitioning to forum
 - **Escalation**: Tier 1 (FAQ) → Tier 2 (email) → Tier 3 (engineering)

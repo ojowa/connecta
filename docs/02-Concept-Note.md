@@ -1,6 +1,6 @@
 # Concept Note
 
-## Connecta — Matchmaking & Relationship Platform
+## OJChat — Matchmaking & Relationship Platform
 
 **Version:** 1.0.0
 **Date:** July 2026
@@ -9,7 +9,7 @@
 
 ## 1. Introduction
 
-Connecta is a mobile-first dating and relationship platform built for the modern African user. It combines intelligent matchmaking, privacy-focused messaging, and real-time communication features into a single, cohesive experience.
+OJChat is a mobile-first dating and relationship platform built for the modern African user. It combines intelligent matchmaking, privacy-focused messaging, and real-time communication features into a single, cohesive experience.
 
 The platform addresses the core failures of existing dating apps — fake profiles, shallow matching, privacy violations, and poor offline experiences — by leveraging artificial intelligence, end-to-end encryption, and an offline-first architecture.
 
@@ -39,9 +39,9 @@ Africa's dating app market is underserved by local solutions. Most platforms are
 - Language diversity
 - Safety concerns (romance scams, catfishing)
 
-### 2.3 The Connecta Solution
+### 2.3 The OJChat Solution
 
-Connecta is purpose-built for this market. It prioritizes:
+OJChat is purpose-built for this market. It prioritizes:
 
 - **Connectivity resilience** — Works offline, syncs when online
 - **Privacy by default** — End-to-end encryption for all messages
@@ -55,7 +55,7 @@ Connecta is purpose-built for this market. It prioritizes:
 
 ### 3.1 Offline-First Architecture
 
-Most dating apps require constant internet connectivity. Connecta uses a local-first approach:
+Most dating apps require constant internet connectivity. OJChat uses a local-first approach:
 
 ```
 User Action → Encrypted Local SQLite → Background Sync → Cloud (Encrypted Ciphertext)
@@ -74,7 +74,7 @@ User Action → Encrypted Local SQLite → Background Sync → Cloud (Encrypted 
 
 ### 3.2 End-to-End Encryption (E2EE)
 
-Connecta implements Signal Protocol-based encryption:
+OJChat implements Signal Protocol-based encryption:
 
 - Each device generates a key pair during registration
 - Keys are exchanged during the handshake phase of messaging
@@ -90,7 +90,7 @@ Connecta implements Signal Protocol-based encryption:
 
 ### 3.3 AI Matchmaking Engine
 
-Unlike simple tag-based matching, Connecta's AI engine uses multiple signals:
+Unlike simple tag-based matching, OJChat's AI engine uses multiple signals:
 
 **Input Signals:**
 - User preferences (age, location, interests, education, lifestyle)
@@ -185,13 +185,13 @@ Encounter Issue → Long-press Message/Profile → Report/Block
 
 ### 4.3 Admin Web Panel (Management Console)
 
-Connecta includes a web-based administration panel for platform management. This is a **React (Next.js)** application served separately from the mobile app, accessible to authorized administrators and support staff.
+OJChat includes a web-based administration panel for platform management. This is a **React (Next.js)** application served separately from the mobile app, accessible to authorized administrators and support staff.
 
 **Purpose:**
-Management, moderation, analytics, and operational control of the Connecta platform — without requiring direct database access or server CLI.
+Management, moderation, analytics, and operational control of the OJChat platform — without requiring direct database access or server CLI.
 
 **Access:**
-- Web-based (browser) — accessible at `admin.connecta.app`
+- Web-based (browser) — accessible at `admin.ojchat.app`
 - Role-based access control (RBAC) with two roles:
   - **Super Admin** — Full access to all features
   - **Moderator** — Limited access (reports, user management, content review)
@@ -350,4 +350,4 @@ Free users get core functionality. Premium features drive conversion.
 
 ---
 
-*This document is part of the Connecta Software Design Document (SDD) package.*
+*This document is part of the OJChat Software Design Document (SDD) package.*

@@ -2,7 +2,7 @@
 
 ## 1. Overview
 
-This document defines the automated build, test, and deployment pipeline for the Connecta platform. The pipeline ensures code quality, security, and reliability across the NestJS monorepo (12 microservices), React Native (Expo) mobile app, and Next.js admin panel.
+This document defines the automated build, test, and deployment pipeline for the OJChat platform. The pipeline ensures code quality, security, and reliability across the NestJS monorepo (13 microservices), React Native (Expo) mobile app, and Next.js admin panel.
 
 ## 2. Git Strategy
 
@@ -45,7 +45,7 @@ Triggered on every push and pull request:
 | Production| Single VM + Docker   | Kubernetes (EKS)   | Multi-region EKS   |
 
 - Each microservice runs as an isolated Docker container
-- `docker-compose.yml` orchestrates all 12 services locally
+- `docker-compose.yml` orchestrates all 13 services locally
 - Kubernetes manifests managed with Helm charts (V2)
 
 ## 6. Environment Management
@@ -89,3 +89,5 @@ Triggered on every push and pull request:
 | V1    | Docker Compose local dev + GitHub Actions CI | Planned |
 | V2    | Kubernetes (EKS) for staging & production | Planned |
 | V3    | Multi-region deployment, canary releases | Planned |
+
+> **Note**: The `docker/` and `k8s/` directories are currently empty and will be populated as implementation progresses.

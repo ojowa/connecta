@@ -1,6 +1,6 @@
 # UI/UX Specification
 
-## Connecta — Screen Specifications & Design System
+## OJChat — Screen Specifications & Design System
 
 **Version:** 1.0.0
 **Date:** July 2026
@@ -66,14 +66,14 @@
 ### 2.1 Onboarding Screens
 
 #### Splash Screen
-- Connecta logo (centered)
+- OJChat logo (centered)
 - Tagline: "Find Your Connection"
 - Loading indicator
 - Duration: 2–3 seconds
 
 #### Welcome Screen
 - Hero illustration
-- "Welcome to Connecta" heading
+- "Welcome to OJChat" heading
 - "Join millions finding meaningful connections"
 - [Get Started] button (primary)
 - "Already have an account? Log In" link
@@ -415,4 +415,4 @@ graph TB
 
 ---
 
-*This document is part of the Connecta Software Design Document (SDD) package.*
+*This document is part of the OJChat Software Design Document (SDD) package.*

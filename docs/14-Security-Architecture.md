@@ -1,6 +1,6 @@
 # Security Architecture
 
-## Connecta — Security Design & Compliance
+## OJChat — Security Design & Compliance
 
 **Version:** 1.0.0
 **Date:** July 2026
@@ -212,8 +212,8 @@ export class RateLimitGuard implements CanActivate {
 import { RNSSLPinning } from 'react-native-ssl-pinning';
 
 const CERTIFICATE_PINS = {
-  'api.connecta.app': ['sha256/AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA='],
-  'cdn.connecta.app': ['sha256/BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB='],
+  'api.ojchat.app': ['sha256/AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA='],
+  'cdn.ojchat.app': ['sha256/BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB='],
 };
 
 export async function secureFetch(url: string, options: RequestInit): Promise<Response> {
@@ -259,7 +259,7 @@ export async function secureFetch(url: string, options: RequestInit): Promise<Re
 | Right to rectification | Profile editing |
 | Right to erasure | Account deletion feature |
 | Data breach notification | 72-hour notification to NDPC |
-| Data Protection Officer | Designate DPO for Connecta |
+| Data Protection Officer | Designate DPO for OJChat |
 | Cross-border transfer | Data residency in Nigeria |
 
 ### 8.1 Privacy Policy Requirements
@@ -321,8 +321,8 @@ interface AuditLogEntry {
 |---|---|---|
 | JWT authentication | ✅ Implemented | 15min access + 7d refresh tokens |
 | Password hashing (bcrypt) | ✅ Implemented | Cost factor 12, salt rounds |
-| Rate limiting | ✅ Implemented | ThrottlerModule on all 12 services via global guard |
-| CORS configuration | ✅ Implemented | All 12 services with credentials support |
+| Rate limiting | ✅ Implemented | ThrottlerModule on all 13 services via global guard |
+| CORS configuration | ✅ Implemented | All 13 services with credentials support |
 | E2EE (Signal Protocol) | ✅ Implemented | Curve25519 + AES-256-GCM |
 | Certificate pinning | ✅ Implemented | Mobile app via trustkit |
 | Secure keychain storage | ✅ Implemented | expo-secure-store |
@@ -352,4 +352,4 @@ interface AuditLogEntry {
 
 ---
 
-*This document is part of the Connecta Software Design Document (SDD) package.*
+*This document is part of the OJChat Software Design Document (SDD) package.*

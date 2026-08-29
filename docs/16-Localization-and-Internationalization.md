@@ -2,7 +2,7 @@
 
 ## 1. Overview
 
-Connecta's localization strategy enables multi-language support across African markets, starting with Nigeria's four major languages and expanding to pan-African coverage. The architecture separates translatable content from application logic, supports locale-aware formatting, and provides tooling for translators to manage string updates efficiently.
+OJChat's localization strategy enables multi-language support across African markets, starting with Nigeria's four major languages and expanding to pan-African coverage. The architecture separates translatable content from application logic, supports locale-aware formatting, and provides tooling for translators to manage string updates efficiently.
 
 The i18n system is designed for incremental rollout: V1 ships English-only, V2 adds Nigerian languages, and V3 targets the broader African market.
 

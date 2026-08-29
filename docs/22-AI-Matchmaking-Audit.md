@@ -1,6 +1,6 @@
 # Doc 22: AI Matchmaking Engine — Audit Report
 
-## Connecta — Code Quality & Security Audit
+## OJChat — Code Quality & Security Audit
 
 **Version:** 1.0.0
 **Date:** July 2026
@@ -387,7 +387,7 @@ graph TD
 | Removed hardcoded DB passwords (12 files) | ✅ | 16dd36c |
 | Removed hardcoded JWT secrets (5 files) | ✅ | 16dd36c |
 | Registered ThrottlerGuard globally | ✅ | 16dd36c |
-| CORS enabled on all 12 services | ✅ | 16dd36c |
+| CORS enabled on all 13 services | ✅ | 16dd36c |
 | Helmet/CSP headers on API gateway | ✅ | f623e31 |
 | Auth DTO validation (class-validator) | ✅ | f623e31 |
 | DTOs for all 11 remaining services | ✅ | pending |

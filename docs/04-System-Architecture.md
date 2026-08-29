@@ -1,6 +1,6 @@
 # System Architecture
 
-## Connecta — Technical Architecture Document
+## OJChat — Technical Architecture Document
 
 **Version:** 1.0.0
 **Date:** July 2026
@@ -9,13 +9,12 @@
 
 ## 1. Architecture Overview
 
-Connecta uses a **microservices architecture** with an **API Gateway** pattern. The system is designed for horizontal scalability, fault isolation, and independent deployment of services.
+OJChat uses a **microservices architecture** with an **API Gateway** pattern. The system is designed for horizontal scalability, fault isolation, and independent deployment of services.
 
 ### 1.1 Architecture Style
 
 - **Microservices** — Each domain has its own service, database, and deployment unit
-- **Event-Driven** — Asynchronous communication via message broker (NATS/RabbitMQ)
-- **CQRS (Command Query Responsibility Segregation)** — Separate read and write models for high-throughput services
+- **Event-Driven** — In-process event communication via EventEmitter2
 - **Offline-First** — Mobile client operates independently, syncing when connected
 - **API Gateway** — Single entry point for all client requests
 
@@ -41,22 +40,15 @@ graph TB
     end
 
     subgraph Core Services
-        USER_SVC[User Service]
-        PROFILE_SVC[Profile Service]
+        USER_SVC[Users Service]
         MATCH_SVC[Matching Service]
         CHAT_SVC[Chat Service]
-        CALL_SVC[Call Signalling Service]
+        CALL_SVC[Calls Service]
         MEDIA_SVC[Media Service]
-        PAY_SVC[Payment Service]
-        NOTIF_SVC[Notification Service]
+        PAY_SVC[Payments Service]
+        NOTIF_SVC[Notifications Service]
         SEARCH_SVC[Search Service]
         ADMIN_SVC[Admin Service]
-    end
-
-    subgraph AI Services
-        RECOMMEND[Recommendation Engine<br/>Python/FastAPI]
-        MODERATION[Moderation Engine<br/>Python/FastAPI]
-        SCAM[Scam Detection<br/>Python/FastAPI]
     end
 
     subgraph Data Layer
@@ -65,7 +57,6 @@ graph TB
         REDIS[(Redis<br/>Cache + Sessions)]
         ES[(Elasticsearch<br/>Search Index)]
         S3[(S3/R2<br/>Object Storage)]
-        NATS[NATS<br/>Message Broker]
     end
 
     subgraph External Services
@@ -80,7 +71,6 @@ graph TB
 
     GW --> AUTH_SVC
     GW --> USER_SVC
-    GW --> PROFILE_SVC
     GW --> MATCH_SVC
     GW --> CHAT_SVC
     GW --> CALL_SVC
@@ -92,7 +82,6 @@ graph TB
 
     AUTH_SVC --> PG
     USER_SVC --> PG
-    PROFILE_SVC --> PG
     MATCH_SVC --> PG
     CHAT_SVC --> PG
     PAY_SVC --> PG
@@ -104,28 +93,12 @@ graph TB
     CHAT_SVC --> REDIS
 
     SEARCH_SVC --> ES
-    PROFILE_SVC --> ES
 
     MEDIA_SVC --> S3
-
-    USER_SVC --> NATS
-    CHAT_SVC --> NATS
-    MATCH_SVC --> NATS
-    PAY_SVC --> NATS
-    NOTIF_SVC --> NATS
-    ADMIN_SVC --> NATS
 
     NOTIF_SVC --> FCM
     PAY_SVC --> PAYSTACK
     AUTH_SVC --> TWILIO
-
-    RECOMMEND --> PG_READ
-    MODERATION --> S3
-    SCAM --> PG_READ
-
-    CHAT_SVC --> RECOMMEND
-    CHAT_SVC --> MODERATION
-    MATCH_SVC --> RECOMMEND
 ```
 
 ---
@@ -154,13 +127,13 @@ Client Request → API Gateway → [Auth Check] → [Rate Limit] → [Route] →
 | Pattern | Use Case | Technology |
 |---|---|---|
 | Synchronous (HTTP) | Real-time queries, CRUD operations | NestJS HTTP clients |
-| Asynchronous (Events) | Cross-service events, notifications | NATS JetStream |
+| Asynchronous (Events) | Cross-service events, notifications | EventEmitter2 (in-process) |
 | WebSocket | Real-time chat, typing indicators | Socket.IO |
 | WebRTC | Voice/video calls | Peer-to-peer + SFU |
 
-### 2.3 Event Bus (NATS)
+### 2.3 Event Bus (EventEmitter2)
 
-All inter-service communication is event-driven:
+All inter-service communication uses EventEmitter2 for in-process event handling:
 
 ```typescript
 // Example events
@@ -173,7 +146,7 @@ Event: report.submitted
 Event: subscription.activated
 ```
 
-Each service publishes and subscribes to relevant events. No service directly calls another service's internal methods.
+Each service publishes and subscribes to relevant events via EventEmitter2. No service directly calls another service's internal methods.
 
 ---
 
@@ -199,10 +172,10 @@ Endpoints:
   DELETE /auth/devices/:id
 ```
 
-**Database:** PostgreSQL (auth schema)
+**Database:** PostgreSQL (public schema)
 **Cache:** Redis (sessions, OTP, rate limits)
 
-### 3.2 User Service
+### 3.2 Users Service
 
 **Responsibility:** User CRUD, preferences, account management, user state.
 
@@ -219,26 +192,8 @@ Endpoints:
   POST   /users/resume
 ```
 
-**Database:** PostgreSQL (users schema)
+**Database:** PostgreSQL (public schema)
 **Cache:** Redis (user profiles, online status)
-
-### 3.3 Profile Service
-
-**Responsibility:** Profile photos, bio, verification, profile completeness scoring.
-
-```
-Endpoints:
-  GET    /profiles/:userId
-  PUT    /profiles
-  POST   /profiles/photos
-  DELETE /profiles/photos/:id
-  PUT    /profiles/photos/reorder
-  POST   /profiles/verify
-  GET    /profiles/verification-status
-```
-
-**Database:** PostgreSQL (profiles schema)
-**Storage:** S3 (photos)
 
 ### 3.4 Matching Service
 
@@ -257,9 +212,8 @@ Endpoints:
   PUT    /match/preferences
 ```
 
-**Database:** PostgreSQL (matches schema)
+**Database:** PostgreSQL (public schema)
 **Cache:** Redis (feed, like counts, compatibility scores)
-**AI:** Calls Recommendation Engine for compatibility scoring
 
 ### 3.5 Chat Service
 
@@ -287,11 +241,10 @@ message.reaction
 message.deleted
 ```
 
-**Database:** PostgreSQL (messages schema)
+**Database:** PostgreSQL (public schema)
 **Cache:** Redis (online status, typing state)
-**AI:** Calls Moderation Engine for toxicity detection
 
-### 3.6 Call Signalling Service
+### 3.6 Calls Service
 
 **Responsibility:** WebRTC signalling, call management, push wake-up.
 
@@ -330,7 +283,7 @@ Endpoints:
 **Storage:** S3/R2 with CloudFront/Cloudflare CDN
 **Processing:** Sharp (images), FFmpeg (video/audio)
 
-### 3.8 Payment Service
+### 3.8 Payments Service
 
 **Responsibility:** Subscription management, payment processing, refunds, receipts.
 
@@ -348,10 +301,10 @@ Endpoints:
   GET    /receipts/:id
 ```
 
-**Database:** PostgreSQL (payments schema, encrypted columns)
+**Database:** PostgreSQL (public schema, encrypted columns)
 **External:** Paystack/Flutterwave API
 
-### 3.9 Notification Service
+### 3.9 Notifications Service
 
 **Responsibility:** Push notifications, email notifications, in-app notifications, notification preferences.
 
@@ -400,7 +353,7 @@ Endpoints:
   POST   /admin/notifications/broadcast
 ```
 
-**Database:** PostgreSQL (admin schema)
+**Database:** PostgreSQL (public schema)
 **Cache:** Redis (dashboard metrics)
 
 ---
@@ -414,7 +367,6 @@ sequenceDiagram
     participant M as Mobile App
     participant GW as API Gateway
     participant MS as Matching Service
-    participant AI as Recommendation Engine
     participant DB as PostgreSQL
     participant Cache as Redis
 
@@ -426,8 +378,7 @@ sequenceDiagram
         Cache-->>MS: Return cached profiles
     else Cache Miss
         MS->>DB: Query candidates (preferences)
-        MS->>AI: Score candidates
-        AI-->>MS: Compatibility scores
+        MS->>MS: Score candidates
         MS->>Cache: Cache feed (TTL: 5min)
     end
     MS-->>GW: Return feed
@@ -441,30 +392,20 @@ sequenceDiagram
     participant M1 as Sender App
     participant GW as API Gateway
     participant CS as Chat Service
-    participant MOD as Moderation Engine
     participant DB as PostgreSQL
-    participant NATS as NATS
-    participant NS as Notification Service
+    participant NS as Notifications Service
     participant FCM as Firebase
     participant M2 as Receiver App
 
     M1->>GW: POST /chat/conversations/:id/messages
     GW->>CS: Forward request
-    CS->>MOD: Check toxicity
-    alt Toxic Content
-        MOD-->>CS: Flag (block/warn)
-        CS-->>M1: 400 Content rejected
-    else Clean Content
-        MOD-->>CS: Approved
-        CS->>DB: Store message (encrypted)
-        CS->>NATS: Publish message.new event
-        CS-->>M1: 201 Created
-        NATS->>NS: message.new event
-        NS->>FCM: Send push notification
-        FCM->>M2: Deliver notification
-        M2->>GW: WebSocket: message.new
-        GW->>M2: Forward message
-    end
+    CS->>DB: Store message (encrypted)
+    CS-->>M1: 201 Created
+    CS->>NS: message.new event
+    NS->>FCM: Send push notification
+    FCM->>M2: Deliver notification
+    M2->>GW: WebSocket: message.new
+    GW->>M2: Forward message
 ```
 
 ### 4.3 Payment Flow
@@ -473,11 +414,10 @@ sequenceDiagram
 sequenceDiagram
     participant M as Mobile App
     participant GW as API Gateway
-    participant PS as Payment Service
+    participant PS as Payments Service
     participant DB as PostgreSQL
-    participant NATS as NATS
     participant PAY as Paystack/Flutterwave
-    participant NS as Notification Service
+    participant NS as Notifications Service
 
     M->>GW: POST /payments/initialize
     GW->>PS: Forward request
@@ -489,8 +429,7 @@ sequenceDiagram
     PS->>PAY: Verify transaction
     PAY-->>PS: Transaction verified
     PS->>DB: Update payment record
-    PS->>NATS: Publish payment.completed
-    NATS->>NS: payment.completed event
+    PS->>NS: payment.completed event
     NS->>M: Push notification (receipt)
 ```
 
@@ -597,32 +536,24 @@ graph TB
         CERT[cert-manager]
     end
 
-    subgraph Namespace: connecta
+    subgraph Namespace: ojchat
         GW_POD[API Gateway<br/>3 replicas]
         AUTH_POD[Auth Service<br/>2 replicas]
-        USER_POD[User Service<br/>2 replicas]
-        PROFILE_POD[Profile Service<br/>2 replicas]
+        USER_POD[Users Service<br/>2 replicas]
         MATCH_POD[Matching Service<br/>2 replicas]
         CHAT_POD[Chat Service<br/>3 replicas]
-        CALL_POD[Call Signalling<br/>2 replicas]
+        CALL_POD[Calls Service<br/>2 replicas]
         MEDIA_POD[Media Service<br/>2 replicas]
-        PAY_POD[Payment Service<br/>2 replicas]
-        NOTIF_POD[Notification Service<br/>2 replicas]
+        PAY_POD[Payments Service<br/>2 replicas]
+        NOTIF_POD[Notifications Service<br/>2 replicas]
         SEARCH_POD[Search Service<br/>1 replica]
         ADMIN_POD[Admin Service<br/>2 replicas]
-    end
-
-    subgraph Namespace: ai
-        RECOMMEND_POD[Recommendation Engine<br/>2 replicas]
-        MODERATION_POD[Moderation Engine<br/>1 replica]
-        SCAM_POD[Scam Detection<br/>1 replica]
     end
 
     subgraph Namespace: data
         PG_POD[(PostgreSQL<br/>Primary + Replica)]
         REDIS_POD[(Redis<br/>Sentinel)]
         ES_POD[(Elasticsearch<br/>3 nodes)]
-        NATS_POD[NATS<br/>Cluster]
     end
 
     subgraph Namespace: monitoring
@@ -634,7 +565,6 @@ graph TB
     ING --> GW_POD
     GW_POD --> AUTH_POD
     GW_POD --> USER_POD
-    GW_POD --> PROFILE_POD
     GW_POD --> MATCH_POD
     GW_POD --> CHAT_POD
     GW_POD --> CALL_POD
@@ -656,15 +586,6 @@ graph TB
     CHAT_POD --> REDIS_POD
 
     SEARCH_POD --> ES_POD
-
-    USER_POD --> NATS_POD
-    CHAT_POD --> NATS_POD
-    MATCH_POD --> NATS_POD
-    PAY_POD --> NATS_POD
-    NOTIF_POD --> NATS_POD
-
-    MATCH_POD --> RECOMMEND_POD
-    CHAT_POD --> MODERATION_POD
 ```
 
 ### 7.2 Environment Strategy
@@ -719,4 +640,4 @@ graph TB
 
 ---
 
-*This document is part of the Connecta Software Design Document (SDD) package.*
+*This document is part of the OJChat Software Design Document (SDD) package.*

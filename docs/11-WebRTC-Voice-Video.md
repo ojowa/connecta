@@ -1,6 +1,6 @@
 # WebRTC Voice & Video
 
-## Connecta — WebRTC Call Architecture
+## OJChat — WebRTC Call Architecture
 
 **Version:** 1.0.0
 **Date:** July 2026
@@ -9,7 +9,7 @@
 
 ## 1. Architecture Overview
 
-Connecta uses **WebRTC** for peer-to-peer voice and video calls. The system includes a signalling server for call setup, STUN/TURN servers for NAT traversal, and optional SFU (Selective Forwarding Unit) for future group calls.
+OJChat uses **WebRTC** for peer-to-peer voice and video calls. The system includes a signalling server for call setup, STUN/TURN servers for NAT traversal, and optional SFU (Selective Forwarding Unit) for future group calls.
 
 ### 1.1 Call Flow Overview
 
@@ -52,9 +52,9 @@ listening-port=3478
 tls-listening-port=5349
 
 # Authentication
-realm=connecta.app
+realm=ojchat.app
 lt-cred-mech
-user=connecta:TURN_SECRET_KEY
+user=ojchat:TURN_SECRET_KEY
 
 # Certificates
 cert=/etc/ssl/certs/turn.pem
@@ -82,15 +82,15 @@ proc-group=turnserver
 ```typescript
 // src/webrtc/ice-config.ts
 export const ICE_SERVERS: RTCIceServer[] = [
-  { urls: 'stun:stun.connecta.app:3478' },
+  { urls: 'stun:stun.ojchat.app:3478' },
   { urls: 'stun:stun.l.google.com:19302' },
   {
     urls: [
-      'turn:turn.connecta.app:3478?transport=udp',
-      'turn:turn.connecta.app:3478?transport=tcp',
-      'turns:turn.connecta.app:5349?transport=tcp',
+      'turn:turn.ojchat.app:3478?transport=udp',
+      'turn:turn.ojchat.app:3478?transport=tcp',
+      'turns:turn.ojchat.app:5349?transport=tcp',
     ],
-    username: 'connecta',
+    username: 'ojchat',
     credential: TURN_CREDENTIAL,
   },
 ];
@@ -103,7 +103,7 @@ export const ICE_SERVERS: RTCIceServer[] = [
 ### 3.1 Call Signalling Endpoints
 
 ```typescript
-// apps/call-signalling-service/src/
+// apps/calls-service/src/
 
 @Controller('calls')
 export class CallController {
@@ -363,7 +363,7 @@ export class CallQualityMonitor {
 ## 7. Call History
 
 ```typescript
-// apps/call-signalling-service/src/call.service.ts
+// apps/calls-service/src/call.service.ts
 @Injectable()
 export class CallService {
   async startCall(dto: StartCallDto): Promise<CallSession> {
@@ -425,4 +425,4 @@ export class CallService {
 
 ---
 
-*This document is part of the Connecta Software Design Document (SDD) package.*
+*This document is part of the OJChat Software Design Document (SDD) package.*

@@ -1,6 +1,6 @@
 # Legal & Compliance
 
-## Connecta — Legal Framework, Policies & Regulatory Compliance
+## OJChat — Legal Framework, Policies & Regulatory Compliance
 
 **Version:** 1.0.0
 **Date:** July 2026
@@ -12,7 +12,7 @@
 
 ### 1.1 Regulatory Landscape
 
-Connecta operates as a dating and matchmaking platform targeting Nigeria with expansion across Africa. The following legal frameworks apply:
+OJChat operates as a dating and matchmaking platform targeting Nigeria with expansion across Africa. The following legal frameworks apply:
 
 | Regulation | Jurisdiction | Relevance |
 |------------|-------------|-----------|
@@ -26,7 +26,7 @@ Connecta operates as a dating and matchmaking platform targeting Nigeria with ex
 
 ### 1.2 Legal Entity & Licensing
 
-- **Entity:** Connecta Technologies Limited (to be incorporated)
+- **Entity:** OJChat Technologies Limited (to be incorporated)
 - **RC Number:** Pending registration with CAC (Corporate Affairs Commission)
 - **Data Controller Registration:** NDPC (Nigeria Data Protection Commission)
 - **Business License:** Required from state-level Ministry of Commerce
@@ -42,7 +42,7 @@ By creating an account, users agree to:
 - Provide accurate, current, and complete registration information
 - Maintain the security of their password and account
 - Accept responsibility for all activities under their account
-- Notify Connecta immediately of unauthorized use
+- Notify OJChat immediately of unauthorized use
 
 ### 2.2 Age Requirement
 
@@ -68,15 +68,15 @@ Users shall NOT:
 - **User-initiated:** Account deletion available in settings; data purged within 30 days
 - **Platform-initiated:** Termination for Terms of Service violations with notice
 - **Immediate suspension:** For scam reports, illegal content, or imminent harm
-- **Appeal process:** Users may appeal termination within 14 days via support@connecta.ng
+- **Appeal process:** Users may appeal termination within 14 days via support@ojchat.ng
 
 ### 2.5 Intellectual Property
 
-- Connecta retains all rights to the platform, branding, and codebase
+- OJChat retains all rights to the platform, branding, and codebase
 - Users retain ownership of content they create (photos, messages, profile)
-- Users grant Connecta a limited, non-exclusive license to display their content on the platform
+- Users grant OJChat a limited, non-exclusive license to display their content on the platform
 - Content removed from the platform is purged within 90 days
-- Connecta may use anonymized, aggregated data for platform improvement
+- OJChat may use anonymized, aggregated data for platform improvement
 
 ---
 
@@ -171,7 +171,7 @@ For users accessing the platform from the EU/EEA:
 - Lawful basis for processing documented for all activities
 - Explicit consent for marketing communications
 - Data Protection Impact Assessment for AI matchmaking
-- Data Protection Officer contact: dpo@connecta.ng
+- Data Protection Officer contact: dpo@ojchat.ng
 - EU representative (if required): To be appointed before EU launch
 
 ### 4.4 Data Processing Agreements (DPAs)
@@ -323,11 +323,11 @@ Each DPA must include:
 
 ### 8.1 PCI DSS Awareness
 
-Connecta does **not** store, process, or transmit card data directly. All payment processing is handled by PCI DSS-compliant third-party processors.
+OJChat does **not** store, process, or transmit card data directly. All payment processing is handled by PCI DSS-compliant third-party processors.
 
 - Card data tokenized at the client level
-- Payment forms hosted by the processor (not embedded in Connecta)
-- No card numbers in Connecta databases or logs
+- Payment forms hosted by the processor (not embedded in OJChat)
+- No card numbers in OJChat databases or logs
 
 ### 8.2 Payment Processor Compliance
 
@@ -435,8 +435,8 @@ Used for targeted advertising:
 
 DMCA-style takedown requests can be submitted via:
 - In-app report (for profile photos)
-- Email: dmca@connecta.ng
-- Mail: Connecta Technologies Limited (address TBD)
+- Email: dmca@ojchat.ng
+- Mail: OJChat Technologies Limited (address TBD)
 
 Required information:
 - Identification of copyrighted work

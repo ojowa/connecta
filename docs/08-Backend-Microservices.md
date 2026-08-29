@@ -1,6 +1,6 @@
 # Backend Microservices
 
-## Connecta — NestJS Microservices Architecture
+## OJChat — NestJS Microservices Architecture
 
 **Version:** 1.0.0
 **Date:** July 2026
@@ -24,7 +24,7 @@
 
 ## 1. Overview
 
-Connecta's backend is built as a **NestJS monorepo** using microservice architecture. Each domain has its own service with independent deployment, database access, and lifecycle.
+OJChat's backend is built as a **NestJS monorepo** using microservice architecture. Each domain has its own service with independent deployment, database access, and lifecycle.
 
 ### Architecture Decisions
 
@@ -35,7 +35,7 @@ Connecta's backend is built as a **NestJS monorepo** using microservice architec
 | Language | TypeScript | Shared types with React Native client |
 | Database ORM | TypeORM | PostgreSQL support, migrations, decorators |
 | Cache | Redis (ioredis) | Session storage, rate limiting, pub/sub |
-| Message Broker | NATS JetStream | Lightweight, fast, event-driven |
+| Event Bus | EventEmitter2 | Lightweight, in-process event-driven communication |
 | API Protocol | HTTP REST + WebSocket | REST for CRUD, WS for real-time |
 | Validation | class-validator + class-transformer | Decorator-based, type-safe |
 | Logging | Pino | Structured JSON logging, high performance |
@@ -48,23 +48,22 @@ Connecta's backend is built as a **NestJS monorepo** using microservice architec
 ### 2.1 Root Structure
 
 ```
-connecta-backend/
+OJChat/
 ├── apps/
 │   ├── api-gateway/
 │   ├── auth-service/
-│   ├── user-service/
-│   ├── profile-service/
+│   ├── users-service/
 │   ├── matching-service/
 │   ├── chat-service/
-│   ├── call-signalling-service/
+│   ├── calls-service/
 │   ├── media-service/
-│   ├── payment-service/
-│   ├── notification-service/
+│   ├── payments-service/
+│   ├── notifications-service/
 │   ├── search-service/
+│   ├── content-service/
+│   ├── support-service/
 │   ├── admin-service/
-│   ├── recommendation-engine/    # Python/FastAPI
-│   ├── moderation-engine/        # Python/FastAPI
-│   └── scam-detection/           # Python/FastAPI
+│   └── admin-web/
 ├── libs/
 │   ├── common/
 │   │   ├── src/
@@ -79,27 +78,16 @@ connecta-backend/
 │   │   │   ├── utils/
 │   │   │   └── common.module.ts
 │   │   └── package.json
-│   ├── auth/
+│   ├── config/
 │   │   ├── src/
-│   │   │   ├── jwt.strategy.ts
-│   │   │   ├── jwt-auth.guard.ts
-│   │   │   ├── roles.guard.ts
-│   │   │   ├── auth.module.ts
-│   │   │   └── auth.service.ts
+│   │   │   ├── config.module.ts
+│   │   │   └── config.service.ts
 │   │   └── package.json
 │   ├── database/
 │   │   ├── src/
 │   │   │   ├── database.module.ts
 │   │   │   ├── database.config.ts
 │   │   │   └── migrations/
-│   │   └── package.json
-│   ├── config/
-│   │   ├── src/
-│   │   │   ├── app.config.ts
-│   │   │   ├── database.config.ts
-│   │   │   ├── redis.config.ts
-│   │   │   ├── nats.config.ts
-│   │   │   └── config.module.ts
 │   │   └── package.json
 │   └── logger/
 │       ├── src/
@@ -147,17 +135,11 @@ connecta-backend/
       "entryFile": "main",
       "sourceRoot": "apps/auth-service/src"
     },
-    "user-service": {
+    "users-service": {
       "type": "application",
-      "root": "apps/user-service",
+      "root": "apps/users-service",
       "entryFile": "main",
-      "sourceRoot": "apps/user-service/src"
-    },
-    "profile-service": {
-      "type": "application",
-      "root": "apps/profile-service",
-      "entryFile": "main",
-      "sourceRoot": "apps/profile-service/src"
+      "sourceRoot": "apps/users-service/src"
     },
     "matching-service": {
       "type": "application",
@@ -171,11 +153,11 @@ connecta-backend/
       "entryFile": "main",
       "sourceRoot": "apps/chat-service/src"
     },
-    "call-signalling-service": {
+    "calls-service": {
       "type": "application",
-      "root": "apps/call-signalling-service",
+      "root": "apps/calls-service",
       "entryFile": "main",
-      "sourceRoot": "apps/call-signalling-service/src"
+      "sourceRoot": "apps/calls-service/src"
     },
     "media-service": {
       "type": "application",
@@ -183,17 +165,17 @@ connecta-backend/
       "entryFile": "main",
       "sourceRoot": "apps/media-service/src"
     },
-    "payment-service": {
+    "payments-service": {
       "type": "application",
-      "root": "apps/payment-service",
+      "root": "apps/payments-service",
       "entryFile": "main",
-      "sourceRoot": "apps/payment-service/src"
+      "sourceRoot": "apps/payments-service/src"
     },
-    "notification-service": {
+    "notifications-service": {
       "type": "application",
-      "root": "apps/notification-service",
+      "root": "apps/notifications-service",
       "entryFile": "main",
-      "sourceRoot": "apps/notification-service/src"
+      "sourceRoot": "apps/notifications-service/src"
     },
     "search-service": {
       "type": "application",
@@ -201,45 +183,27 @@ connecta-backend/
       "entryFile": "main",
       "sourceRoot": "apps/search-service/src"
     },
+    "content-service": {
+      "type": "application",
+      "root": "apps/content-service",
+      "entryFile": "main",
+      "sourceRoot": "apps/content-service/src"
+    },
+    "support-service": {
+      "type": "application",
+      "root": "apps/support-service",
+      "entryFile": "main",
+      "sourceRoot": "apps/support-service/src"
+    },
     "admin-service": {
       "type": "application",
       "root": "apps/admin-service",
       "entryFile": "main",
       "sourceRoot": "apps/admin-service/src"
-    },
-    "common": {
-      "type": "library",
-      "root": "libs/common",
-      "entryFile": "index",
-      "sourceRoot": "libs/common/src"
-    },
-    "auth": {
-      "type": "library",
-      "root": "libs/auth",
-      "entryFile": "index",
-      "sourceRoot": "libs/auth/src"
-    },
-    "database": {
-      "type": "library",
-      "root": "libs/database",
-      "entryFile": "index",
-      "sourceRoot": "libs/database/src"
-    },
-    "config": {
-      "type": "library",
-      "root": "libs/config",
-      "entryFile": "index",
-      "sourceRoot": "libs/config/src"
-    },
-    "logger": {
-      "type": "library",
-      "root": "libs/logger",
-      "entryFile": "index",
-      "sourceRoot": "libs/logger/src"
     }
   }
 }
-`
+```
 
 ### 2.3 NPM Scripts
 
@@ -251,17 +215,18 @@ connecta-backend/
     "build:auth-service": "nest build auth-service",
     "start:api-gateway": "nest start api-gateway",
     "start:auth-service": "nest start auth-service",
-    "start:user-service": "nest start user-service",
-    "start:profile-service": "nest start profile-service",
+    "start:users-service": "nest start users-service",
     "start:matching-service": "nest start matching-service",
     "start:chat-service": "nest start chat-service",
-    "start:call-signalling-service": "nest start call-signalling-service",
+    "start:calls-service": "nest start calls-service",
     "start:media-service": "nest start media-service",
-    "start:payment-service": "nest start payment-service",
-    "start:notification-service": "nest start notification-service",
+    "start:payments-service": "nest start payments-service",
+    "start:notifications-service": "nest start notifications-service",
     "start:search-service": "nest start search-service",
+    "start:content-service": "nest start content-service",
+    "start:support-service": "nest start support-service",
     "start:admin-service": "nest start admin-service",
-    "start:dev": "concurrently \"npm run start:api-gateway\" \"npm run start:auth-service\" \"npm run start:user-service\"",
+    "start:dev": "concurrently \"npm run start:api-gateway\" \"npm run start:auth-service\" \"npm run start:users-service\"",
     "lint": "eslint \"{apps,libs}/**/*.ts\" --fix",
     "test": "jest",
     "test:watch": "jest --watch",
@@ -272,7 +237,7 @@ connecta-backend/
     "migration:run": "npm run typeorm migration:run -d libs/database/src/data-source.ts"
   }
 }
-`
+```
 
 ### 2.4 TypeScript Configuration
 
@@ -300,18 +265,16 @@ connecta-backend/
     "paths": {
       "@app/common": ["libs/common/src"],
       "@app/common/*": ["libs/common/src/*"],
-      "@app/auth": ["libs/auth/src"],
-      "@app/auth/*": ["libs/auth/src/*"],
-      "@app/database": ["libs/database/src"],
-      "@app/database/*": ["libs/database/src/*"],
       "@app/config": ["libs/config/src"],
       "@app/config/*": ["libs/config/src/*"],
+      "@app/database": ["libs/database/src"],
+      "@app/database/*": ["libs/database/src/*"],
       "@app/logger": ["libs/logger/src"],
       "@app/logger/*": ["libs/logger/src/*"]
     }
   }
 }
-`
+```
 
 ---
 
@@ -325,7 +288,7 @@ The API Gateway is the single entry point for all client requests. It handles ro
 
 #### Folder Structure
 
-`
+```
 apps/api-gateway/
 ├── src/
 │   ├── api-gateway.module.ts
@@ -333,7 +296,6 @@ apps/api-gateway/
 │   ├── controllers/
 │   │   ├── auth.controller.ts
 │   │   ├── users.controller.ts
-│   │   ├── profiles.controller.ts
 │   │   ├── matching.controller.ts
 │   │   ├── chat.controller.ts
 │   │   ├── calls.controller.ts
@@ -376,7 +338,6 @@ import { ConfigModule } from '@nestjs/config';
 import { ThrottlerModule } from '@nestjs/throttler';
 import { AuthController } from './controllers/auth.controller';
 import { UsersController } from './controllers/users.controller';
-import { ProfilesController } from './controllers/profiles.controller';
 import { MatchingController } from './controllers/matching.controller';
 import { ChatController } from './controllers/chat.controller';
 import { CallsController } from './controllers/calls.controller';
@@ -406,7 +367,6 @@ import { AppLoggerModule } from '@app/logger';
   controllers: [
     AuthController,
     UsersController,
-    ProfilesController,
     MatchingController,
     ChatController,
     CallsController,
@@ -428,7 +388,7 @@ export class ApiGatewayModule implements NestModule {
       .forRoutes('*');
   }
 }
-`
+```
 
 #### Main Entry Point
 
@@ -473,8 +433,8 @@ async function bootstrap() {
   app.useGlobalInterceptors(new ResponseTransformInterceptor());
 
   const config = new DocumentBuilder()
-    .setTitle('Connecta API')
-    .setDescription('Connecta Dating App API Gateway')
+    .setTitle('OJChat API')
+    .setDescription('OJChat Dating App API Gateway')
     .setVersion('1.0')
     .addBearerAuth()
     .addApiKey({ type: 'apiKey', name: 'X-API-KEY', in: 'header' }, 'api-key')
@@ -724,7 +684,7 @@ Handles authentication, authorization, token management, OAuth integration, and 
 
 #### Folder Structure
 
-`
+```
 apps/auth-service/
 ├── src/
 │   ├── auth-service.module.ts
@@ -765,7 +725,7 @@ apps/auth-service/
 │   └── auth.controller.spec.ts
 ├── tsconfig.app.json
 └── tsconfig.json
-`
+```
 
 #### Entity: User
 
@@ -1179,21 +1139,21 @@ export class UserEventsHandler {
 
 ---
 
-### 3.3 User Service
+### 3.3 Users Service
 
 Manages core user data, preferences, settings, and account operations.
 
 #### Folder Structure
 
-`
-apps/user-service/
+```
+apps/users-service/
 ├── src/
-│   ├── user-service.module.ts
+│   ├── users-service.module.ts
 │   ├── main.ts
 │   ├── controllers/
-│   │   └── user.controller.ts
+│   │   └── users.controller.ts
 │   ├── services/
-│   │   ├── user.service.ts
+│   │   ├── users.service.ts
 │   │   ├── user-settings.service.ts
 │   │   └── blocked-users.service.ts
 │   ├── entities/
@@ -1209,10 +1169,10 @@ apps/user-service/
 │   │   ├── auth-events.handler.ts
 │   │   └── profile-events.handler.ts
 │   └── repositories/
-│       └── user.repository.ts
+│       └── users.repository.ts
 ├── test/
 └── tsconfig.app.json
-`
+```
 
 #### Entity: User Settings
 
@@ -1434,396 +1394,7 @@ export class UserService {
     await this.settingsRepo.save(settings);
   }
 }
-`
-
----
-
-### 3.4 Profile Service
-
-Manages user profiles, photos, bio, interests, preferences, and profile completion.
-
-#### Folder Structure
-
-`
-apps/profile-service/
-├── src/
-│   ├── profile-service.module.ts
-│   ├── main.ts
-│   ├── controllers/
-│   │   └── profile.controller.ts
-│   ├── services/
-│   │   ├── profile.service.ts
-│   │   ├── photo.service.ts
-│   │   └── interest.service.ts
-│   ├── entities/
-│   │   ├── profile.entity.ts
-│   │   ├── photo.entity.ts
-│   │   ├── interest.entity.ts
-│   │   └── profile-interest.entity.ts
-│   ├── dto/
-│   │   ├── create-profile.dto.ts
-│   │   ├── update-profile.dto.ts
-│   │   ├── photo.dto.ts
-│   │   └── profile-query.dto.ts
-│   ├── event-handlers/
-│   │   ├── user-events.handler.ts
-│   │   └── media-events.handler.ts
-│   └── repositories/
-│       └── profile.repository.ts
-├── test/
-└── tsconfig.app.json
-`
-
-#### Entity: Profile
-
-```typescript
-// apps/profile-service/src/entities/profile.entity.ts
-import {
-  Entity, PrimaryGeneratedColumn, Column, CreateDateColumn,
-  UpdateDateColumn, OneToMany, ManyToMany, JoinTable, Index,
-} from 'typeorm';
-import { Photo } from './photo.entity';
-import { Interest } from './interest.entity';
-
-export enum Gender {
-  MALE = 'male',
-  FEMALE = 'female',
-  NON_BINARY = 'non_binary',
-  OTHER = 'other',
-}
-
-export enum RelationshipGoal {
-  RELATIONSHIP = 'relationship',
-  CASUAL = 'casual',
-  FRIENDSHIP = 'friendship',
-  UNSURE = 'unsure',
-}
-
-@Entity('profiles')
-@Index(['userId'], { unique: true })
-@Index(['location'])
-@Index(['gender'])
-@Index(['dateOfBirth'])
-export class Profile {
-  @PrimaryGeneratedColumn('uuid')
-  id: string;
-
-  @Column({ unique: true })
-  userId: string;
-
-  @Column()
-  firstName: string;
-
-  @Column({ nullable: true })
-  lastName: string;
-
-  @Column({ nullable: true })
-  bio: string;
-
-  @Column({ type: 'date', nullable: true })
-  dateOfBirth: Date;
-
-  @Column({ type: 'enum', enum: Gender, nullable: true })
-  gender: Gender;
-
-  @Column({ nullable: true })
-  showGender: boolean;
-
-  @Column({ nullable: true })
-  jobTitle: string;
-
-  @Column({ nullable: true })
-  company: string;
-
-  @Column({ nullable: true })
-  school: string;
-
-  @Column({ type: 'decimal', precision: 10, scale: 7, nullable: true })
-  latitude: number;
-
-  @Column({ type: 'decimal', precision: 10, scale: 7, nullable: true })
-  longitude: number;
-
-  @Column({ nullable: true })
-  city: string;
-
-  @Column({ nullable: true })
-  country: string;
-
-  @Column({ type: 'enum', enum: RelationshipGoal, nullable: true })
-  relationshipGoal: RelationshipGoal;
-
-  @Column({ default: false })
-  verified: boolean;
-
-  @Column({ default: 0 })
-  completionPercentage: number;
-
-  @Column({ default: true })
-  isActive: boolean;
-
-  @OneToMany(() => Photo, (photo) => photo.profile, { cascade: true })
-  photos: Photo[];
-
-  @ManyToMany(() => Interest, (interest) => interest.profiles)
-  @JoinTable({
-    name: 'profile_interests',
-    joinColumn: { name: 'profileId' },
-    inverseJoinColumn: { name: 'interestId' },
-  })
-  interests: Interest[];
-
-  @Column({ type: 'jsonb', nullable: true })
-  prompts: Array<{
-    question: string;
-    answer: string;
-  }>;
-
-  @Column({ type: 'jsonb', nullable: true })
-  socialLinks: Record<string, string>;
-
-  @CreateDateColumn()
-  createdAt: Date;
-
-  @UpdateDateColumn()
-  updatedAt: Date;
-}
-`
-
-#### Entity: Photo
-
-```typescript
-// apps/profile-service/src/entities/photo.entity.ts
-import {
-  Entity, PrimaryGeneratedColumn, Column, CreateDateColumn,
-  ManyToOne, JoinColumn, Index,
-} from 'typeorm';
-import { Profile } from './profile.entity';
-
-@Entity('photos')
-@Index(['profileId', 'order'])
-export class Photo {
-  @PrimaryGeneratedColumn('uuid')
-  id: string;
-
-  @Column()
-  profileId: string;
-
-  @Column()
-  url: string;
-
-  @Column({ nullable: true })
-  thumbnailUrl: string;
-
-  @Column({ nullable: true })
-  cdnUrl: string;
-
-  @Column()
-  order: number;
-
-  @Column({ default: false })
-  isPrimary: boolean;
-
-  @Column({ default: false })
-  isVerified: boolean;
-
-  @Column({ nullable: true })
-  moderationStatus: string;
-
-  @ManyToOne(() => Profile, (profile) => profile.photos, { onDelete: 'CASCADE' })
-  @JoinColumn({ name: 'profileId' })
-  profile: Profile;
-
-  @CreateDateColumn()
-  createdAt: Date;
-}
-`
-
-#### Interest Entity
-
-```typescript
-// apps/profile-service/src/entities/interest.entity.ts
-import {
-  Entity, PrimaryGeneratedColumn, Column, ManyToMany,
-} from 'typeorm';
-import { Profile } from './profile.entity';
-
-@Entity('interests')
-export class Interest {
-  @PrimaryGeneratedColumn('uuid')
-  id: string;
-
-  @Column({ unique: true })
-  name: string;
-
-  @Column({ nullable: true })
-  category: string;
-
-  @Column({ nullable: true })
-  icon: string;
-
-  @Column({ default: true })
-  isActive: boolean;
-
-  @ManyToMany(() => Profile, (profile) => profile.interests)
-  profiles: Profile[];
-}
-`
-
-#### Profile Service Implementation
-
-```typescript
-// apps/profile-service/src/services/profile.service.ts
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, In } from 'typeorm';
-import { RpcException } from '@nestjs/microservices';
-import { EventPattern, Payload, ClientProxy, Inject } from '@nestjs/microservices';
-import { Profile } from '../entities/profile.entity';
-import { Photo } from '../entities/photo.entity';
-import { Interest } from '../entities/interest.entity';
-import { CreateProfileDto } from '../dto/create-profile.dto';
-import { UpdateProfileDto } from '../dto/update-profile.dto';
-import { AppLoggerService } from '@app/logger';
-
-@Injectable()
-export class ProfileService {
-  constructor(
-    @InjectRepository(Profile)
-    private readonly profileRepo: Repository<Profile>,
-    @InjectRepository(Photo)
-    private readonly photoRepo: Repository<Photo>,
-    @InjectRepository(Interest)
-    private readonly interestRepo: Repository<Interest>,
-    @Inject('USER_SERVICE') private readonly userClient: ClientProxy,
-    @Inject('MEDIA_SERVICE') private readonly mediaClient: ClientProxy,
-    private readonly logger: AppLoggerService,
-  ) {}
-
-  async create(userId: string, dto: CreateProfileDto) {
-    const existing = await this.profileRepo.findOne({ where: { userId } });
-    if (existing) {
-      throw new RpcException(
-        new BadRequestException('Profile already exists for this user'),
-      );
-    }
-
-    const profile = this.profileRepo.create({ userId, ...dto });
-
-    if (dto.interestIds?.length) {
-      profile.interests = await this.interestRepo.findBy({ id: In(dto.interestIds) });
-    }
-
-    const saved = await this.profileRepo.save(profile);
-    this.calculateCompletion(saved);
-
-    this.userClient.emit('profile.created', { userId, profileId: saved.id });
-    return saved;
-  }
-
-  async findByUserId(userId: string) {
-    const profile = await this.profileRepo.findOne({
-      where: { userId },
-      relations: ['photos', 'interests'],
-    });
-    if (!profile) {
-      throw new RpcException(new NotFoundException('Profile not found'));
-    }
-    return profile;
-  }
-
-  async update(userId: string, dto: UpdateProfileDto) {
-    const profile = await this.profileRepo.findOne({ where: { userId } });
-    if (!profile) {
-      throw new RpcException(new NotFoundException('Profile not found'));
-    }
-
-    if (dto.interestIds) {
-      profile.interests = await this.interestRepo.findBy({ id: In(dto.interestIds) });
-    }
-
-    Object.assign(profile, dto);
-    const saved = await this.profileRepo.save(profile);
-    this.calculateCompletion(saved);
-    return saved;
-  }
-
-  async addPhoto(userId: string, photoUrl: string, isPrimary = false) {
-    const profile = await this.profileRepo.findOne({
-      where: { userId },
-      relations: ['photos'],
-    });
-
-    if (!profile) {
-      throw new RpcException(new NotFoundException('Profile not found'));
-    }
-
-    if (profile.photos.length >= 9) {
-      throw new RpcException(new BadRequestException('Maximum 9 photos allowed'));
-    }
-
-    const maxOrder = profile.photos.reduce((max, p) => Math.max(max, p.order), -1);
-
-    const photo = this.photoRepo.create({
-      profileId: profile.id,
-      url: photoUrl,
-      order: maxOrder + 1,
-      isPrimary,
-    });
-
-    if (isPrimary) {
-      await this.photoRepo.update({ profileId: profile.id }, { isPrimary: false });
-    }
-
-    return this.photoRepo.save(photo);
-  }
-
-  async removePhoto(userId: string, photoId: string) {
-    const photo = await this.photoRepo.findOne({
-      where: { id: photoId },
-      relations: ['profile'],
-    });
-
-    if (!photo || photo.profile.userId !== userId) {
-      throw new RpcException(new NotFoundException('Photo not found'));
-    }
-
-    if (photo.isPrimary) {
-      throw new RpcException(new BadRequestException('Cannot delete primary photo'));
-    }
-
-    await this.photoRepo.remove(photo);
-    this.mediaClient.emit('media.delete', { url: photo.url });
-    return { success: true };
-  }
-
-  private calculateCompletion(profile: Profile) {
-    let score = 0;
-    const checks = [
-      profile.firstName,
-      profile.bio,
-      profile.dateOfBirth,
-      profile.gender,
-      profile.photos?.length > 0,
-      profile.interests?.length > 0,
-      profile.jobTitle,
-      profile.school,
-      profile.relationshipGoal,
-    ];
-
-    checks.forEach((check) => {
-      if (check) score += Math.floor(100 / checks.length);
-    });
-
-    profile.completionPercentage = Math.min(score, 100);
-  }
-
-  @EventPattern('user.deactivated')
-  async handleUserDeactivated(@Payload() data: { userId: string }) {
-    await this.profileRepo.update({ userId: data.userId }, { isActive: false });
-  }
-}
-`
+```
 
 ---
 
@@ -1833,7 +1404,7 @@ Handles the swipe logic, match creation, discovery feed, boost mechanics, and al
 
 #### Folder Structure
 
-`
+```
 apps/matching-service/
 ├── src/
 │   ├── matching-service.module.ts
@@ -1861,7 +1432,7 @@ apps/matching-service/
 │       └── elo-rating.strategy.ts
 ├── test/
 └── tsconfig.app.json
-`
+```
 
 #### Entity: Swipe
 
@@ -2225,28 +1796,28 @@ export class MatchingService {
 `
 
 ---
-### 3.7 Call Signalling Service
+### 3.7 Calls Service
 
 Handles WebRTC signalling for audio/video calls, call state management, and call quality monitoring.
 
 #### Folder Structure
 
-`
-apps/call-signalling-service/
+```
+apps/calls-service/
 ├── src/
-│   ├── call-signalling.module.ts
+│   ├── calls-service.module.ts
 │   ├── main.ts
 │   ├── controllers/
-│   │   └── call.controller.ts
+│   │   └── calls.controller.ts
 │   ├── services/
-│   │   ├── call.service.ts
+│   │   ├── calls.service.ts
 │   │   └── ice-candidate.service.ts
 │   ├── entities/
 │   │   ├── call.entity.ts
 │   │   └── call-log.entity.ts
 │   ├── dto/
 │   │   ├── initiate-call.dto.ts
-│   │   └── call-signalling.dto.ts
+│   │   └── calls-signalling.dto.ts
 │   ├── gateways/
 │   │   ├── call.gateway.ts
 │   │   └── ws-call.guard.ts
@@ -2254,7 +1825,7 @@ apps/call-signalling-service/
 │       └── match-events.handler.ts
 ├── test/
 └── tsconfig.app.json
-`
+```
 
 #### Entity: Call
 
@@ -2514,7 +2085,7 @@ Handles file uploads, image processing, CDN management, and media moderation.
 
 #### Folder Structure
 
-`
+```
 apps/media-service/
 ├── src/
 │   ├── media-service.module.ts
@@ -2541,7 +2112,7 @@ apps/media-service/
 │       └── s3.storage.strategy.ts
 ├── test/
 └── tsconfig.app.json
-`
+```
 
 #### Entity: Media
 
@@ -2781,21 +2352,21 @@ export class MediaService {
 `
 
 ---
-### 3.9 Payment Service
+### 3.9 Payments Service
 
 Handles subscriptions, in-app purchases, payment processing, receipt validation, and billing management.
 
 #### Folder Structure
 
-`
-apps/payment-service/
+```
+apps/payments-service/
 ├── src/
-│   ├── payment-service.module.ts
+│   ├── payments-service.module.ts
 │   ├── main.ts
 │   ├── controllers/
-│   │   └── payment.controller.ts
+│   │   └── payments.controller.ts
 │   ├── services/
-│   │   ├── payment.service.ts
+│   │   ├── payments.service.ts
 │   │   ├── subscription.service.ts
 │   │   ├── in-app-purchase.service.ts
 │   │   └── receipt-validator.service.ts
@@ -2818,7 +2389,7 @@ apps/payment-service/
 │       └── apple.webhook.ts
 ├── test/
 └── tsconfig.app.json
-`
+```
 
 #### Entity: Subscription
 
@@ -3186,21 +2757,21 @@ export class PaymentService {
 `
 
 ---
-### 3.10 Notification Service
+### 3.10 Notifications Service
 
 Handles push notifications, in-app notifications, email notifications, and notification preferences.
 
 #### Folder Structure
 
-`
-apps/notification-service/
+```
+apps/notifications-service/
 ├── src/
-│   ├── notification-service.module.ts
+│   ├── notifications-service.module.ts
 │   ├── main.ts
 │   ├── controllers/
-│   │   └── notification.controller.ts
+│   │   └── notifications.controller.ts
 │   ├── services/
-│   │   ├── notification.service.ts
+│   │   ├── notifications.service.ts
 │   │   ├── push-notification.service.ts
 │   │   ├── email-notification.service.ts
 │   │   ├── in-app-notification.service.ts
@@ -3226,7 +2797,7 @@ apps/notification-service/
 │       └── sendgrid.provider.ts
 ├── test/
 └── tsconfig.app.json
-`
+```
 
 #### Entity: Notification
 
@@ -3554,7 +3125,7 @@ Handles advanced search, filtering, autocomplete, and Elasticsearch index manage
 
 #### Folder Structure
 
-`
+```
 apps/search-service/
 ├── src/
 │   ├── search-service.module.ts
@@ -3577,7 +3148,7 @@ apps/search-service/
 │       └── user.index.ts
 ├── test/
 └── tsconfig.app.json
-`
+```
 
 #### Search Service Implementation
 
@@ -3763,7 +3334,7 @@ Handles admin dashboards, user management, content moderation, analytics, and sy
 
 #### Folder Structure
 
-`
+```
 apps/admin-service/
 ├── src/
 │   ├── admin-service.module.ts
@@ -3797,7 +3368,7 @@ apps/admin-service/
 │       └── audit-log.decorator.ts
 ├── test/
 └── tsconfig.app.json
-`
+```
 
 #### Entity: Admin User
 
@@ -4076,7 +3647,7 @@ export class AdminService {
 
 ### 4.1 Common Library (@app/common)
 
-`
+```
 libs/common/
 ├── src/
 │   ├── index.ts
@@ -4114,7 +3685,7 @@ libs/common/
 │       └── roles.decorator.ts
 ├── tsconfig.lib.json
 └── package.json
-`
+```
 
 #### Key DTOs with Validation
 
@@ -4289,114 +3860,9 @@ export const Roles = (...roles: string[]) => SetMetadata(ROLES_KEY, roles);
 
 ---
 
-### 4.2 Auth Library (@app/auth)
-
-`
-libs/auth/
-├── src/
-│   ├── index.ts
-│   ├── guards/
-│   │   ├── jwt-auth.guard.ts
-│   │   ├── roles.guard.ts
-│   │   └── throttle.guard.ts
-│   ├── strategies/
-│   │   ├── jwt.strategy.ts
-│   │   └── jwt-refresh.strategy.ts
-│   ├── decorators/
-│   │   ├── current-user.decorator.ts
-│   │   └── public.decorator.ts
-│   ├── interceptors/
-│   │   └── auth-context.interceptor.ts
-│   └── auth.module.ts
-├── tsconfig.lib.json
-└── package.json
-`
-
-#### JWT Auth Guard
-
-```typescript
-// libs/auth/src/guards/jwt-auth.guard.ts
-import {
-  Injectable, ExecutionContext, UnauthorizedException,
-} from '@nestjs/common';
-import { AuthGuard } from '@nestjs/passport';
-import { Reflector } from '@nestjs/core';
-import { IS_PUBLIC_KEY } from '../decorators/public.decorator';
-
-@Injectable()
-export class JwtAuthGuard extends AuthGuard('jwt') {
-  constructor(private reflector: Reflector) {
-    super();
-  }
-
-  canActivate(context: ExecutionContext) {
-    const isPublic = this.reflector.getAllAndOverride<boolean>(IS_PUBLIC_KEY, [
-      context.getHandler(),
-      context.getClass(),
-    ]);
-
-    if (isPublic) {
-      return true;
-    }
-
-    return super.canActivate(context);
-  }
-
-  handleRequest(err: any, user: any, info: any) {
-    if (err || !user) {
-      throw err || new UnauthorizedException('Invalid or expired token');
-    }
-    return user;
-  }
-}
-`
-
-#### Roles Guard
-
-```typescript
-// libs/auth/src/guards/roles.guard.ts
-import {
-  Injectable, CanActivate, ExecutionContext, ForbiddenException,
-} from '@nestjs/common';
-import { Reflector } from '@nestjs/core';
-import { ROLES_KEY } from '../decorators/roles.decorator';
-
-@Injectable()
-export class RolesGuard implements CanActivate {
-  constructor(private reflector: Reflector) {}
-
-  canActivate(context: ExecutionContext): boolean {
-    const requiredRoles = this.reflector.getAllAndOverride<string[]>(ROLES_KEY, [
-      context.getHandler(),
-      context.getClass(),
-    ]);
-
-    if (!requiredRoles || requiredRoles.length === 0) {
-      return true;
-    }
-
-    const { user } = context.switchToHttp().getRequest();
-
-    if (!user) {
-      throw new ForbiddenException('Access denied');
-    }
-
-    const hasRole = requiredRoles.some((role) => user.role === role);
-
-    if (!hasRole) {
-      throw new ForbiddenException('Insufficient permissions');
-    }
-
-    return true;
-  }
-}
-`
-
----
-
 ### 4.3 Database Library (@app/database)
 
-`
+```
 libs/database/
 ├── src/
 │   ├── index.ts
@@ -4410,7 +3876,7 @@ libs/database/
 │       └── admin.seed.ts
 ├── tsconfig.lib.json
 └── package.json
-`
+```
 
 #### Database Module
 
@@ -4452,9 +3918,9 @@ export class TypeOrmConfigService implements TypeOrmOptionsFactory {
       type: 'postgres',
       host: this.configService.get('DB_HOST', 'localhost'),
       port: this.configService.get('DB_PORT', 5432),
-      username: this.configService.get('DB_USERNAME', 'connecta'),
-      password: this.configService.get('DB_PASSWORD', 'connecta_secret'),
-      database: this.configService.get('DB_NAME', 'connecta'),
+      username: this.configService.get('DB_USERNAME', 'ojchat'),
+      password: this.configService.get('DB_PASSWORD', 'ojchat_secret'),
+      database: this.configService.get('DB_NAME', 'ojchat_db'),
       entities: [__dirname + '/../../**/*.entity{.ts,.js}'],
       synchronize: this.configService.get('DB_SYNC', false),
       logging: this.configService.get('DB_LOGGING', false),
@@ -4481,9 +3947,9 @@ export default new DataSource({
   type: 'postgres',
   host: process.env.DB_HOST || 'localhost',
   port: parseInt(process.env.DB_PORT, 10) || 5432,
-  username: process.env.DB_USERNAME || 'connecta',
-  password: process.env.DB_PASSWORD || 'connecta_secret',
-  database: process.env.DB_NAME || 'connecta',
+  username: process.env.DB_USERNAME || 'ojchat',
+  password: process.env.DB_PASSWORD || 'ojchat_secret',
+  database: process.env.DB_NAME || 'ojchat_db',
   entities: [__dirname + '/../../**/*.entity{.ts,.js}'],
   migrations: [__dirname + '/migrations/*{.ts,.js}'],
   synchronize: false,
@@ -4494,7 +3960,7 @@ export default new DataSource({
 
 ### 4.4 Config Library (@app/config)
 
-`
+```
 libs/config/
 ├── src/
 │   ├── index.ts
@@ -4504,13 +3970,12 @@ libs/config/
 │       ├── app.config.ts
 │       ├── database.config.ts
 │       ├── redis.config.ts
-│       ├── nats.config.ts
 │       ├── jwt.config.ts
 │       ├── s3.config.ts
 │       └── elasticsearch.config.ts
 ├── tsconfig.lib.json
 └── package.json
-`
+```
 
 #### Config Module
 
@@ -4522,7 +3987,6 @@ import { AppConfigService } from './config.service';
 import appConfig from './configurations/app.config';
 import databaseConfig from './configurations/database.config';
 import redisConfig from './configurations/redis.config';
-import natsConfig from './configurations/nats.config';
 import jwtConfig from './configurations/jwt.config';
 
 @Global()
@@ -4530,7 +3994,7 @@ import jwtConfig from './configurations/jwt.config';
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
-      load: [appConfig, databaseConfig, redisConfig, natsConfig, jwtConfig],
+      load: [appConfig, databaseConfig, redisConfig, jwtConfig],
       envFilePath: ['.env.local', '.env'],
     }),
   ],
@@ -4563,9 +4027,9 @@ export class AppConfigService {
     return {
       host: this.configService.get('database.host', 'localhost'),
       port: this.configService.get('database.port', 5432),
-      username: this.configService.get('database.username', 'connecta'),
+      username: this.configService.get('database.username', 'ojchat'),
       password: this.configService.get('database.password', ''),
-      name: this.configService.get('database.name', 'connecta'),
+      name: this.configService.get('database.name', 'ojchat_db'),
     };
   }
 
@@ -4574,12 +4038,6 @@ export class AppConfigService {
       host: this.configService.get('redis.host', 'localhost'),
       port: this.configService.get('redis.port', 6379),
       password: this.configService.get('redis.password', ''),
-    };
-  }
-
-  get nats() {
-    return {
-      url: this.configService.get('nats.url', 'nats://localhost:4222'),
     };
   }
 
@@ -4598,7 +4056,7 @@ export class AppConfigService {
 
 ### 4.5 Logger Library (@app/logger)
 
-`
+```
 libs/logger/
 ├── src/
 │   ├── index.ts
@@ -4611,7 +4069,7 @@ libs/logger/
 │       └── elasticsearch.transport.ts
 ├── tsconfig.lib.json
 └── package.json
-`
+```
 
 #### Logger Service
 
@@ -4634,7 +4092,7 @@ export class AppLoggerService implements LoggerService {
         winston.format.errors({ stack: true }),
         winston.format.json(),
       ),
-      defaultMeta: { service: 'connecta' },
+      defaultMeta: { service: 'ojchat' },
       transports: [
         new winston.transports.Console({
           format: winston.format.combine(
@@ -4692,40 +4150,31 @@ export class AppLoggerService implements LoggerService {
 
 ## 5. Inter-Service Communication
 
-### 5.1 NATS Event Bus
+### 5.1 EventEmitter2 Event Bus
 
-All cross-service communication uses NATS JetStream for reliable, ordered event delivery.
+All cross-service communication uses EventEmitter2 for in-process event handling. Services communicate via HTTP fetch for synchronous calls and EventEmitter2 for asynchronous events.
 
 ```typescript
-// libs/common/src/nats-client.ts
-import { Client, NatsConnection, StringCodec } from 'nats';
+// libs/common/src/event-emitter.ts
+import { EventEmitter2 } from '@nestjs/event-emitter';
 
-export class NatsClient {
-  private connection: NatsConnection;
-  private codec = StringCodec();
+export class EventBus {
+  private eventEmitter: EventEmitter2;
 
-  async connect(): Promise<void> {
-    this.connection = await Client.connect({
-      servers: process.env.NATS_URL || 'nats://localhost:4222',
-      reconnect: true,
-      maxReconnectAttempts: 10,
+  constructor() {
+    this.eventEmitter = new EventEmitter2({
+      wildcard: true,
+      delimiter: '.',
+      maxListeners: 10,
     });
   }
 
   async publish(subject: string, data: unknown): Promise<void> {
-    this.connection.publish(subject, this.codec.encode(JSON.stringify(data)));
+    this.eventEmitter.emit(subject, data);
   }
 
-  async subscribe(
-    subject: string,
-    handler: (data: unknown) => Promise<void>
-  ): Promise<void> {
-    const sub = this.connection.subscribe(subject);
-    for await (const msg of sub) {
-      const data = JSON.parse(this.codec.decode(msg.data));
-      await handler(data);
-      msg.ack();
-    }
+  subscribe(subject: string, handler: (data: unknown) => Promise<void>): void {
+    this.eventEmitter.on(subject, handler);
   }
 }
 ```
@@ -4944,4 +4393,4 @@ process.on('SIGINT', async () => {
 
 ---
 
-*This document is part of the Connecta Software Design Document (SDD) package.*
+*This document is part of the OJChat Software Design Document (SDD) package.*

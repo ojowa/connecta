@@ -2,7 +2,7 @@
 
 ## 1. Performance Budget
 
-Connecta targets a responsive, low-bandwidth-friendly experience optimized for Nigerian mobile networks (average 15-25 Mbps 4G, variable 3G coverage).
+OJChat targets a responsive, low-bandwidth-friendly experience optimized for Nigerian mobile networks (average 15-25 Mbps 4G, variable 3G coverage).
 
 | Metric | Budget | Measurement |
 |---|---|---|
@@ -173,8 +173,8 @@ CREATE INDEX idx_messages_conversation ON messages(conversation_id, created_at D
 CREATE INDEX idx_messages_sender ON messages(sender_id, created_at DESC);
 
 -- Analytics
-CREATE INDEX idx_events_name_created ON analytics.events(event_name, created_at);
-CREATE INDEX idx_events_user_created ON analytics.events(user_id, created_at);
+CREATE INDEX idx_events_name_created ON events(event_name, created_at);
+CREATE INDEX idx_events_user_created ON events(user_id, created_at);
 ```
 
 ### 4.2 Materialized Views
@@ -183,24 +183,24 @@ Pre-computed views for expensive analytical queries:
 
 ```sql
 -- Daily active users
-CREATE MATERIALIZED VIEW analytics.mv_dau AS
+CREATE MATERIALIZED VIEW mv_dau AS
 SELECT DATE(created_at) AS date, COUNT(DISTINCT user_id) AS dau
-FROM analytics.events
+FROM events
 WHERE event_name = 'app_open'
 GROUP BY DATE(created_at);
 
 -- User retention cohorts
-CREATE MATERIALIZED VIEW analytics.mv_retention AS
+CREATE MATERIALIZED VIEW mv_retention AS
 SELECT
     DATE_TRUNC('week', signup_date) AS cohort_week,
     days_since_signup,
     COUNT(DISTINCT user_id) AS active_users
-FROM analytics.user_activity
+FROM user_activity
 GROUP BY 1, 2;
 
 -- Refresh schedule
-REFRESH MATERIALIZED VIEW CONCURRENTLY analytics.mv_dau;
-REFRESH MATERIALIZED VIEW CONCURRENTLY analytics.mv_retention;
+REFRESH MATERIALIZED VIEW CONCURRENTLY mv_dau;
+REFRESH MATERIALIZED VIEW CONCURRENTLY mv_retention;
 ```
 
 ### 4.3 Read Replicas (V2)
@@ -216,9 +216,9 @@ Large tables are partitioned by time:
 
 | Table | Partition Key | Strategy |
 |---|---|---|
-| `analytics.events` | `created_at` | Monthly range |
+| `events` | `created_at` | Monthly range |
 | `messages` | `created_at` | Monthly range |
-| `analytics.daily_metrics` | `date` | Monthly range |
+| `daily_metrics` | `date` | Monthly range |
 
 ---
 
@@ -360,7 +360,7 @@ cache.hit.rate.{layer}
 
 ### 7.4 APM Integration
 
-- Distributed tracing across all 12 microservices
+- Distributed tracing across all 13 microservices
 - Service dependency map auto-generated from trace data
 - Bottleneck detection on slow request paths
 - Automated alerts on latency regression (>20% increase over 7-day baseline)
@@ -378,7 +378,7 @@ Each microservice is containerized and independently scalable:
 | api-gateway | CPU >60% | 2 | 10 |
 | matching-service | CPU >60% | 2 | 8 |
 | messaging-service | CPU >60% or connections >1000 | 3 | 12 |
-| analytics-service | Queue depth >1000 | 2 | 6 |
+| admin-service | Queue depth >1000 | 2 | 6 |
 | notification-service | Queue depth >500 | 2 | 8 |
 | All others | CPU >70% | 1 | 6 |
 
@@ -395,10 +395,9 @@ Inter-service communication uses message queues for decoupling:
 
 | Queue | Producer | Consumer | Purpose |
 |---|---|---|---|
-| `match.events` | matching-service | notification-service, analytics-service | New match events |
-| `message.events` | messaging-service | notification-service, analytics-service | New message events |
-| `report.events` | moderation-service | notification-service, analytics-service | New report events |
-| `analytics.events` | all services | analytics-service | Event ingestion |
+| `match.events` | matching-service | notification-service | New match events |
+| `message.events` | messaging-service | notification-service | New message events |
+| `report.events` | moderation-service | notification-service | New report events |
 | `notification.push` | notification-service | push-worker | Push notification delivery |
 
 ### 8.4 Database Sharding (V3)

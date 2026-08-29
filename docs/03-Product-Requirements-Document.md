@@ -1,6 +1,6 @@
 # Product Requirements Document (PRD)
 
-## Connecta — Dating & Matchmaking Platform
+## OJChat — Dating & Matchmaking Platform
 
 **Version:** 1.0.0
 **Date:** July 2026
@@ -10,7 +10,7 @@
 
 ## 1. Document Purpose
 
-This PRD defines the functional and non-functional requirements for the Connecta platform. It serves as the single source of truth for product, design, and engineering teams during development.
+This PRD defines the functional and non-functional requirements for the OJChat platform. It serves as the single source of truth for product, design, and engineering teams during development.
 
 ---
 
@@ -18,7 +18,7 @@ This PRD defines the functional and non-functional requirements for the Connecta
 
 | Field | Value |
 |---|---|
-| Product Name | Connecta |
+| Product Name | OJChat |
 | Platform | iOS, Android, Web (Admin Panel) |
 | Type | Dating & Matchmaking Platform |
 | Target Market | Nigeria (launch), Pan-Africa (expansion) |
@@ -226,7 +226,7 @@ This PRD defines the functional and non-functional requirements for the Connecta
 | NFR-25 | Accessibility (WCAG) | Level AA |
 | NFR-26 | Language support | English (Phase 1), French, Yoruba, Igbo, Hausa (Phase 2) |
 | NFR-27 | Screen reader support | iOS VoiceOver, Android TalkBack |
-| NFR-28 | Offline functionality | 100% core features |
+| NFR-28 | Offline functionality | Optimized for low-bandwidth networks |
 
 ---
 
@@ -370,7 +370,7 @@ Acceptance Criteria:
 
 ## 7. Subscription Plans
 
-| Feature | Free | Premium (₦4,999/mo) | Gold (₦9,999/mo) | Platinum (₦14,999/mo) |
+| Feature | Free | Premium (₦4,999/mo) | Gold (₦9,999/mo) | Platinum (₦19,999/mo) |
 |---|---|---|---|---|
 | Daily Likes | 50 | Unlimited | Unlimited | Unlimited |
 | Basic Filters | ✓ | ✓ | ✓ | ✓ |
@@ -453,4 +453,4 @@ Acceptance Criteria:
 
 ---
 
-*This document is part of the Connecta Software Design Document (SDD) package.*
+*This document is part of the OJChat Software Design Document (SDD) package.*

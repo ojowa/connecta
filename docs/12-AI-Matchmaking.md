@@ -1,6 +1,6 @@
 # AI Matchmaking Engine
 
-## Connecta — AI-Powered Compatibility & Safety
+## OJChat — AI-Powered Compatibility & Safety
 
 **Version:** 1.0.0
 **Date:** July 2026
@@ -21,7 +21,7 @@
 
 ## 1. Architecture Overview
 
-Connecta's AI engine is a set of Python/FastAPI microservices that power matchmaking, safety, and moderation features. The engine uses machine learning models to score compatibility, detect fake profiles, identify scams, and filter toxic content.
+OJChat's AI engine is a set of Python/FastAPI microservices that power matchmaking, safety, and moderation features. The engine uses machine learning models to score compatibility, detect fake profiles, identify scams, and filter toxic content.
 
 ```mermaid
 graph TB
@@ -147,8 +147,8 @@ class CandidateGenerator:
         # Step 1: Basic preference filter
         candidates = self.db.query("""
             SELECT p.user_id
-            FROM users.profiles p
-            JOIN users.preferences pref ON pref.user_id = :user_id
+            FROM profiles p
+            JOIN user_preferences pref ON pref.user_id = :user_id
             WHERE p.user_id != :user_id
               AND p.is_visible = TRUE
               AND p.is_paused = FALSE
@@ -158,9 +158,9 @@ class CandidateGenerator:
                     ST_MakePoint(:lon, :lat)::geography
               ) <= :distance_max
               AND p.gender = :show_me
-              AND p.user_id NOT IN (SELECT blocked_id FROM users.blocks WHERE blocker_id = :user_id)
-              AND p.user_id NOT IN (SELECT liked_user_id FROM matching.likes WHERE user_id = :user_id)
-              AND p.user_id NOT IN (SELECT passed_user_id FROM matching.passes WHERE user_id = :user_id)
+              AND p.user_id NOT IN (SELECT blocked_id FROM blocks WHERE blocker_id = :user_id)
+              AND p.user_id NOT IN (SELECT liked_user_id FROM likes WHERE user_id = :user_id)
+              AND p.user_id NOT IN (SELECT passed_user_id FROM passes WHERE user_id = :user_id)
             ORDER BY p.profile_score DESC
             LIMIT :limit
         """, {
@@ -706,4 +706,4 @@ Proceed with Python sidecar when:
 
 ---
 
-*This document is part of the Connecta Software Design Document (SDD) package.*
+*This document is part of the OJChat Software Design Document (SDD) package.*

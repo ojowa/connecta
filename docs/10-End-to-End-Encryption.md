@@ -1,6 +1,8 @@
 # End-to-End Encryption
 
-## Connecta — E2EE Architecture & Signal Protocol Implementation
+> **NOTE:** Full end-to-end encryption using Signal Protocol is planned but not yet implemented. Current implementation uses server-side password hashing (bcrypt) and HTTPS transport encryption.
+
+## OJChat — E2EE Architecture & Signal Protocol Implementation
 
 **Version:** 1.0.0
 **Date:** July 2026
@@ -9,7 +11,7 @@
 
 ## 1. Encryption Overview
 
-Connecta implements **Signal Protocol** for end-to-end encryption of all messages, voice notes, and media. The server acts as a key relay and ciphertext store — it never has access to plaintext content.
+OJChat implements **Signal Protocol** for end-to-end encryption of all messages, voice notes, and media. The server acts as a key relay and ciphertext store — it never has access to plaintext content.
 
 ### 1.1 Security Guarantees
 
@@ -300,7 +302,7 @@ export class MediaEncryptor {
 // src/security/keychain.ts
 import * as Keychain from 'react-native-keychain';
 
-const SERVICE_NAME = 'com.connecta.crypto';
+const SERVICE_NAME = 'com.ojchat.crypto';
 
 export async function storeKey(
   keyAlias: string,
@@ -468,7 +470,7 @@ The server is a **trusted relay** — it stores and delivers ciphertext but cann
 
 ## 10. Comparison with Other Platforms
 
-| Feature | Connecta | Signal | WhatsApp | iMessage |
+| Feature | OJChat | Signal | WhatsApp | iMessage |
 |---|---|---|---|---|
 | Protocol | Signal Protocol | Signal Protocol | Signal Protocol | Custom |
 | Forward Secrecy | Yes | Yes | Yes | Yes |
@@ -480,4 +482,4 @@ The server is a **trusted relay** — it stores and delivers ciphertext but cann
 
 ---
 
-*This document is part of the Connecta Software Design Document (SDD) package.*
+*This document is part of the OJChat Software Design Document (SDD) package.*

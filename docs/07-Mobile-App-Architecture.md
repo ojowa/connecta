@@ -1,6 +1,6 @@
 # Mobile App Architecture Document
 
-**Project:** Connecta Dating App
+**Project:** OJChat Dating App
 **Version:** 1.0.0
 **Date:** July 2026
 **Platform:** iOS & Android
@@ -63,7 +63,7 @@
 ## 2. Folder Structure
 
 ```
-connecta-mobile/
+ojchat-mobile/
 |-- app.json
 |-- App.tsx
 |-- babel.config.js
@@ -490,7 +490,7 @@ export const useAppStore = create<AppState>()(
         }),
       })),
       {
-        name: 'connecta-auth-storage',
+        name: 'ojchat-auth-storage',
         storage: createJSONStorage(() => mmkvStorage),
         partialize: (state) => ({
           token: state.token,
@@ -501,7 +501,7 @@ export const useAppStore = create<AppState>()(
         }),
       }
     ),
-    { name: 'ConnectaStore' }
+    { name: 'OJChatStore' }
   )
 );
 ```
@@ -816,7 +816,7 @@ export async function getDatabase(): Promise<SQLite.SQLiteDatabase> {
   // Retrieve encryption key from secure storage (Keychain/Keystore)
   const encryptionKey = await getOrCreateEncryptionKey();
 
-  db = await SQLite.openDatabaseAsync('connecta.db', {
+  db = await SQLite.openDatabaseAsync('ojchat.db', {
     encryptionKey,
   });
 
@@ -831,7 +831,7 @@ export async function getDatabase(): Promise<SQLite.SQLiteDatabase> {
 }
 
 async function getOrCreateEncryptionKey(): Promise<string> {
-  const SERVICE_NAME = 'com.connecta.database';
+  const SERVICE_NAME = 'com.ojchat.database';
 
   const credentials = await Keychain.getInternetCredentials(SERVICE_NAME);
   if (credentials) {
@@ -842,7 +842,7 @@ async function getOrCreateEncryptionKey(): Promise<string> {
   const newKey = generateSecureKey(32);
   await Keychain.setInternetCredentials(
     SERVICE_NAME,
-    'connecta-db',
+    'ojchat-db',
     newKey,
     {
       accessible: Keychain.ACCESSIBLE.WHEN_UNLOCKED_THIS_DEVICE_ONLY,
@@ -1723,7 +1723,7 @@ export const ICE_SERVERS: RTCIceServer[] = [
     urls: 'stun:stun1.l.google.com:19302',
   },
   {
-    urls: 'turn:connecta-turn.com:3478',
+    urls: 'turn:ojchat-turn.com:3478',
     username: process.env.EXPO_PUBLIC_TURN_USERNAME!,
     credential: process.env.EXPO_PUBLIC_TURN_CREDENTIAL!,
   },
@@ -2017,7 +2017,7 @@ export class BiometricAuthService {
   static async storeCredentials(username: string, password: string): Promise<boolean> {
     try {
       await Keychain.setGenericPassword(username, password, {
-        service: 'com.connecta.auth',
+        service: 'com.ojchat.auth',
         accessible: Keychain.ACCESSIBLE.WHEN_UNLOCKED_THIS_DEVICE_ONLY,
         securityLevel: Keychain.SECURITY_LEVEL.SECURE_HARDWARE,
         accessControl: Keychain.ACCESS_CONTROL.BIOMETRY_CURRENT_SET,
@@ -2035,7 +2035,7 @@ export class BiometricAuthService {
   } | null> {
     try {
       const credentials = await Keychain.getGenericPassword({
-        service: 'com.connecta.auth',
+        service: 'com.ojchat.auth',
         authenticationPrompt: {
           title: 'Authenticate to sign in',
           subtitle: 'Verify your identity to continue',
@@ -2053,7 +2053,7 @@ export class BiometricAuthService {
   static async deleteCredentials(): Promise<boolean> {
     try {
       return await Keychain.resetGenericPassword({
-        service: 'com.connecta.auth',
+        service: 'com.ojchat.auth',
       });
     } catch (error) {
       console.error('[Biometric] Delete credentials failed:', error);
@@ -3033,8 +3033,8 @@ module.exports = {
   apps: {
     'ios.debug': {
       type: 'ios.app',
-      binaryPath: 'ios/build/Build/Products/Debug-iphonesimulator/Connecta.app',
-      build: 'xcodebuild -workspace ios/Connecta.xcworkspace -scheme Connecta -configuration Debug -sdk iphonesimulator -derivedDataPath ios/build',
+      binaryPath: 'ios/build/Build/Products/Debug-iphonesimulator/OJChat.app',
+      build: 'xcodebuild -workspace ios/OJChat.xcworkspace -scheme OJChat -configuration Debug -sdk iphonesimulator -derivedDataPath ios/build',
     },
     'android.debug': {
       type: 'android.apk',
@@ -3075,11 +3075,11 @@ module.exports = {
 
 ```bash
 # .env
-EXPO_PUBLIC_API_URL=https://api.connecta.app/v1
-EXPO_PUBLIC_WS_URL=wss://ws.connecta.app
+EXPO_PUBLIC_API_URL=https://api.ojchat.app/v1
+EXPO_PUBLIC_WS_URL=wss://ws.ojchat.app
 EXPO_PUBLIC_GOOGLE_MAPS_KEY=your_google_maps_key
-EXPO_PUBLIC_TURN_USERNAME=connecta-user
-EXPO_PUBLIC_TURN_CREDENTIAL=connecta-turn-secret
+EXPO_PUBLIC_TURN_USERNAME=ojchat-user
+EXPO_PUBLIC_TURN_CREDENTIAL=ojchat-turn-secret
 EXPO_PUBLIC_SENTRY_DSN=https://your-sentry-dsn
 EXPO_PUBLIC_AMPLITUDE_KEY=your_amplitude_key
 ```
@@ -3104,15 +3104,15 @@ EXPO_PUBLIC_AMPLITUDE_KEY=your_amplitude_key
     "preview": {
       "distribution": "internal",
       "env": {
-        "EXPO_PUBLIC_API_URL": "https://staging-api.connecta.app/v1",
-        "EXPO_PUBLIC_WS_URL": "wss://staging-ws.connecta.app"
+        "EXPO_PUBLIC_API_URL": "https://staging-api.ojchat.app/v1",
+        "EXPO_PUBLIC_WS_URL": "wss://staging-ws.ojchat.app"
       }
     },
     "production": {
       "autoIncrement": true,
       "env": {
-        "EXPO_PUBLIC_API_URL": "https://api.connecta.app/v1",
-        "EXPO_PUBLIC_WS_URL": "wss://ws.connecta.app"
+        "EXPO_PUBLIC_API_URL": "https://api.ojchat.app/v1",
+        "EXPO_PUBLIC_WS_URL": "wss://ws.ojchat.app"
       }
     }
   },
@@ -3167,4 +3167,4 @@ EXPO_PUBLIC_AMPLITUDE_KEY=your_amplitude_key
 
 ---
 
-*This document is part of the Connecta Software Design Document (SDD) package.*
+*This document is part of the OJChat Software Design Document (SDD) package.*

@@ -1,6 +1,6 @@
 # API Specification
 
-## Connecta — RESTful & WebSocket API Reference
+## OJChat — RESTful & WebSocket API Reference
 
 **Version:** 1.0.0
 **Date:** July 2026
@@ -13,7 +13,7 @@
 2. [Authentication](#2-authentication)
 3. [Common Conventions](#3-common-conventions)
 4. [Auth Service](#4-auth-service)
-5. [User Service](#5-user-service)
+5. [Users Service](#5-users-service)
 6. [Profile Service](#6-profile-service)
 7. [Matching Service](#7-matching-service)
 8. [Chat Service](#8-chat-service)
@@ -35,8 +35,8 @@
 
 | Environment | Base URL |
 |---|---|
-| Production | `https://api.connecta.app/v1` |
-| Staging | `https://api.staging.connecta.app/v1` |
+| Production | `https://api.ojchat.app/v1` |
+| Staging | `https://api.staging.ojchat.app/v1` |
 | Local | `http://localhost:3000/v1` |
 
 ### 1.2 Content Types
@@ -274,7 +274,7 @@ POST /v1/auth/register
 **Curl Example:**
 
 ```bash
-curl -X POST https://api.connecta.app/v1/auth/register \
+curl -X POST https://api.ojchat.app/v1/auth/register \
   -H "Content-Type: application/json" \
   -d '{
     "email": "user@example.com",
@@ -335,7 +335,7 @@ POST /v1/auth/login
       "email_verified": true,
       "phone_verified": true,
       "profile_completed": true,
-      "avatar_url": "https://cdn.connecta.app/avatars/usr_a1b2c3d4e5f6.jpg"
+      "avatar_url": "https://cdn.ojchat.app/avatars/usr_a1b2c3d4e5f6.jpg"
     },
     "tokens": {
       "access_token": "eyJhbGciOiJSUzI1NiIs...",
@@ -373,7 +373,7 @@ POST /v1/auth/login
 **Curl Example:**
 
 ```bash
-curl -X POST https://api.connecta.app/v1/auth/login \
+curl -X POST https://api.ojchat.app/v1/auth/login \
   -H "Content-Type: application/json" \
   -d '{
     "identifier": "user@example.com",
@@ -443,7 +443,7 @@ POST /v1/auth/otp/send
 **Curl Example:**
 
 ```bash
-curl -X POST https://api.connecta.app/v1/auth/otp/send \
+curl -X POST https://api.ojchat.app/v1/auth/otp/send \
   -H "Content-Type: application/json" \
   -d '{
     "channel": "email",
@@ -504,7 +504,7 @@ POST /v1/auth/otp/verify
 **Curl Example:**
 
 ```bash
-curl -X POST https://api.connecta.app/v1/auth/otp/verify \
+curl -X POST https://api.ojchat.app/v1/auth/otp/verify \
   -H "Content-Type: application/json" \
   -d '{
     "identifier": "user@example.com",
@@ -559,7 +559,7 @@ POST /v1/auth/refresh
 **Curl Example:**
 
 ```bash
-curl -X POST https://api.connecta.app/v1/auth/refresh \
+curl -X POST https://api.ojchat.app/v1/auth/refresh \
   -H "Content-Type: application/json" \
   -d '{"refresh_token": "rt_x1y2z3..."}'
 ```
@@ -600,7 +600,7 @@ Authorization: Bearer <access_token>
 **Curl Example:**
 
 ```bash
-curl -X POST https://api.connecta.app/v1/auth/logout \
+curl -X POST https://api.ojchat.app/v1/auth/logout \
   -H "Authorization: Bearer eyJhbGciOiJSUzI1NiIs..." \
   -H "Content-Type: application/json" \
   -d '{"all_devices": false}'
@@ -654,7 +654,7 @@ Authorization: Bearer <access_token>
 **Curl Example:**
 
 ```bash
-curl -X GET https://api.connecta.app/v1/auth/devices \
+curl -X GET https://api.ojchat.app/v1/auth/devices \
   -H "Authorization: Bearer eyJhbGciOiJSUzI1NiIs..."
 ```
 
@@ -693,7 +693,7 @@ Authorization: Bearer <access_token>
 **Curl Example:**
 
 ```bash
-curl -X DELETE https://api.connecta.app/v1/auth/devices/dev_def456 \
+curl -X DELETE https://api.ojchat.app/v1/auth/devices/dev_def456 \
   -H "Authorization: Bearer eyJhbGciOiJSUzI1NiIs..."
 ```
 
@@ -738,7 +738,7 @@ Authorization: Bearer <access_token>
 **Curl Example:**
 
 ```bash
-curl -X POST https://api.connecta.app/v1/auth/biometric/register \
+curl -X POST https://api.ojchat.app/v1/auth/biometric/register \
   -H "Authorization: Bearer eyJhbGciOiJSUzI1NiIs..." \
   -H "Content-Type: application/json" \
   -d '{
@@ -803,7 +803,7 @@ POST /v1/auth/biometric/login
 **Curl Example:**
 
 ```bash
-curl -X POST https://api.connecta.app/v1/auth/biometric/login \
+curl -X POST https://api.ojchat.app/v1/auth/biometric/login \
   -H "Content-Type: application/json" \
   -d '{
     "device_id": "dev_abc123",
@@ -841,7 +841,7 @@ Authorization: Bearer <access_token>
 **Curl Example:**
 
 ```bash
-curl -X DELETE https://api.connecta.app/v1/auth/biometric/bio_xyz789 \
+curl -X DELETE https://api.ojchat.app/v1/auth/biometric/bio_xyz789 \
   -H "Authorization: Bearer eyJhbGciOiJSUzI1NiIs..."
 ```
 
@@ -882,7 +882,7 @@ POST /v1/auth/password/forgot
 **Curl Example:**
 
 ```bash
-curl -X POST https://api.connecta.app/v1/auth/password/forgot \
+curl -X POST https://api.ojchat.app/v1/auth/password/forgot \
   -H "Content-Type: application/json" \
   -d '{"email": "user@example.com"}'
 ```
@@ -931,7 +931,7 @@ POST /v1/auth/password/reset
 **Curl Example:**
 
 ```bash
-curl -X POST https://api.connecta.app/v1/auth/password/reset \
+curl -X POST https://api.ojchat.app/v1/auth/password/reset \
   -H "Content-Type: application/json" \
   -d '{
     "token": "reset-token-from-email",
@@ -985,7 +985,7 @@ Authorization: Bearer <access_token>
 **Curl Example:**
 
 ```bash
-curl -X GET https://api.connecta.app/v1/users/me \
+curl -X GET https://api.ojchat.app/v1/users/me \
   -H "Authorization: Bearer eyJhbGciOiJSUzI1NiIs..."
 ```
 
@@ -1059,7 +1059,7 @@ Authorization: Bearer <access_token>
 **Curl Example:**
 
 ```bash
-curl -X PATCH https://api.connecta.app/v1/users/me \
+curl -X PATCH https://api.ojchat.app/v1/users/me \
   -H "Authorization: Bearer eyJhbGciOiJSUzI1NiIs..." \
   -H "Content-Type: application/json" \
   -d '{
@@ -1104,7 +1104,7 @@ Authorization: Bearer <access_token>
     "photos": [
       {
         "id": "photo_abc123",
-        "url": "https://cdn.connecta.app/photos/usr_x9y8z7w6/1.jpg",
+        "url": "https://cdn.ojchat.app/photos/usr_x9y8z7w6/1.jpg",
         "order": 1,
         "is_primary": true
       }
@@ -1125,7 +1125,7 @@ Authorization: Bearer <access_token>
 **Curl Example:**
 
 ```bash
-curl -X GET https://api.connecta.app/v1/users/usr_x9y8z7w6 \
+curl -X GET https://api.ojchat.app/v1/users/usr_x9y8z7w6 \
   -H "Authorization: Bearer eyJhbGciOiJSUzI1NiIs..."
 ```
 
@@ -1193,7 +1193,7 @@ Authorization: Bearer <access_token>
 **Curl Example:**
 
 ```bash
-curl -X PUT https://api.connecta.app/v1/users/me/preferences \
+curl -X PUT https://api.ojchat.app/v1/users/me/preferences \
   -H "Authorization: Bearer eyJhbGciOiJSUzI1NiIs..." \
   -H "Content-Type: application/json" \
   -d '{
@@ -1238,7 +1238,7 @@ Authorization: Bearer <access_token>
 **Curl Example:**
 
 ```bash
-curl -X GET https://api.connecta.app/v1/users/me/preferences \
+curl -X GET https://api.ojchat.app/v1/users/me/preferences \
   -H "Authorization: Bearer eyJhbGciOiJSUzI1NiIs..."
 ```
 
@@ -1284,7 +1284,7 @@ Authorization: Bearer <access_token>
 **Curl Example:**
 
 ```bash
-curl -X POST https://api.connecta.app/v1/users/usr_x9y8z7w6/block \
+curl -X POST https://api.ojchat.app/v1/users/usr_x9y8z7w6/block \
   -H "Authorization: Bearer eyJhbGciOiJSUzI1NiIs..." \
   -H "Content-Type: application/json" \
   -d '{"reason": "harassment"}'
@@ -1318,7 +1318,7 @@ Authorization: Bearer <access_token>
 **Curl Example:**
 
 ```bash
-curl -X DELETE https://api.connecta.app/v1/users/usr_x9y8z7w6/block \
+curl -X DELETE https://api.ojchat.app/v1/users/usr_x9y8z7w6/block \
   -H "Authorization: Bearer eyJhbGciOiJSUzI1NiIs..."
 ```
 
@@ -1364,7 +1364,7 @@ Authorization: Bearer <access_token>
 **Curl Example:**
 
 ```bash
-curl -X GET "https://api.connecta.app/v1/users/me/blocks?page=1&limit=20" \
+curl -X GET "https://api.ojchat.app/v1/users/me/blocks?page=1&limit=20" \
   -H "Authorization: Bearer eyJhbGciOiJSUzI1NiIs..."
 ```
 
@@ -1388,7 +1388,7 @@ Authorization: Bearer <access_token>
   "reason": "fake_profile",
   "description": "This profile is using stolen photos from Instagram.",
   "evidence_urls": [
-    "https://cdn.connecta.app/reports/evidence1.jpg"
+    "https://cdn.ojchat.app/reports/evidence1.jpg"
   ],
   "message_ids": ["msg_abc123", "msg_def456"]
 }
@@ -1414,7 +1414,7 @@ Authorization: Bearer <access_token>
 **Curl Example:**
 
 ```bash
-curl -X POST https://api.connecta.app/v1/users/usr_x9y8z7w6/report \
+curl -X POST https://api.ojchat.app/v1/users/usr_x9y8z7w6/report \
   -H "Authorization: Bearer eyJhbGciOiJSUzI1NiIs..." \
   -H "Content-Type: application/json" \
   -d '{
@@ -1442,7 +1442,7 @@ Authorization: Bearer <access_token>
 {
   "password": "SecureP@ss123",
   "reason": "no_longer_using",
-  "feedback": "Found a partner, thanks Connecta!"
+  "feedback": "Found a partner, thanks OJChat!"
 }
 ```
 
@@ -1466,7 +1466,7 @@ Authorization: Bearer <access_token>
 **Curl Example:**
 
 ```bash
-curl -X DELETE https://api.connecta.app/v1/users/me \
+curl -X DELETE https://api.ojchat.app/v1/users/me \
   -H "Authorization: Bearer eyJhbGciOiJSUzI1NiIs..." \
   -H "Content-Type: application/json" \
   -d '{
@@ -1499,8 +1499,8 @@ Authorization: Bearer <access_token>
     "photos": [
       {
         "id": "photo_abc123",
-        "url": "https://cdn.connecta.app/photos/usr_a1b2c3d4e5f6/1.jpg",
-        "thumbnail_url": "https://cdn.connecta.app/photos/usr_a1b2c3d4e5f6/1_thumb.jpg",
+        "url": "https://cdn.ojchat.app/photos/usr_a1b2c3d4e5f6/1.jpg",
+        "thumbnail_url": "https://cdn.ojchat.app/photos/usr_a1b2c3d4e5f6/1_thumb.jpg",
         "order": 1,
         "is_primary": true,
         "status": "approved",
@@ -1508,8 +1508,8 @@ Authorization: Bearer <access_token>
       },
       {
         "id": "photo_def456",
-        "url": "https://cdn.connecta.app/photos/usr_a1b2c3d4e5f6/2.jpg",
-        "thumbnail_url": "https://cdn.connecta.app/photos/usr_a1b2c3d4e5f6/2_thumb.jpg",
+        "url": "https://cdn.ojchat.app/photos/usr_a1b2c3d4e5f6/2.jpg",
+        "thumbnail_url": "https://cdn.ojchat.app/photos/usr_a1b2c3d4e5f6/2_thumb.jpg",
         "order": 2,
         "is_primary": false,
         "status": "approved",
@@ -1525,7 +1525,7 @@ Authorization: Bearer <access_token>
 **Curl Example:**
 
 ```bash
-curl -X GET https://api.connecta.app/v1/profile/photos \
+curl -X GET https://api.ojchat.app/v1/profile/photos \
   -H "Authorization: Bearer eyJhbGciOiJSUzI1NiIs..."
 ```
 
@@ -1559,8 +1559,8 @@ Content-Type: multipart/form-data
   "data": {
     "photo": {
       "id": "photo_ghi789",
-      "url": "https://cdn.connecta.app/photos/usr_a1b2c3d4e5f6/3.jpg",
-      "thumbnail_url": "https://cdn.connecta.app/photos/usr_a1b2c3d4e5f6/3_thumb.jpg",
+      "url": "https://cdn.ojchat.app/photos/usr_a1b2c3d4e5f6/3.jpg",
+      "thumbnail_url": "https://cdn.ojchat.app/photos/usr_a1b2c3d4e5f6/3_thumb.jpg",
       "order": 3,
       "is_primary": false,
       "status": "pending_review",
@@ -1582,7 +1582,7 @@ Content-Type: multipart/form-data
 **Curl Example:**
 
 ```bash
-curl -X POST https://api.connecta.app/v1/profile/photos \
+curl -X POST https://api.ojchat.app/v1/profile/photos \
   -H "Authorization: Bearer eyJhbGciOiJSUzI1NiIs..." \
   -F "photo=@/path/to/photo.jpg" \
   -F "is_primary=true"
@@ -1617,7 +1617,7 @@ Authorization: Bearer <access_token>
 **Curl Example:**
 
 ```bash
-curl -X DELETE https://api.connecta.app/v1/profile/photos/photo_abc123 \
+curl -X DELETE https://api.ojchat.app/v1/profile/photos/photo_abc123 \
   -H "Authorization: Bearer eyJhbGciOiJSUzI1NiIs..."
 ```
 
@@ -1657,7 +1657,7 @@ Authorization: Bearer <access_token>
 **Curl Example:**
 
 ```bash
-curl -X PUT https://api.connecta.app/v1/profile/photos/order \
+curl -X PUT https://api.ojchat.app/v1/profile/photos/order \
   -H "Authorization: Bearer eyJhbGciOiJSUzI1NiIs..." \
   -H "Content-Type: application/json" \
   -d '{"photo_ids": ["photo_def456", "photo_abc123", "photo_ghi789"]}'
@@ -1691,7 +1691,7 @@ Authorization: Bearer <access_token>
 **Curl Example:**
 
 ```bash
-curl -X PUT https://api.connecta.app/v1/profile/photos/photo_abc123/primary \
+curl -X PUT https://api.ojchat.app/v1/profile/photos/photo_abc123/primary \
   -H "Authorization: Bearer eyJhbGciOiJSUzI1NiIs..."
 ```
 
@@ -1733,7 +1733,7 @@ Content-Type: multipart/form-data
 **Curl Example:**
 
 ```bash
-curl -X POST https://api.connecta.app/v1/profile/verification/request \
+curl -X POST https://api.ojchat.app/v1/profile/verification/request \
   -H "Authorization: Bearer eyJhbGciOiJSUzI1NiIs..." \
   -F "selfie=@/path/to/selfie.jpg" \
   -F "method=selfie"
@@ -1762,7 +1762,7 @@ Authorization: Bearer <access_token>
     "status": "approved",
     "method": "selfie",
     "verified_at": "2026-07-19T10:02:00Z",
-    "badge_url": "https://cdn.connecta.app/badges/verified.png",
+    "badge_url": "https://cdn.ojchat.app/badges/verified.png",
     "expires_at": "2027-07-19T10:02:00Z"
   }
 }
@@ -1779,7 +1779,7 @@ Authorization: Bearer <access_token>
 **Curl Example:**
 
 ```bash
-curl -X GET https://api.connecta.app/v1/profile/verification \
+curl -X GET https://api.ojchat.app/v1/profile/verification \
   -H "Authorization: Bearer eyJhbGciOiJSUzI1NiIs..."
 ```
 
@@ -1824,7 +1824,7 @@ Authorization: Bearer <access_token>
         "mutual_interests": ["travel", "art", "photography"],
         "photos": [
           {
-            "url": "https://cdn.connecta.app/photos/usr_x9y8z7w6/1.jpg",
+            "url": "https://cdn.ojchat.app/photos/usr_x9y8z7w6/1.jpg",
             "is_primary": true
           }
         ],
@@ -1840,7 +1840,7 @@ Authorization: Bearer <access_token>
 **Curl Example:**
 
 ```bash
-curl -X GET "https://api.connecta.app/v1/matching/feed?page=1&limit=20" \
+curl -X GET "https://api.ojchat.app/v1/matching/feed?page=1&limit=20" \
   -H "Authorization: Bearer eyJhbGciOiJSUzI1NiIs..."
 ```
 
@@ -1919,7 +1919,7 @@ Authorization: Bearer <access_token>
 **Curl Example:**
 
 ```bash
-curl -X POST https://api.connecta.app/v1/matching/like/usr_x9y8z7w6 \
+curl -X POST https://api.ojchat.app/v1/matching/like/usr_x9y8z7w6 \
   -H "Authorization: Bearer eyJhbGciOiJSUzI1NiIs..." \
   -H "Content-Type: application/json" \
   -d '{"like_type": "normal"}'
@@ -1953,7 +1953,7 @@ Authorization: Bearer <access_token>
 **Curl Example:**
 
 ```bash
-curl -X POST https://api.connecta.app/v1/matching/pass/usr_x9y8z7w6 \
+curl -X POST https://api.ojchat.app/v1/matching/pass/usr_x9y8z7w6 \
   -H "Authorization: Bearer eyJhbGciOiJSUzI1NiIs..."
 ```
 
@@ -1994,7 +1994,7 @@ Authorization: Bearer <access_token>
 **Curl Example:**
 
 ```bash
-curl -X POST https://api.connecta.app/v1/matching/superlike/usr_x9y8z7w6 \
+curl -X POST https://api.ojchat.app/v1/matching/superlike/usr_x9y8z7w6 \
   -H "Authorization: Bearer eyJhbGciOiJSUzI1NiIs..."
 ```
 
@@ -2038,7 +2038,7 @@ Authorization: Bearer <access_token>
 **Curl Example:**
 
 ```bash
-curl -X POST https://api.connecta.app/v1/matching/undo \
+curl -X POST https://api.ojchat.app/v1/matching/undo \
   -H "Authorization: Bearer eyJhbGciOiJSUzI1NiIs..."
 ```
 
@@ -2076,7 +2076,7 @@ Authorization: Bearer <access_token>
         "matched_user": {
           "user_id": "usr_x9y8z7w6",
           "full_name": "Chidinma Okafor",
-          "avatar_url": "https://cdn.connecta.app/photos/usr_x9y8z7w6/1.jpg",
+          "avatar_url": "https://cdn.ojchat.app/photos/usr_x9y8z7w6/1.jpg",
           "is_online": true,
           "last_seen_at": "2026-07-19T10:30:00Z"
         },
@@ -2098,7 +2098,7 @@ Authorization: Bearer <access_token>
 **Curl Example:**
 
 ```bash
-curl -X GET "https://api.connecta.app/v1/matching/matches?page=1&limit=20" \
+curl -X GET "https://api.ojchat.app/v1/matching/matches?page=1&limit=20" \
   -H "Authorization: Bearer eyJhbGciOiJSUzI1NiIs..."
 ```
 
@@ -2131,7 +2131,7 @@ Authorization: Bearer <access_token>
 **Curl Example:**
 
 ```bash
-curl -X DELETE https://api.connecta.app/v1/matching/matches/mtch_abc123 \
+curl -X DELETE https://api.ojchat.app/v1/matching/matches/mtch_abc123 \
   -H "Authorization: Bearer eyJhbGciOiJSUzI1NiIs..."
 ```
 
@@ -2169,8 +2169,8 @@ Authorization: Bearer <access_token>
         "from_user": {
           "user_id": "usr_m3n4o5p6",
           "full_name": "Amina Bello",
-          "avatar_blurred_url": "https://cdn.connecta.app/blurred/usr_m3n4o5p6/1.jpg",
-          "avatar_url": "https://cdn.connecta.app/photos/usr_m3n4o5p6/1.jpg",
+          "avatar_blurred_url": "https://cdn.ojchat.app/blurred/usr_m3n4o5p6/1.jpg",
+          "avatar_url": "https://cdn.ojchat.app/photos/usr_m3n4o5p6/1.jpg",
           "age": 25,
           "verified": true
         },
@@ -2187,7 +2187,7 @@ Authorization: Bearer <access_token>
 **Curl Example:**
 
 ```bash
-curl -X GET "https://api.connecta.app/v1/matching/liked-you?page=1&limit=20" \
+curl -X GET "https://api.ojchat.app/v1/matching/liked-you?page=1&limit=20" \
   -H "Authorization: Bearer eyJhbGciOiJSUzI1NiIs..."
 ```
 
@@ -2232,7 +2232,7 @@ Authorization: Bearer <access_token>
 **Curl Example:**
 
 ```bash
-curl -X GET https://api.connecta.app/v1/matching/compatibility/usr_x9y8z7w6 \
+curl -X GET https://api.ojchat.app/v1/matching/compatibility/usr_x9y8z7w6 \
   -H "Authorization: Bearer eyJhbGciOiJSUzI1NiIs..."
 ```
 
@@ -2281,7 +2281,7 @@ Authorization: Bearer <access_token>
 **Curl Example:**
 
 ```bash
-curl -X GET https://api.connecta.app/v1/matching/scam-check/usr_x9y8z7w6 \
+curl -X GET https://api.ojchat.app/v1/matching/scam-check/usr_x9y8z7w6 \
   -H "Authorization: Bearer eyJhbGciOiJSUzI1NiIs..."
 ```
 
@@ -2336,7 +2336,7 @@ Authorization: Bearer <access_token>
 **Curl Example:**
 
 ```bash
-curl -X GET https://api.connecta.app/v1/matching/safety-score/usr_x9y8z7w6 \
+curl -X GET https://api.ojchat.app/v1/matching/safety-score/usr_x9y8z7w6 \
   -H "Authorization: Bearer eyJhbGciOiJSUzI1NiIs..."
 ```
 
@@ -2376,7 +2376,7 @@ Authorization: Bearer <access_token>
         "participant": {
           "user_id": "usr_x9y8z7w6",
           "full_name": "Chidinma Okafor",
-          "avatar_url": "https://cdn.connecta.app/photos/usr_x9y8z7w6/1.jpg",
+          "avatar_url": "https://cdn.ojchat.app/photos/usr_x9y8z7w6/1.jpg",
           "is_online": true,
           "last_seen_at": "2026-07-19T10:30:00Z"
         },
@@ -2400,7 +2400,7 @@ Authorization: Bearer <access_token>
 **Curl Example:**
 
 ```bash
-curl -X GET "https://api.connecta.app/v1/chat/conversations?page=1&limit=20" \
+curl -X GET "https://api.ojchat.app/v1/chat/conversations?page=1&limit=20" \
   -H "Authorization: Bearer eyJhbGciOiJSUzI1NiIs..."
 ```
 
@@ -2489,7 +2489,7 @@ Authorization: Bearer <access_token>
 **Curl Example:**
 
 ```bash
-curl -X GET "https://api.connecta.app/v1/chat/conversations/conv_xyz789/messages?limit=50" \
+curl -X GET "https://api.ojchat.app/v1/chat/conversations/conv_xyz789/messages?limit=50" \
   -H "Authorization: Bearer eyJhbGciOiJSUzI1NiIs..."
 ```
 
@@ -2550,7 +2550,7 @@ Authorization: Bearer <access_token>
 **Curl Example:**
 
 ```bash
-curl -X POST https://api.connecta.app/v1/chat/conversations/conv_xyz789/messages \
+curl -X POST https://api.ojchat.app/v1/chat/conversations/conv_xyz789/messages \
   -H "Authorization: Bearer eyJhbGciOiJSUzI1NiIs..." \
   -H "Content-Type: application/json" \
   -d '{
@@ -2608,7 +2608,7 @@ Authorization: Bearer <access_token>
 **Curl Example:**
 
 ```bash
-curl -X POST https://api.connecta.app/v1/chat/conversations/conv_xyz789/messages/msg_abc123/reactions \
+curl -X POST https://api.ojchat.app/v1/chat/conversations/conv_xyz789/messages/msg_abc123/reactions \
   -H "Authorization: Bearer eyJhbGciOiJSUzI1NiIs..." \
   -H "Content-Type: application/json" \
   -d '{"emoji": "heart", "action": "add"}'
@@ -2652,7 +2652,7 @@ Authorization: Bearer <access_token>
 **Curl Example:**
 
 ```bash
-curl -X PUT https://api.connecta.app/v1/chat/conversations/conv_xyz789/read \
+curl -X PUT https://api.ojchat.app/v1/chat/conversations/conv_xyz789/read \
   -H "Authorization: Bearer eyJhbGciOiJSUzI1NiIs..." \
   -H "Content-Type: application/json" \
   -d '{"last_read_message_id": "msg_def456"}'
@@ -2697,7 +2697,7 @@ Authorization: Bearer <access_token>
 **Curl Example:**
 
 ```bash
-curl -X POST https://api.connecta.app/v1/chat/conversations/conv_xyz789/typing \
+curl -X POST https://api.ojchat.app/v1/chat/conversations/conv_xyz789/typing \
   -H "Authorization: Bearer eyJhbGciOiJSUzI1NiIs..." \
   -H "Content-Type: application/json" \
   -d '{"is_typing": true}'
@@ -2752,7 +2752,7 @@ Authorization: Bearer <access_token>
 **Curl Example:**
 
 ```bash
-curl -X GET "https://api.connecta.app/v1/chat/messages/search?q=coffee+shop" \
+curl -X GET "https://api.ojchat.app/v1/chat/messages/search?q=coffee+shop" \
   -H "Authorization: Bearer eyJhbGciOiJSUzI1NiIs..."
 ```
 
@@ -2793,7 +2793,7 @@ Authorization: Bearer <access_token>
 **Curl Example:**
 
 ```bash
-curl -X DELETE https://api.connecta.app/v1/chat/conversations/conv_xyz789/messages/msg_abc123 \
+curl -X DELETE https://api.ojchat.app/v1/chat/conversations/conv_xyz789/messages/msg_abc123 \
   -H "Authorization: Bearer eyJhbGciOiJSUzI1NiIs..."
 ```
 
@@ -2839,7 +2839,7 @@ Authorization: Bearer <access_token>
     "caller": {
       "user_id": "usr_a1b2c3d4e5f6",
       "full_name": "Adebayo Johnson",
-      "avatar_url": "https://cdn.connecta.app/photos/usr_a1b2c3d4e5f6/1.jpg"
+      "avatar_url": "https://cdn.ojchat.app/photos/usr_a1b2c3d4e5f6/1.jpg"
     },
     "recipient": {
       "user_id": "usr_x9y8z7w6",
@@ -2848,7 +2848,7 @@ Authorization: Bearer <access_token>
     "ice_servers": {
       "ice_servers": [
         {
-          "urls": "stun:turn.connecta.app:3478",
+          "urls": "stun:turn.ojchat.app:3478",
           "username": "user",
           "credential": "pass"
         }
@@ -2871,7 +2871,7 @@ Authorization: Bearer <access_token>
 **Curl Example:**
 
 ```bash
-curl -X POST https://api.connecta.app/v1/calls/start \
+curl -X POST https://api.ojchat.app/v1/calls/start \
   -H "Authorization: Bearer eyJhbGciOiJSUzI1NiIs..." \
   -H "Content-Type: application/json" \
   -d '{
@@ -2917,7 +2917,7 @@ Authorization: Bearer <access_token>
 **Curl Example:**
 
 ```bash
-curl -X POST https://api.connecta.app/v1/calls/call_abc123/answer \
+curl -X POST https://api.ojchat.app/v1/calls/call_abc123/answer \
   -H "Authorization: Bearer eyJhbGciOiJSUzI1NiIs..." \
   -H "Content-Type: application/json" \
   -d '{"sdp_answer": "base64-encoded-sdp-answer"}'
@@ -2967,7 +2967,7 @@ Authorization: Bearer <access_token>
 **Curl Example:**
 
 ```bash
-curl -X POST https://api.connecta.app/v1/calls/call_abc123/reject \
+curl -X POST https://api.ojchat.app/v1/calls/call_abc123/reject \
   -H "Authorization: Bearer eyJhbGciOiJSUzI1NiIs..." \
   -H "Content-Type: application/json" \
   -d '{"reason": "busy"}'
@@ -3025,7 +3025,7 @@ Authorization: Bearer <access_token>
 **Curl Example:**
 
 ```bash
-curl -X POST https://api.connecta.app/v1/calls/call_abc123/end \
+curl -X POST https://api.ojchat.app/v1/calls/call_abc123/end \
   -H "Authorization: Bearer eyJhbGciOiJSUzI1NiIs..." \
   -H "Content-Type: application/json" \
   -d '{"reason": "user_ended"}'
@@ -3067,7 +3067,7 @@ Authorization: Bearer <access_token>
         "other_user": {
           "user_id": "usr_x9y8z7w6",
           "full_name": "Chidinma Okafor",
-          "avatar_url": "https://cdn.connecta.app/photos/usr_x9y8z7w6/1.jpg"
+          "avatar_url": "https://cdn.ojchat.app/photos/usr_x9y8z7w6/1.jpg"
         },
         "status": "ended",
         "duration_seconds": 245,
@@ -3096,7 +3096,7 @@ Authorization: Bearer <access_token>
 **Curl Example:**
 
 ```bash
-curl -X GET "https://api.connecta.app/v1/calls/history?call_type=video&direction=outgoing" \
+curl -X GET "https://api.ojchat.app/v1/calls/history?call_type=video&direction=outgoing" \
   -H "Authorization: Bearer eyJhbGciOiJSUzI1NiIs..."
 ```
 
@@ -3131,8 +3131,8 @@ Content-Type: multipart/form-data
   "data": {
     "media": {
       "id": "med_abc123",
-      "url": "https://cdn.connecta.app/media/usr_a1b2c3d4e5f6/photo_1.jpg",
-      "thumbnail_url": "https://cdn.connecta.app/media/usr_a1b2c3d4e5f6/photo_1_thumb.jpg",
+      "url": "https://cdn.ojchat.app/media/usr_a1b2c3d4e5f6/photo_1.jpg",
+      "thumbnail_url": "https://cdn.ojchat.app/media/usr_a1b2c3d4e5f6/photo_1_thumb.jpg",
       "type": "image/jpeg",
       "size_bytes": 2048576,
       "purpose": "message_image",
@@ -3153,7 +3153,7 @@ Content-Type: multipart/form-data
 **Curl Example:**
 
 ```bash
-curl -X POST https://api.connecta.app/v1/media/upload \
+curl -X POST https://api.ojchat.app/v1/media/upload \
   -H "Authorization: Bearer eyJhbGciOiJSUzI1NiIs..." \
   -F "file=@/path/to/image.jpg" \
   -F "purpose=message_image"
@@ -3189,14 +3189,14 @@ Authorization: Bearer <access_token>
 {
   "success": true,
   "data": {
-    "upload_url": "https://connecta-uploads.s3.amazonaws.com/usr_a1b2c3d4e5f6/photo_1.jpg?X-Amz-Algorithm=...",
+    "upload_url": "https://ojchat-uploads.s3.amazonaws.com/usr_a1b2c3d4e5f6/photo_1.jpg?X-Amz-Algorithm=...",
     "media_id": "med_def456",
     "expires_in": 300,
     "headers": {
       "Content-Type": "image/jpeg",
       "x-amz-meta-purpose": "photo"
     },
-    "cdn_url": "https://cdn.connecta.app/media/usr_a1b2c3d4e5f6/photo_1.jpg"
+    "cdn_url": "https://cdn.ojchat.app/media/usr_a1b2c3d4e5f6/photo_1.jpg"
   }
 }
 ```
@@ -3204,7 +3204,7 @@ Authorization: Bearer <access_token>
 **Curl Example:**
 
 ```bash
-curl -X POST https://api.connecta.app/v1/media/presigned-url \
+curl -X POST https://api.ojchat.app/v1/media/presigned-url \
   -H "Authorization: Bearer eyJhbGciOiJSUzI1NiIs..." \
   -H "Content-Type: application/json" \
   -d '{
@@ -3264,7 +3264,7 @@ GET /v1/payments/plans
       },
       {
         "plan_id": "plan_plus_monthly",
-        "name": "Connecta Plus",
+        "name": "OJChat Plus",
         "price": 4999,
         "currency": "NGN",
         "interval": "month",
@@ -3288,7 +3288,7 @@ GET /v1/payments/plans
       },
       {
         "plan_id": "plan_plus_yearly",
-        "name": "Connecta Plus (Annual)",
+        "name": "OJChat Plus (Annual)",
         "price": 39999,
         "currency": "NGN",
         "interval": "year",
@@ -3302,7 +3302,7 @@ GET /v1/payments/plans
       },
       {
         "plan_id": "plan_premium_monthly",
-        "name": "Connecta Premium",
+        "name": "OJChat Premium",
         "price": 9999,
         "currency": "NGN",
         "interval": "month",
@@ -3323,7 +3323,7 @@ GET /v1/payments/plans
 **Curl Example:**
 
 ```bash
-curl -X GET "https://api.connecta.app/v1/payments/plans?country=NG"
+curl -X GET "https://api.ojchat.app/v1/payments/plans?country=NG"
 ```
 
 ---
@@ -3365,7 +3365,7 @@ Authorization: Bearer <access_token>
     "subscription": {
       "subscription_id": "sub_abc123",
       "plan_id": "plan_plus_monthly",
-      "plan_name": "Connecta Plus",
+      "plan_name": "OJChat Plus",
       "status": "active",
       "price": 4999,
       "currency": "NGN",
@@ -3397,7 +3397,7 @@ Authorization: Bearer <access_token>
 **Curl Example:**
 
 ```bash
-curl -X POST https://api.connecta.app/v1/payments/subscribe \
+curl -X POST https://api.ojchat.app/v1/payments/subscribe \
   -H "Authorization: Bearer eyJhbGciOiJSUzI1NiIs..." \
   -H "Content-Type: application/json" \
   -d '{
@@ -3455,7 +3455,7 @@ Authorization: Bearer <access_token>
 **Curl Example:**
 
 ```bash
-curl -X POST https://api.connecta.app/v1/payments/subscribe/cancel \
+curl -X POST https://api.ojchat.app/v1/payments/subscribe/cancel \
   -H "Authorization: Bearer eyJhbGciOiJSUzI1NiIs..." \
   -H "Content-Type: application/json" \
   -d '{"reason": "too_expensive"}'
@@ -3510,7 +3510,7 @@ Authorization: Bearer <access_token>
 **Curl Example:**
 
 ```bash
-curl -X PUT https://api.connecta.app/v1/payments/subscribe/upgrade \
+curl -X PUT https://api.ojchat.app/v1/payments/subscribe/upgrade \
   -H "Authorization: Bearer eyJhbGciOiJSUzI1NiIs..." \
   -H "Content-Type: application/json" \
   -d '{
@@ -3566,7 +3566,7 @@ Authorization: Bearer <access_token>
 **Curl Example:**
 
 ```bash
-curl -X POST https://api.connecta.app/v1/payments/initialize \
+curl -X POST https://api.ojchat.app/v1/payments/initialize \
   -H "Authorization: Bearer eyJhbGciOiJSUzI1NiIs..." \
   -H "Content-Type: application/json" \
   -d '{
@@ -3627,7 +3627,7 @@ Authorization: Bearer <access_token>
 **Curl Example:**
 
 ```bash
-curl -X POST https://api.connecta.app/v1/payments/verify \
+curl -X POST https://api.ojchat.app/v1/payments/verify \
   -H "Authorization: Bearer eyJhbGciOiJSUzI1NiIs..." \
   -H "Content-Type: application/json" \
   -d '{"reference": "CKA-TXN-INIT123"}'
@@ -3664,14 +3664,14 @@ Authorization: Bearer <access_token>
       {
         "transaction_id": "txn_xyz789",
         "type": "subscription",
-        "description": "Connecta Plus - Monthly",
+        "description": "OJChat Plus - Monthly",
         "amount": 4999,
         "currency": "NGN",
         "status": "successful",
         "payment_method": "card",
         "card_last4": "4242",
         "created_at": "2026-07-19T10:00:00Z",
-        "receipt_url": "https://cdn.connecta.app/receipts/txn_xyz789.pdf"
+        "receipt_url": "https://cdn.ojchat.app/receipts/txn_xyz789.pdf"
       },
       {
         "transaction_id": "txn_init123",
@@ -3693,7 +3693,7 @@ Authorization: Bearer <access_token>
 **Curl Example:**
 
 ```bash
-curl -X GET "https://api.connecta.app/v1/payments/history?page=1&limit=20" \
+curl -X GET "https://api.ojchat.app/v1/payments/history?page=1&limit=20" \
   -H "Authorization: Bearer eyJhbGciOiJSUzI1NiIs..."
 ```
 
@@ -3745,7 +3745,7 @@ Authorization: Bearer <access_token>
 **Curl Example:**
 
 ```bash
-curl -X POST https://api.connecta.app/v1/payments/refund/txn_xyz789 \
+curl -X POST https://api.ojchat.app/v1/payments/refund/txn_xyz789 \
   -H "Authorization: Bearer eyJhbGciOiJSUzI1NiIs..." \
   -H "Content-Type: application/json" \
   -d '{
@@ -3793,9 +3793,9 @@ Authorization: Bearer <access_token>
           "match_id": "mtch_xyz789",
           "user_id": "usr_x9y8z7w6"
         },
-        "image_url": "https://cdn.connecta.app/photos/usr_x9y8z7w6/1.jpg",
+        "image_url": "https://cdn.ojchat.app/photos/usr_x9y8z7w6/1.jpg",
         "read": false,
-        "action_url": "connecta://match/mtch_xyz789",
+        "action_url": "ojchat://match/mtch_xyz789",
         "created_at": "2026-07-19T10:30:00Z"
       },
       {
@@ -3808,7 +3808,7 @@ Authorization: Bearer <access_token>
           "sender_id": "usr_x9y8z7w6"
         },
         "read": false,
-        "action_url": "connecta://chat/conv_xyz789",
+        "action_url": "ojchat://chat/conv_xyz789",
         "created_at": "2026-07-19T10:35:00Z"
       }
     ],
@@ -3843,7 +3843,7 @@ Authorization: Bearer <access_token>
 **Curl Example:**
 
 ```bash
-curl -X GET "https://api.connecta.app/v1/notifications?filter=unread" \
+curl -X GET "https://api.ojchat.app/v1/notifications?filter=unread" \
   -H "Authorization: Bearer eyJhbGciOiJSUzI1NiIs..."
 ```
 
@@ -3894,7 +3894,7 @@ Authorization: Bearer <access_token>
 **Curl Example:**
 
 ```bash
-curl -X GET https://api.connecta.app/v1/notifications/preferences \
+curl -X GET https://api.ojchat.app/v1/notifications/preferences \
   -H "Authorization: Bearer eyJhbGciOiJSUzI1NiIs..."
 ```
 
@@ -3946,7 +3946,7 @@ Authorization: Bearer <access_token>
 **Curl Example:**
 
 ```bash
-curl -X PUT https://api.connecta.app/v1/notifications/preferences \
+curl -X PUT https://api.ojchat.app/v1/notifications/preferences \
   -H "Authorization: Bearer eyJhbGciOiJSUzI1NiIs..." \
   -H "Content-Type: application/json" \
   -d '{
@@ -4003,7 +4003,7 @@ Or to mark all as read:
 **Curl Example:**
 
 ```bash
-curl -X PUT https://api.connecta.app/v1/notifications/read \
+curl -X PUT https://api.ojchat.app/v1/notifications/read \
   -H "Authorization: Bearer eyJhbGciOiJSUzI1NiIs..." \
   -H "Content-Type: application/json" \
   -d '{"mark_all": true}'
@@ -4027,9 +4027,9 @@ Authorization: Bearer <admin_access_token>
 ```json
 {
   "title": "New Feature: Video Calls!",
-  "body": "Connecta now supports video calls. Try it today!",
-  "image_url": "https://cdn.connecta.app/broadcasts/video_calls.jpg",
-  "action_url": "connecta://features/video_calls",
+  "body": "OJChat now supports video calls. Try it today!",
+  "image_url": "https://cdn.ojchat.app/broadcasts/video_calls.jpg",
+  "action_url": "ojchat://features/video_calls",
   "target": {
     "type": "all"
   },
@@ -4062,12 +4062,12 @@ Authorization: Bearer <admin_access_token>
 **Curl Example:**
 
 ```bash
-curl -X POST https://api.connecta.app/v1/notifications/broadcast \
+curl -X POST https://api.ojchat.app/v1/notifications/broadcast \
   -H "Authorization: Bearer eyJhbGciOiJSUzI1NiIs..." \
   -H "Content-Type: application/json" \
   -d '{
     "title": "New Feature: Video Calls!",
-    "body": "Connecta now supports video calls.",
+    "body": "OJChat now supports video calls.",
     "target": {"type": "all"}
   }'
 ```
@@ -4124,7 +4124,7 @@ Authorization: Bearer <access_token>
         "is_online": false,
         "photos": [
           {
-            "url": "https://cdn.connecta.app/photos/usr_x9y8z7w6/1.jpg",
+            "url": "https://cdn.ojchat.app/photos/usr_x9y8z7w6/1.jpg",
             "is_primary": true
           }
         ],
@@ -4139,7 +4139,7 @@ Authorization: Bearer <access_token>
 **Curl Example:**
 
 ```bash
-curl -X GET "https://api.connecta.app/v1/search/users?q=designer&age_min=22&age_max=30&verified=true" \
+curl -X GET "https://api.ojchat.app/v1/search/users?q=designer&age_min=22&age_max=30&verified=true" \
   -H "Authorization: Bearer eyJhbGciOiJSUzI1NiIs..."
 ```
 
@@ -4173,13 +4173,13 @@ Authorization: Bearer <access_token>
         "text": "Chioma",
         "type": "name",
         "user_id": "usr_p1q2r3s4",
-        "avatar_url": "https://cdn.connecta.app/photos/usr_p1q2r3s4/1.jpg"
+        "avatar_url": "https://cdn.ojchat.app/photos/usr_p1q2r3s4/1.jpg"
       },
       {
         "text": "Chidinma",
         "type": "name",
         "user_id": "usr_x9y8z7w6",
-        "avatar_url": "https://cdn.connecta.app/photos/usr_x9y8z7w6/1.jpg"
+        "avatar_url": "https://cdn.ojchat.app/photos/usr_x9y8z7w6/1.jpg"
       }
     ]
   }
@@ -4189,7 +4189,7 @@ Authorization: Bearer <access_token>
 **Curl Example:**
 
 ```bash
-curl -X GET "https://api.connecta.app/v1/search/autocomplete?q=Chi" \
+curl -X GET "https://api.ojchat.app/v1/search/autocomplete?q=Chi" \
   -H "Authorization: Bearer eyJhbGciOiJSUzI1NiIs..."
 ```
 
@@ -4211,7 +4211,7 @@ POST /v1/admin/login
 
 ```json
 {
-  "email": "admin@connecta.app",
+  "email": "admin@ojchat.app",
   "password": "AdminSecureP@ss1"
 }
 ```
@@ -4224,7 +4224,7 @@ POST /v1/admin/login
   "data": {
     "admin": {
       "id": "adm_abc123",
-      "email": "admin@connecta.app",
+      "email": "admin@ojchat.app",
       "full_name": "System Admin",
       "role": "super_admin",
       "permissions": ["*"]
@@ -4255,10 +4255,10 @@ POST /v1/admin/login
 **Curl Example:**
 
 ```bash
-curl -X POST https://api.connecta.app/v1/admin/login \
+curl -X POST https://api.ojchat.app/v1/admin/login \
   -H "Content-Type: application/json" \
   -d '{
-    "email": "admin@connecta.app",
+    "email": "admin@ojchat.app",
     "password": "AdminSecureP@ss1"
   }'
 ```
@@ -4292,7 +4292,7 @@ POST /v1/admin/2fa/verify
   "data": {
     "admin": {
       "id": "adm_abc123",
-      "email": "admin@connecta.app",
+      "email": "admin@ojchat.app",
       "full_name": "System Admin",
       "role": "super_admin",
       "permissions": ["*"],
@@ -4317,7 +4317,7 @@ POST /v1/admin/2fa/verify
 **Curl Example:**
 
 ```bash
-curl -X POST https://api.connecta.app/v1/admin/2fa/verify \
+curl -X POST https://api.ojchat.app/v1/admin/2fa/verify \
   -H "Content-Type: application/json" \
   -d '{
     "temp_token": "tmp_admin...",
@@ -4396,7 +4396,7 @@ Authorization: Bearer <admin_access_token>
 **Curl Example:**
 
 ```bash
-curl -X GET "https://api.connecta.app/v1/admin/dashboard?period=7d" \
+curl -X GET "https://api.ojchat.app/v1/admin/dashboard?period=7d" \
   -H "Authorization: Bearer eyJhbGciOiJSUzI1NiIs..."
 ```
 
@@ -4441,7 +4441,7 @@ Authorization: Bearer <admin_access_token>
         "verified": true,
         "profile_completed": true,
         "subscription": {
-          "plan": "Connecta Plus",
+          "plan": "OJChat Plus",
           "status": "active",
           "expires_at": "2026-08-19T10:00:00Z"
         },
@@ -4460,7 +4460,7 @@ Authorization: Bearer <admin_access_token>
 **Curl Example:**
 
 ```bash
-curl -X GET "https://api.connecta.app/v1/admin/users?status=active&verified=true" \
+curl -X GET "https://api.ojchat.app/v1/admin/users?status=active&verified=true" \
   -H "Authorization: Bearer eyJhbGciOiJSUzI1NiIs..."
 ```
 
@@ -4519,7 +4519,7 @@ Authorization: Bearer <admin_access_token>
 **Curl Example:**
 
 ```bash
-curl -X GET https://api.connecta.app/v1/admin/users/usr_a1b2c3d4e5f6 \
+curl -X GET https://api.ojchat.app/v1/admin/users/usr_a1b2c3d4e5f6 \
   -H "Authorization: Bearer eyJhbGciOiJSUzI1NiIs..."
 ```
 
@@ -4565,7 +4565,7 @@ Authorization: Bearer <admin_access_token>
 **Curl Example:**
 
 ```bash
-curl -X POST https://api.connecta.app/v1/admin/users/usr_a1b2c3d4e5f6/suspend \
+curl -X POST https://api.ojchat.app/v1/admin/users/usr_a1b2c3d4e5f6/suspend \
   -H "Authorization: Bearer eyJhbGciOiJSUzI1NiIs..." \
   -H "Content-Type: application/json" \
   -d '{
@@ -4620,7 +4620,7 @@ Authorization: Bearer <admin_access_token>
 **Curl Example:**
 
 ```bash
-curl -X POST https://api.connecta.app/v1/admin/users/usr_a1b2c3d4e5f6/ban \
+curl -X POST https://api.ojchat.app/v1/admin/users/usr_a1b2c3d4e5f6/ban \
   -H "Authorization: Bearer eyJhbGciOiJSUzI1NiIs..." \
   -H "Content-Type: application/json" \
   -d '{
@@ -4668,7 +4668,7 @@ Authorization: Bearer <admin_access_token>
 **Curl Example:**
 
 ```bash
-curl -X POST https://api.connecta.app/v1/admin/users/usr_a1b2c3d4e5f6/unsuspend \
+curl -X POST https://api.ojchat.app/v1/admin/users/usr_a1b2c3d4e5f6/unsuspend \
   -H "Authorization: Bearer eyJhbGciOiJSUzI1NiIs..." \
   -H "Content-Type: application/json" \
   -d '{"reason": "overturn_after_review"}'
@@ -4718,7 +4718,7 @@ Authorization: Bearer <admin_access_token>
         "reason": "fake_profile",
         "description": "This profile is using stolen photos from Instagram.",
         "evidence_urls": [
-          "https://cdn.connecta.app/reports/evidence1.jpg"
+          "https://cdn.ojchat.app/reports/evidence1.jpg"
         ],
         "message_ids": ["msg_abc123"],
         "status": "pending_review",
@@ -4741,7 +4741,7 @@ Authorization: Bearer <admin_access_token>
 **Curl Example:**
 
 ```bash
-curl -X GET "https://api.connecta.app/v1/admin/reports?status=pending_review&priority=high" \
+curl -X GET "https://api.ojchat.app/v1/admin/reports?status=pending_review&priority=high" \
   -H "Authorization: Bearer eyJhbGciOiJSUzI1NiIs..."
 ```
 
@@ -4797,7 +4797,7 @@ Authorization: Bearer <admin_access_token>
 **Curl Example:**
 
 ```bash
-curl -X POST https://api.connecta.app/v1/admin/reports/rpt_xyz789/resolve \
+curl -X POST https://api.ojchat.app/v1/admin/reports/rpt_xyz789/resolve \
   -H "Authorization: Bearer eyJhbGciOiJSUzI1NiIs..." \
   -H "Content-Type: application/json" \
   -d '{
@@ -4856,7 +4856,7 @@ Authorization: Bearer <admin_access_token>
 **Curl Example:**
 
 ```bash
-curl -X GET "https://api.connecta.app/v1/admin/analytics?metric=registrations&period=30d&granularity=day" \
+curl -X GET "https://api.ojchat.app/v1/admin/analytics?metric=registrations&period=30d&granularity=day" \
   -H "Authorization: Bearer eyJhbGciOiJSUzI1NiIs..."
 ```
 
@@ -4895,7 +4895,7 @@ Authorization: Bearer <admin_access_token>
         "entry_id": "audit_abc123",
         "admin": {
           "id": "adm_abc123",
-          "email": "admin@connecta.app",
+          "email": "admin@ojchat.app",
           "role": "super_admin"
         },
         "action": "user_suspend",
@@ -4918,7 +4918,7 @@ Authorization: Bearer <admin_access_token>
 **Curl Example:**
 
 ```bash
-curl -X GET "https://api.connecta.app/v1/admin/audit-log?action=user_suspend" \
+curl -X GET "https://api.ojchat.app/v1/admin/audit-log?action=user_suspend" \
   -H "Authorization: Bearer eyJhbGciOiJSUzI1NiIs..."
 ```
 
@@ -4943,7 +4943,7 @@ Authorization: Bearer <admin_access_token>
   "data": {
     "settings": {
       "platform": {
-        "app_name": "Connecta",
+        "app_name": "OJChat",
         "version": "1.0.0",
         "maintenance_mode": false,
         "min_app_version": "1.0.0"
@@ -4983,7 +4983,7 @@ Authorization: Bearer <admin_access_token>
 **Curl Example:**
 
 ```bash
-curl -X GET https://api.connecta.app/v1/admin/settings \
+curl -X GET https://api.ojchat.app/v1/admin/settings \
   -H "Authorization: Bearer eyJhbGciOiJSUzI1NiIs..."
 ```
 
@@ -5028,7 +5028,7 @@ Authorization: Bearer <admin_access_token>
 **Curl Example:**
 
 ```bash
-curl -X PUT https://api.connecta.app/v1/admin/settings \
+curl -X PUT https://api.ojchat.app/v1/admin/settings \
   -H "Authorization: Bearer eyJhbGciOiJSUzI1NiIs..." \
   -H "Content-Type: application/json" \
   -d '{
@@ -5055,7 +5055,7 @@ Authorization: Bearer <admin_access_token>
 ```json
 {
   "title": "System Maintenance",
-  "body": "Connecta will be under maintenance tonight from 11 PM to 2 AM.",
+  "body": "OJChat will be under maintenance tonight from 11 PM to 2 AM.",
   "target": { "type": "all" },
   "priority": "high",
   "schedule_at": "2026-07-19T22:00:00Z"
@@ -5080,12 +5080,12 @@ Authorization: Bearer <admin_access_token>
 **Curl Example:**
 
 ```bash
-curl -X POST https://api.connecta.app/v1/admin/broadcast \
+curl -X POST https://api.ojchat.app/v1/admin/broadcast \
   -H "Authorization: Bearer eyJhbGciOiJSUzI1NiIs..." \
   -H "Content-Type: application/json" \
   -d '{
     "title": "System Maintenance",
-    "body": "Connecta will be under maintenance tonight from 11 PM to 2 AM.",
+    "body": "OJChat will be under maintenance tonight from 11 PM to 2 AM.",
     "target": {"type": "all"}
   }'
 ```
@@ -5148,7 +5148,7 @@ Authorization: Bearer <access_token>
 **Curl Example:**
 
 ```bash
-curl -X POST https://api.connecta.app/v1/crypto/prekeys \
+curl -X POST https://api.ojchat.app/v1/crypto/prekeys \
   -H "Authorization: Bearer eyJhbGciOiJSUzI1NiIs..." \
   -H "Content-Type: application/json" \
   -d '{
@@ -5350,14 +5350,14 @@ Authorization: Bearer <access_token>
 
 ## 16. WebSocket Events
 
-Connecta uses WebSocket connections for real-time communication. The WebSocket server is available at `wss://ws.connecta.app/v1`.
+OJChat uses WebSocket connections for real-time communication. The WebSocket server is available at `wss://ws.ojchat.app/v1`.
 
 ### 16.1 Connection
 
 **WebSocket URL:**
 
 ```
-wss://ws.connecta.app/v1?token=<access_token>
+wss://ws.ojchat.app/v1?token=<access_token>
 ```
 
 **Connection Headers:**
@@ -5456,7 +5456,7 @@ X-Device-ID: <device_id>
     "matched_user": {
       "user_id": "usr_x9y8z7w6",
       "full_name": "Chidinma Okafor",
-      "avatar_url": "https://cdn.connecta.app/photos/usr_x9y8z7w6/1.jpg"
+      "avatar_url": "https://cdn.ojchat.app/photos/usr_x9y8z7w6/1.jpg"
     },
     "matched_at": "2026-07-19T10:30:00Z",
     "conversation_id": "conv_xyz789"
@@ -5486,12 +5486,12 @@ X-Device-ID: <device_id>
     "caller": {
       "user_id": "usr_a1b2c3d4e5f6",
       "full_name": "Adebayo Johnson",
-      "avatar_url": "https://cdn.connecta.app/photos/usr_a1b2c3d4e5f6/1.jpg"
+      "avatar_url": "https://cdn.ojchat.app/photos/usr_a1b2c3d4e5f6/1.jpg"
     },
     "ice_servers": {
       "ice_servers": [
         {
-          "urls": "stun:turn.connecta.app:3478",
+          "urls": "stun:turn.ojchat.app:3478",
           "username": "user",
           "credential": "pass"
         }
@@ -5591,4 +5591,4 @@ The server sends a ping every 30 seconds. The client must respond with a pong wi
 
 ---
 
-*This document is part of the Connecta Software Design Document (SDD) package.*
+*This document is part of the OJChat Software Design Document (SDD) package.*

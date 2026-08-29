@@ -1,6 +1,6 @@
 # Offline Synchronization
 
-## Connecta — Offline-First Architecture & Sync Engine
+## OJChat — Offline-First Architecture & Sync Engine
 
 **Version:** 1.0.0
 **Date:** July 2026
@@ -9,7 +9,9 @@
 
 ## 1. Architecture Overview
 
-Connecta uses a **local-first architecture** where the mobile client operates independently of the server. All user actions are written to an encrypted local SQLite database immediately, and synchronization with the cloud happens asynchronously when connectivity is available.
+OJChat uses a **local-first architecture** where the mobile client operates independently of the server.
+
+> **Note:** The offline-first architecture described in this document is largely aspirational at this stage. Core messaging and profile viewing are designed to work offline, but full offline sync (outbox pattern, conflict resolution, background sync) is not yet fully implemented in the current codebase. All user actions are written to an encrypted local SQLite database immediately, and synchronization with the cloud happens asynchronously when connectivity is available.
 
 ### 1.1 Design Principles
 
@@ -65,7 +67,7 @@ import { getEncryptionKey } from '../security/keychain';
 export async function openDatabase(): Promise<SQLiteDatabase> {
   const key = await getEncryptionKey('local_db');
   const db = await SQLite.openDatabase({
-    name: 'connecta.db',
+    name: 'ojchat.db',
     key: key,
     location: 'default',
   });
@@ -561,4 +563,4 @@ graph TB
 
 ---
 
-*This document is part of the Connecta Software Design Document (SDD) package.*
+*This document is part of the OJChat Software Design Document (SDD) package.*

@@ -2,7 +2,7 @@
 
 ## 1. Overview
 
-The Analytics & Reporting platform powers business intelligence, user engagement tracking, and safety monitoring for Connecta. It provides real-time dashboards for operations teams, scheduled reports for leadership, and data pipelines that feed into automated safety and growth systems.
+The Analytics & Reporting platform powers business intelligence, user engagement tracking, and safety monitoring for OJChat. It provides real-time dashboards for operations teams, scheduled reports for leadership, and data pipelines that feed into automated safety and growth systems.
 
 The analytics architecture is designed with privacy-first principles: all user-level data is pseudonymized at ingestion, raw event data is retained only for 90 days, and aggregated metrics are stored indefinitely. Users can opt out of non-essential tracking via in-app settings.
 
@@ -42,7 +42,7 @@ The analytics architecture is designed with privacy-first principles: all user-l
 
 ### 2.3 Event Ingestion
 
-Events are captured client-side via the `AnalyticsService` and sent to the `analytics-service` microservice over HTTPS. The service validates events against a schema, enriches them with server-side context (timestamp, device info, geo-region), and writes them to the `analytics.events` table in PostgreSQL.
+Events are captured client-side via the `AnalyticsService` and sent to the API gateway over HTTPS. The service validates events against a schema, enriches them with server-side context (timestamp, device info, geo-region), and writes them to the database.
 
 Batch ingestion is used for high-volume events (swipes, profile views) to reduce network overhead. Events are buffered in a Redis queue and flushed every 10 seconds or when the batch reaches 100 events, whichever comes first.
 
@@ -76,7 +76,7 @@ Signup → Profile Complete → First Match → First Message → Subscription P
 | First Match → First Message | >80% | Time-series from `first_match` to `first_message` |
 | First Message → Subscription | >5% within 30 days | Revenue attribution model |
 
-Funnel data is computed nightly by the `analytics-service` and stored in the `analytics.funnel_snapshots` table. The admin dashboard renders funnel visualizations with drill-down by country, referral source, and registration cohort.
+Funnel data is computed nightly by scheduled jobs and stored in the database. The admin dashboard renders funnel visualizations with drill-down by country, referral source, and registration cohort.
 
 ### 3.3 Engagement Metrics
 
@@ -146,9 +146,9 @@ Revenue metrics are segmented by subscription tier:
 | Tier | Price (₦/month) | Target Mix | ARPU Contribution |
 |---|---|---|---|
 | Free | 0 | 70% of users | ₦0 |
-| Gold | 2,000 | 20% of users | ₦400 |
-| Platinum | 5,000 | 8% of users | ₦400 |
-| Diamond | 10,000 | 2% of users | ₦200 |
+| Premium | 2,000 | 20% of users | ₦400 |
+| Gold | 5,000 | 8% of users | ₦400 |
+| Platinum | 10,000 | 2% of users | ₦200 |
 
 ### 5.3 Revenue Dashboard
 
@@ -170,7 +170,7 @@ A/B testing is implemented through the admin settings system and a dedicated `ex
 ### 6.2 Experiment Configuration
 
 ```sql
-CREATE TABLE analytics.experiments (
+CREATE TABLE experiments (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     name VARCHAR(100) NOT NULL UNIQUE,
     description TEXT,
@@ -211,19 +211,19 @@ CREATE TABLE analytics.experiments (
 ### 7.1 Architecture
 
 ```
-Client Events → analytics-service → PostgreSQL (analytics schema) → Aggregation Queries → Admin Dashboard
-                                      ↓
-                                  Scheduled Reports (email/Slack)
+Client Events → API Gateway → PostgreSQL → Aggregation Queries → Admin Dashboard
+                                    ↓
+                                Scheduled Reports (email/Slack)
 ```
 
 ### 7.2 Pipeline Stages
 
 | Stage | Component | SLA |
 |---|---|---|
-| Ingestion | `analytics-service` REST/WebSocket endpoint | <100ms ingestion latency |
+| Ingestion | API gateway REST/WebSocket endpoint | <100ms ingestion latency |
 | Validation | JSON schema validation + deduplication | <10ms per event |
 | Enrichment | Server-side context (geo, device, session) | <5ms per event |
-| Storage | PostgreSQL `analytics.events` table | Partitioned by month |
+| Storage | PostgreSQL table | Partitioned by month |
 | Aggregation | Nightly cron jobs + materialized views | Complete by 06:00 UTC |
 | Serving | Admin dashboard API endpoints | <500ms query response |
 | Reporting | Scheduled email/Slack reports | Daily at 08:00 UTC |
@@ -233,7 +233,7 @@ Client Events → analytics-service → PostgreSQL (analytics schema) → Aggreg
 | Data Type | Retention Period | Storage |
 |---|---|---|
 | Raw events | 90 days | PostgreSQL (partitioned) |
-| Aggregated metrics | Indefinite | PostgreSQL (analytics schema) |
+| Aggregated metrics | Indefinite | PostgreSQL |
 | Funnel snapshots | 2 years | PostgreSQL |
 | Safety incident logs | 3 years | PostgreSQL (encrypted) |
 | Revenue reports | 7 years | PostgreSQL + cold storage |
@@ -242,7 +242,7 @@ Client Events → analytics-service → PostgreSQL (analytics schema) → Aggreg
 
 ```sql
 -- Partitioned events table
-CREATE TABLE analytics.events (
+CREATE TABLE events (
     id BIGSERIAL,
     event_name VARCHAR(100) NOT NULL,
     user_id UUID,
@@ -253,17 +253,17 @@ CREATE TABLE analytics.events (
 ) PARTITION BY RANGE (created_at);
 
 -- Monthly partitions
-CREATE TABLE analytics.events_2026_01 PARTITION OF analytics.events
+CREATE TABLE events_2026_01 PARTITION OF events
     FOR VALUES FROM ('2026-01-01') TO ('2026-02-01');
 
 -- Materialized view for daily metrics
-CREATE MATERIALIZED VIEW analytics.daily_metrics AS
+CREATE MATERIALIZED VIEW daily_metrics AS
 SELECT
     DATE(created_at) AS date,
     event_name,
     COUNT(DISTINCT user_id) AS unique_users,
     COUNT(*) AS total_events
-FROM analytics.events
+FROM events
 GROUP BY DATE(created_at), event_name;
 ```
 

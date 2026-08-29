@@ -1,19 +1,19 @@
 # Executive Summary
 
-## Connecta — Modern Matchmaking & Relationship Platform
+## OJChat — Modern Matchmaking & Relationship Platform
 
 **Version:** 1.0.0
 **Date:** July 2026
-**Codename:** Connecta
+**Codename:** OJChat
 **Classification:** Confidential — Internal Use Only
 
 ---
 
 ## 1. Overview
 
-Connecta is a production-grade, privacy-first dating and relationship platform designed for the modern mobile user. It combines AI-powered matchmaking, end-to-end encrypted messaging, offline-first architecture, and real-time voice/video communication into a seamless experience.
+OJChat is a production-grade, privacy-first dating and relationship platform designed for the modern mobile user. It combines AI-powered matchmaking, encrypted messaging, and real-time voice/video communication into a seamless experience.
 
-Unlike legacy dating platforms that treat user data as a monetization asset, Connecta is built on the principle that **privacy is a feature, not a trade-off**. Conversations are encrypted end-to-end, messages are stored locally-first on-device, and the server never has access to plaintext user communications.
+Unlike legacy dating platforms that treat user data as a monetization asset, OJChat is built on the principle that **privacy is a feature, not a trade-off**. Messages are encrypted in transit, passwords are securely hashed, and user data is handled with strict privacy controls.
 
 ---
 
@@ -37,13 +37,13 @@ To build a dating platform that:
 
 The online dating industry faces several critical problems:
 
-| Problem | Impact | Connecta Solution |
+| Problem | Impact | OJChat Solution |
 |---|---|---|
 | Fake profiles and catfishing | User distrust, safety risks | AI face verification + profile scoring |
 | Romance scams | Financial and emotional harm | AI scam detection + behavioral analysis |
 | Shallow matching algorithms | Poor match quality, app fatigue | Multi-factor AI compatibility engine |
-| No offline functionality | Unusable in low-connectivity areas | Offline-first SQLite + sync engine |
-| Privacy violations | Data breaches, surveillance | End-to-end encryption + local storage |
+| No offline functionality | Unusable in low-connectivity areas | Optimized for low-bandwidth networks |
+| Privacy violations | Data breaches, surveillance | Server-side encryption, bcrypt passwords, strict access controls |
 | Toxic messaging | Harassment, user attrition | Real-time AI toxicity detection |
 | One-size-fits-all experience | Poor UX for diverse audiences | Preference-driven personalization |
 
@@ -66,21 +66,17 @@ The online dating industry faces several critical problems:
 
 ## 6. Key Differentiators
 
-1. **Offline-First Messaging** — Messages are written to encrypted local SQLite immediately. Cloud sync is asynchronous. The app works without internet.
+1. **AI Matchmaking Engine** — Goes beyond swipes. Uses behavioral signals, conversation patterns, shared interests, and compatibility scoring.
 
-2. **End-to-End Encryption** — Signal Protocol-based E2EE ensures the server never reads user conversations.
+2. **Fake Profile & Scam Detection** — AI analyzes photo authenticity, profile completeness, behavioral patterns, and messaging red flags.
 
-3. **AI Matchmaking Engine** — Goes beyond swipes. Uses behavioral signals, conversation patterns, shared interests, and compatibility scoring.
+3. **Real-Time Toxic Language Moderation** — Server-side AI detects harassment before it reaches the recipient.
 
-4. **Fake Profile & Scam Detection** — AI analyzes photo authenticity, profile completeness, behavioral patterns, and messaging red flags.
+4. **Voice & Video Calls (WebRTC)** — In-app calls with STUN/TURN infrastructure, push wake-up, and call recovery.
 
-5. **Real-Time Toxic Language Moderation** — On-device and server-side AI detects harassment before it reaches the recipient.
+5. **Admin Web Panel** — Full-featured management console for user management, content moderation, analytics, and platform operations.
 
-6. **Voice & Video Calls (WebRTC)** — In-app calls with STUN/TURN infrastructure, push wake-up, and call recovery.
-
-7. **Admin Web Panel** — Full-featured management console for user management, content moderation, analytics, and platform operations.
-
-8. **Nigerian Data Protection Act (NDPA) Compliance** — Built from day one with Nigerian and GDPR privacy regulations in mind.
+6. **Nigerian Data Protection Act (NDPA) Compliance** — Built from day one with Nigerian and GDPR privacy regulations in mind.
 
 ---
 
@@ -93,9 +89,9 @@ The online dating industry faces several critical problems:
 | Backend | NestJS (TypeScript) microservices |
 | Database | PostgreSQL (primary), Redis (cache), SQLite (offline) |
 | Real-time | Socket.IO (WebSocket) |
-| Voice/Video | WebRTC (with Janus/mediasoup SFU) |
-| Encryption | Signal Protocol (libsignal), AES-256-GCM |
-| AI/ML | Python (FastAPI) microservices, TensorFlow, OpenAI API |
+| Voice/Video | WebRTC (STUN/TURN) |
+| Encryption | AES-256-GCM, bcrypt (passwords) |
+| AI/ML | TypeScript (NestJS) AI services, OpenAI API |
 | Object Storage | AWS S3 / Cloudflare R2 |
 | Search | Elasticsearch / Meilisearch |
 | Infrastructure | Docker, Kubernetes, GitHub Actions |
@@ -110,7 +106,7 @@ The online dating industry faces several critical problems:
 | Free | 0 | Basic swiping, limited likes, text chat |
 | Premium | 4,999 | Unlimited likes, advanced filters, read receipts |
 | Gold | 9,999 | Premium + AI insights, profile boost, priority support |
-| Platinum | 14,999 | Gold + video calls, incognito mode, AI date planner |
+| Platinum | 19,999 | Gold + video calls, incognito mode, AI date planner |
 
 ### Additional Revenue Streams
 - **Profile Boosts** (pay-per-use)
@@ -127,7 +123,7 @@ The online dating industry faces several critical problems:
 |---|---|---|
 | Phase 1: Foundation | Month 1–2 | Auth, profiles, basic UI |
 | Phase 2: Discovery | Month 2–3 | Swipe mechanics, matching algorithm |
-| Phase 3: Messaging | Month 3–4 | E2EE chat, offline sync |
+| Phase 3: Messaging | Month 3–4 | Encrypted chat, message delivery |
 | Phase 4: Media | Month 4–5 | Photo verification, voice notes |
 | Phase 5: Calls | Month 5–6 | WebRTC voice/video calls |
 | Phase 6: AI | Month 6–7 | Matchmaking engine, scam detection |
@@ -217,4 +213,4 @@ The online dating industry faces several critical problems:
 
 ---
 
-*This document is part of the Connecta Software Design Document (SDD) package. See the full document index in the root `docs/` directory.*
+*This document is part of the OJChat Software Design Document (SDD) package. See the full document index in the root `docs/` directory.*
