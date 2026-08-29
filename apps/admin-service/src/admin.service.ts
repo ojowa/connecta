@@ -1,6 +1,6 @@
 import { Injectable, UnauthorizedException, NotFoundException, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, In, MoreThan } from 'typeorm';
+import { Repository, In, MoreThan, IsNull } from 'typeorm';
 import { AdminUser, User, Report, Notification, Subscription, Transaction, Plan, Like, Match, Message, Session, NotificationDelivery, Appeal, SystemSetting, Moment, MomentView, VerificationRequest, Profile, Photo } from '@app/common/entities';
 import * as bcrypt from 'bcryptjs';
 import * as jwt from 'jsonwebtoken';
@@ -774,7 +774,7 @@ export class AdminService {
   }
 
   async getMoments(page = 1, limit = 50, userId?: string) {
-    const where: any = userId ? { userId } : {};
+    const where: any = userId ? { userId, deletedAt: IsNull() } : { deletedAt: IsNull() };
     const [moments, total] = await this.momentRepo.findAndCount({
       where,
       order: { createdAt: 'DESC' },
@@ -809,20 +809,20 @@ export class AdminService {
   }
 
   async deleteMoment(momentId: string) {
-    const moment = await this.momentRepo.findOne({ where: { id: momentId } });
+    const moment = await this.momentRepo.findOne({ where: { id: momentId, deletedAt: IsNull() } });
     if (!moment) throw new NotFoundException('Moment not found');
     await this.momentViewRepo.delete({ momentId });
-    await this.momentRepo.remove(moment);
+    await this.momentRepo.softDelete(momentId);
     return { deleted: true };
   }
 
   async getMomentStats() {
-    const total = await this.momentRepo.count();
-    const active = await this.momentRepo.count({ where: { expiresAt: MoreThan(new Date()) } });
+    const total = await this.momentRepo.count({ where: { deletedAt: IsNull() } });
+    const active = await this.momentRepo.count({ where: { expiresAt: MoreThan(new Date()), deletedAt: IsNull() } });
     const expired = total - active;
     const today = new Date();
     today.setHours(0, 0, 0, 0);
-    const todayCount = await this.momentRepo.count({ where: { createdAt: MoreThan(today) } });
+    const todayCount = await this.momentRepo.count({ where: { createdAt: MoreThan(today), deletedAt: IsNull() } });
 
     return { total, active, expired, todayCount };
   }

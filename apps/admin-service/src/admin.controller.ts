@@ -21,6 +21,12 @@ export class AdminController {
     return payload;
   }
 
+  private requireRole(payload: any, allowedRoles: string[]) {
+    if (!allowedRoles.includes(payload.role)) {
+      throw new UnauthorizedException('Insufficient permissions');
+    }
+  }
+
   @Get('dashboard')
   @ApiOperation({ summary: 'Get dashboard stats' })
   getDashboard(@Headers('authorization') auth: string, @Query('period') period?: string) {
@@ -298,21 +304,24 @@ export class AdminController {
   @Get('moments')
   @ApiOperation({ summary: 'Get all moments (admin moderation)' })
   getMoments(@Headers('authorization') auth: string, @Query('page') page?: string, @Query('limit') limit?: string, @Query('userId') userId?: string) {
-    this.verifyAuth(auth);
+    const payload = this.verifyAuth(auth);
+    this.requireRole(payload, ['moderator', 'admin']);
     return this.adminService.getMoments(page ? parseInt(page) : 1, limit ? parseInt(limit) : 50, userId);
   }
 
   @Get('moments/stats')
   @ApiOperation({ summary: 'Get moments statistics' })
   getMomentStats(@Headers('authorization') auth: string) {
-    this.verifyAuth(auth);
+    const payload = this.verifyAuth(auth);
+    this.requireRole(payload, ['moderator', 'admin']);
     return this.adminService.getMomentStats();
   }
 
   @Delete('moments/:id')
   @ApiOperation({ summary: 'Delete a moment (admin moderation)' })
   deleteMoment(@Headers('authorization') auth: string, @Param('id') id: string) {
-    this.verifyAuth(auth);
+    const payload = this.verifyAuth(auth);
+    this.requireRole(payload, ['admin']);
     return this.adminService.deleteMoment(id);
   }
 

@@ -25,28 +25,15 @@ import { LoadingSpinner } from '../../components/common/LoadingSpinner';
 import { useAppStore } from '../../store';
 import * as ImagePicker from 'expo-image-picker';
 import { Platform } from 'react-native';
-
-interface Moment {
-  id: string;
-  userId: string;
-  userName: string;
-  userAvatar?: string;
-  caption?: string;
-  mediaUrl?: string;
-  mediaType?: 'image' | 'video';
-  viewCount: number;
-  hasViewed?: boolean;
-  createdAt: string;
-  expiresAt: string;
-}
+import { Moment, MomentWithUser, MyMoment } from '../../types/moments';
 
 const STORY_DURATION_MS = 24 * 60 * 60 * 1000;
 
 const useMoments = () =>
-  useQuery<Moment[]>({
+  useQuery<MomentWithUser[]>({
     queryKey: ['moments'],
     queryFn: async () => {
-      const { data } = await apiClient.get<Moment[]>(ENDPOINTS.MATCHING.MOMENTS);
+      const { data } = await apiClient.get<MomentWithUser[]>(ENDPOINTS.MATCHING.MOMENTS);
       return data;
     },
     refetchInterval: 60000,
@@ -72,6 +59,16 @@ const useViewMoment = () =>
     mutationFn: async (id: string) => {
       await apiClient.post(ENDPOINTS.MATCHING.MOMENT_VIEW(id));
     },
+  });
+
+const useMyMoments = () =>
+  useQuery<MyMoment[]>({
+    queryKey: ['myMoments'],
+    queryFn: async () => {
+      const { data } = await apiClient.get<MyMoment[]>(ENDPOINTS.MATCHING.MOMENTS_MINE);
+      return data;
+    },
+    refetchInterval: 60000,
   });
 
 const timeAgo = (date: string) => {
@@ -304,33 +301,37 @@ const MomentsScreen: React.FC = () => {
   const user = useAppStore((s) => s.user);
   const queryClient = useQueryClient();
   const { data: moments = [], isLoading, refetch } = useMoments();
+  const { data: myMoments = [], refetch: refetchMyMoments } = useMyMoments();
   const createMoment = useCreateMoment();
   const deleteMoment = useDeleteMoment();
   const viewMoment = useViewMoment();
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const [activeTab, setActiveTab] = useState<'feed' | 'mine'>('feed');
   const viewedIds = useRef(new Set<string>());
+
+  const currentMoments = activeTab === 'feed' ? moments : myMoments;
 
   const userMap = React.useMemo(() => {
     const map = new Map<string, { id: string; name: string; avatar?: string }>();
-    moments.forEach((m) => {
+    currentMoments.forEach((m) => {
       if (!map.has(m.userId)) {
         map.set(m.userId, { id: m.userId, name: m.userName, avatar: m.userAvatar });
       }
     });
     return map;
-  }, [moments]);
+  }, [currentMoments]);
 
   const groupedByUser = React.useMemo(() => {
     const groups = new Map<string, Moment[]>();
-    moments.forEach((m) => {
+    currentMoments.forEach((m) => {
       const existing = groups.get(m.userId) || [];
       existing.push(m);
       groups.set(m.userId, existing);
     });
     return groups;
-  }, [moments]);
+  }, [currentMoments]);
 
   const userList = React.useMemo(() => Array.from(userMap.values()), [userMap]);
 
@@ -348,7 +349,7 @@ const MomentsScreen: React.FC = () => {
   }, [groupedByUser, selectedUserId]);
 
   useEffect(() => {
-    if (selectedMoments.length > 0 && user) {
+    if (activeTab === 'feed' && selectedMoments.length > 0 && user) {
       selectedMoments.forEach((m) => {
         if (m.userId !== user.id && !viewedIds.current.has(m.id)) {
           viewedIds.current.add(m.id);
@@ -356,13 +357,13 @@ const MomentsScreen: React.FC = () => {
         }
       });
     }
-  }, [selectedMoments, viewMoment, user]);
+  }, [selectedMoments, viewMoment, user, activeTab]);
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
-    await refetch();
+    await (activeTab === 'feed' ? refetch() : refetchMyMoments());
     setRefreshing(false);
-  }, [refetch]);
+  }, [refetch, refetchMyMoments]);
 
   const handleCreateMoment = useCallback(
     async (caption: string, mediaUri?: string, type?: string) => {
@@ -382,9 +383,7 @@ const MomentsScreen: React.FC = () => {
               name: isVideo ? 'moment.mp4' : 'moment.jpg',
             } as any);
           }
-          const uploadRes = await apiClient.post('/media/upload', formData, {
-            headers: { 'Content-Type': 'multipart/form-data' },
-          });
+          const uploadRes = await apiClient.post('/media/upload', formData);
           const uploaded = uploadRes.data?.data || uploadRes.data;
           uploadedUrl = uploaded?.url;
         } catch {
@@ -397,6 +396,7 @@ const MomentsScreen: React.FC = () => {
         {
           onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['moments'] });
+            queryClient.invalidateQueries({ queryKey: ['myMoments'] });
             setShowCreateModal(false);
           },
           onError: () => {
@@ -413,6 +413,7 @@ const MomentsScreen: React.FC = () => {
       deleteMoment.mutate(id, {
         onSuccess: () => {
           queryClient.invalidateQueries({ queryKey: ['moments'] });
+          queryClient.invalidateQueries({ queryKey: ['myMoments'] });
         },
         onError: () => {
           Alert.alert('Error', 'Failed to delete moment.');
@@ -440,33 +441,52 @@ const MomentsScreen: React.FC = () => {
         </TouchableOpacity>
       </View>
 
-      <View style={styles.storiesContainer}>
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.storiesScroll}>
-          {user && (
-            <StoryCircle
-              user={{ id: user.id, name: user.fullName || 'You', avatar: user.avatarUrl }}
-              hasUnviewed={false}
-              isOwn={true}
-              isSelected={selectedUserId === user.id}
-              onPress={() => setSelectedUserId(user.id)}
-            />
-          )}
-          {otherUsers.map((u) => (
-            <StoryCircle
-              key={u.id}
-              user={u}
-              hasUnviewed={(groupedByUser.get(u.id) || []).some(
-                (m) => !isExpired(m.expiresAt) && m.userId !== user?.id
-              )}
-              isOwn={false}
-              isSelected={selectedUserId === u.id}
-              onPress={() => setSelectedUserId(u.id)}
-            />
-          ))}
-        </ScrollView>
+      <View style={styles.tabBar}>
+        <TouchableOpacity
+          style={[styles.tabButton, activeTab === 'feed' && styles.tabButtonActive]}
+          onPress={() => { setActiveTab('feed'); setSelectedUserId(null); }}
+        >
+          <Text style={[styles.tabButtonText, activeTab === 'feed' && styles.tabButtonTextActive]}>Feed</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={[styles.tabButton, activeTab === 'mine' && styles.tabButtonActive]}
+          onPress={() => { setActiveTab('mine'); setSelectedUserId(user?.id || null); }}
+        >
+          <Text style={[styles.tabButtonText, activeTab === 'mine' && styles.tabButtonTextActive]}>My Moments</Text>
+        </TouchableOpacity>
       </View>
 
-      <View style={styles.divider} />
+      {activeTab === 'feed' && (
+        <>
+          <View style={styles.storiesContainer}>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.storiesScroll}>
+              {user && (
+                <StoryCircle
+                  user={{ id: user.id, name: user.fullName || 'You', avatar: user.avatarUrl }}
+                  hasUnviewed={false}
+                  isOwn={true}
+                  isSelected={selectedUserId === user.id}
+                  onPress={() => setSelectedUserId(user.id)}
+                />
+              )}
+              {otherUsers.map((u) => (
+                <StoryCircle
+                  key={u.id}
+                  user={u}
+                  hasUnviewed={(groupedByUser.get(u.id) || []).some(
+                    (m) => !isExpired(m.expiresAt) && m.userId !== user?.id
+                  )}
+                  isOwn={false}
+                  isSelected={selectedUserId === u.id}
+                  onPress={() => setSelectedUserId(u.id)}
+                />
+              ))}
+            </ScrollView>
+          </View>
+
+          <View style={styles.divider} />
+        </>
+      )}
 
       <FlatList
         data={selectedMoments}
@@ -478,7 +498,9 @@ const MomentsScreen: React.FC = () => {
             <Text style={styles.emptyIcon}>✨</Text>
             <Text style={styles.emptyText}>No moments yet</Text>
             <Text style={styles.emptySubtext}>
-              {selectedUserId === user?.id
+              {activeTab === 'mine'
+                ? 'You haven\'t posted any moments yet.'
+                : selectedUserId === user?.id
                 ? 'Share a moment with your matches!'
                 : 'This user hasn\'t posted any moments.'}
             </Text>
@@ -556,6 +578,30 @@ const styles = StyleSheet.create({
   storyName: { ...typography.small, color: colors.textSecondary, marginTop: spacing.xs, textAlign: 'center' },
   storyNameActive: { color: colors.textPrimary, fontWeight: '600' },
   divider: { height: 1, backgroundColor: colors.border },
+  tabBar: {
+    flexDirection: 'row',
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.xs,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
+  },
+  tabButton: {
+    flex: 1,
+    paddingVertical: spacing.sm,
+    alignItems: 'center',
+    borderRadius: borderRadius.md,
+  },
+  tabButtonActive: {
+    backgroundColor: colors.primaryOverlay,
+  },
+  tabButtonText: {
+    ...typography.button,
+    color: colors.textSecondary,
+  },
+  tabButtonTextActive: {
+    color: colors.primary,
+    fontWeight: '600',
+  },
   momentsList: { padding: spacing.md },
   momentCard: {
     backgroundColor: colors.white,

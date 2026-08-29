@@ -1,7 +1,8 @@
-import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, Index } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, Index, DeleteDateColumn } from 'typeorm';
 
 @Entity('moments')
 @Index(['userId', 'expiresAt'])
+@Index(['deletedAt'])
 export class Moment {
   @PrimaryGeneratedColumn('uuid') id: string;
   @Column() userId: string;
@@ -11,4 +12,5 @@ export class Moment {
   @Column({ type: 'timestamp' }) expiresAt: Date;
   @Column({ default: 0 }) viewCount: number;
   @CreateDateColumn() createdAt: Date;
+  @DeleteDateColumn() deletedAt: Date;
 }

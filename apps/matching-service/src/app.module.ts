@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { EventEmitterModule } from '@nestjs/event-emitter';
+import { ScheduleModule } from '@nestjs/schedule';
 import { allEntities } from '@app/common/entities';
 import { TypeOrmConfigService } from '@app/database/typeorm-config.service';
 import { MatchingController } from './matching.controller';
@@ -17,6 +18,7 @@ import { MatchmakingEngine } from './ai/matchmaking.engine';
 import { ToxicityDetector } from './ai/toxicity.detector';
 import { FakeProfileDetector } from './ai/fake-profile.detector';
 import { MatchEventsHandler } from './events/match-events.handler';
+import { MomentCronService } from './crons/moment-cron.service';
 
 @Module({
   imports: [
@@ -26,6 +28,7 @@ import { MatchEventsHandler } from './events/match-events.handler';
     }),
     TypeOrmModule.forFeature(allEntities),
     EventEmitterModule.forRoot(),
+    ScheduleModule.forRoot(),
   ],
   controllers: [MatchingController],
   providers: [
@@ -41,6 +44,7 @@ import { MatchEventsHandler } from './events/match-events.handler';
     ToxicityDetector,
     FakeProfileDetector,
     MatchEventsHandler,
+    MomentCronService,
   ],
   exports: [MatchingEnhancementService],
 })

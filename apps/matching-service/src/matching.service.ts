@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, In, MoreThan, LessThan } from 'typeorm';
+import { Repository, In, MoreThan, LessThan, IsNull } from 'typeorm';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { User, Profile, Like, Pass, Match, DailyLike, Photo, UserPreference, Block, Interest, ProfileInterest, Boost, PhotoLike, Moment, MomentView, ProfileView, Plan, Subscription, Notification } from '@app/common/entities';
 import { MatchmakingEngine } from './ai/matchmaking.engine';
@@ -303,13 +303,15 @@ export class MatchingService {
     await this.dailyLikeRepo.increment({ id: dailyLike.id }, 'likesGiven', 1);
 
     const likedUser = await this.userRepo.findOne({ where: { id: likedId } });
-    await this.enhancementService.trackBehavior({
-      userId: likerId,
-      targetUserId: likedId,
-      action: 'like',
-      targetAge: likedUser?.dateOfBirth ? Math.floor((Date.now() - new Date(likedUser.dateOfBirth).getTime()) / (365.25 * 24 * 60 * 60 * 1000)) : undefined,
-      targetGender: likedUser?.gender,
-    });
+    try {
+      await this.enhancementService.trackBehavior({
+        userId: likerId,
+        targetUserId: likedId,
+        action: 'like',
+        targetAge: likedUser?.dateOfBirth ? Math.floor((Date.now() - new Date(likedUser.dateOfBirth).getTime()) / (365.25 * 24 * 60 * 60 * 1000)) : undefined,
+        targetGender: likedUser?.gender,
+      });
+    } catch (_) {}
 
     const mutual = await this.likeRepo.findOne({ where: { userId: likedId, likedUserId: likerId } });
     if (mutual) {
@@ -367,20 +369,42 @@ export class MatchingService {
     }
 
     const existing = await this.likeRepo.findOne({ where: { userId: likerId, likedUserId: likedId } });
-    if (existing) return existing;
+    if (existing) {
+      const mutual = await this.likeRepo.findOne({ where: { userId: likedId, likedUserId: likerId } });
+      if (mutual) {
+        const alreadyMatched = await this.matchRepo.findOne({
+          where: [
+            { user1Id: likerId, user2Id: likedId, isActive: true },
+            { user1Id: likedId, user2Id: likerId, isActive: true },
+          ],
+        });
+        if (!alreadyMatched) {
+          const match = this.matchRepo.create({ user1Id: likerId, user2Id: likedId, matchedAt: new Date(), isActive: true });
+          await this.matchRepo.save(match);
+          await this.enhancementService.updateEloOnMatch(likerId);
+          await this.enhancementService.updateEloOnMatch(likedId);
+          this.eventEmitter.emit('match.created', { matchId: match.id, user1Id: likerId, user2Id: likedId });
+          const updatedMatch = await this.matchRepo.findOne({ where: { id: match.id } });
+          return { superLiked: true, matched: true, matchId: match.id, conversationId: updatedMatch?.conversationId };
+        }
+      }
+      return existing;
+    }
 
     const like = this.likeRepo.create({ userId: likerId, likedUserId: likedId, isSuperLike: true });
     await this.likeRepo.save(like);
     await this.dailyLikeRepo.increment({ id: dailyLike.id }, 'superLikesGiven', 1);
 
     const likedUser = await this.userRepo.findOne({ where: { id: likedId } });
-    await this.enhancementService.trackBehavior({
-      userId: likerId,
-      targetUserId: likedId,
-      action: 'super_like',
-      targetAge: likedUser?.dateOfBirth ? Math.floor((Date.now() - new Date(likedUser.dateOfBirth).getTime()) / (365.25 * 24 * 60 * 60 * 1000)) : undefined,
-      targetGender: likedUser?.gender,
-    });
+    try {
+      await this.enhancementService.trackBehavior({
+        userId: likerId,
+        targetUserId: likedId,
+        action: 'super_like',
+        targetAge: likedUser?.dateOfBirth ? Math.floor((Date.now() - new Date(likedUser.dateOfBirth).getTime()) / (365.25 * 24 * 60 * 60 * 1000)) : undefined,
+        targetGender: likedUser?.gender,
+      });
+    } catch (_) {}
 
     const mutual = await this.likeRepo.findOne({ where: { userId: likedId, likedUserId: likerId } });
     if (mutual) {
@@ -924,16 +948,18 @@ export class MatchingService {
     return this.momentRepo.save(moment);
   }
 
-  async getMoments(userId: string) {
+  async getMoments(userId: string, page = 1, limit = 20) {
     const matches = await this.matchRepo.find({
       where: [{ user1Id: userId, isActive: true }, { user2Id: userId, isActive: true }],
     });
     const matchUserIds = matches.map((m) => (m.user1Id === userId ? m.user2Id : m.user1Id));
-    if (matchUserIds.length === 0) return [];
+    if (matchUserIds.length === 0) return { moments: [], meta: { page, limit, total: 0, totalPages: 0 } };
 
-    const moments = await this.momentRepo.find({
-      where: { userId: In(matchUserIds), expiresAt: MoreThan(new Date()) },
+    const [moments, total] = await this.momentRepo.findAndCount({
+      where: { userId: In(matchUserIds), expiresAt: MoreThan(new Date()), deletedAt: IsNull() },
       order: { createdAt: 'DESC' },
+      skip: (page - 1) * limit,
+      take: limit,
     });
 
     const momentIds = moments.map((m) => m.id);
@@ -948,15 +974,18 @@ export class MatchingService {
     const users = userIds.length > 0 ? await this.userRepo.find({ where: { id: In(userIds) } }) : [];
     const userMap = new Map(users.map((u) => [u.id, u]));
 
-    return moments.map((m) => ({
-      ...m,
-      viewed: viewedSet.has(m.id),
-      user: userMap.get(m.userId) || null,
-    }));
+    return {
+      moments: moments.map((m) => ({
+        ...m,
+        viewed: viewedSet.has(m.id),
+        user: userMap.get(m.userId) || null,
+      })),
+      meta: { page, limit, total, totalPages: Math.ceil(total / limit) },
+    };
   }
 
   async viewMoment(userId: string, momentId: string) {
-    const moment = await this.momentRepo.findOne({ where: { id: momentId } });
+    const moment = await this.momentRepo.findOne({ where: { id: momentId, deletedAt: IsNull() } });
     if (!moment) throw new NotFoundException('Moment not found');
     if (new Date(moment.expiresAt) <= new Date()) throw new BadRequestException('Moment has expired');
     if (moment.userId === userId) return { viewed: true };
@@ -967,34 +996,50 @@ export class MatchingService {
       await this.momentViewRepo.save(view);
       await this.momentRepo.increment({ id: momentId }, 'viewCount', 1);
 
-      const viewer = await this.userRepo.findOne({ where: { id: userId } });
-      const notif = this.notifRepo.create({
-        userId: moment.userId,
-        type: 'moment_viewed',
-        title: 'Someone viewed your Moment',
-        body: `${viewer?.fullName || 'Someone'} viewed your Moment`,
-        data: { momentId, viewerId: userId },
-        channel: 'in_app',
-      });
-      await this.notifRepo.save(notif);
+      this.createMomentViewNotification(moment.userId, momentId, userId);
     }
     return { viewed: true };
   }
 
+  private async createMomentViewNotification(ownerId: string, momentId: string, viewerId: string) {
+    try {
+      const viewer = await this.userRepo.findOne({ where: { id: viewerId }, select: ['fullName'] });
+      const notif = this.notifRepo.create({
+        userId: ownerId,
+        type: 'moment_viewed',
+        title: 'Someone viewed your Moment',
+        body: `${viewer?.fullName || 'Someone'} viewed your Moment`,
+        data: { momentId, viewerId },
+        channel: 'in_app',
+      });
+      await this.notifRepo.save(notif);
+    } catch (e) {
+      console.error('Failed to create moment view notification:', e);
+    }
+  }
+
   async deleteMoment(userId: string, momentId: string) {
-    const moment = await this.momentRepo.findOne({ where: { id: momentId } });
+    const moment = await this.momentRepo.findOne({ where: { id: momentId, deletedAt: IsNull() } });
     if (!moment) throw new NotFoundException('Moment not found');
     if (moment.userId !== userId) throw new BadRequestException('Not your moment');
-    await this.momentRepo.remove(moment);
+    await this.momentRepo.softDelete(momentId);
     return { deleted: true };
   }
 
-  async getMyMoments(userId: string) {
-    const moments = await this.momentRepo.find({ where: { userId }, order: { createdAt: 'DESC' } });
-    return moments.map((m) => ({
-      ...m,
-      expired: new Date(m.expiresAt) <= new Date(),
-    }));
+  async getMyMoments(userId: string, page = 1, limit = 20) {
+    const [moments, total] = await this.momentRepo.findAndCount({
+      where: { userId, deletedAt: IsNull() },
+      order: { createdAt: 'DESC' },
+      skip: (page - 1) * limit,
+      take: limit,
+    });
+    return {
+      moments: moments.map((m) => ({
+        ...m,
+        expired: new Date(m.expiresAt) <= new Date(),
+      })),
+      meta: { page, limit, total, totalPages: Math.ceil(total / limit) },
+    };
   }
 
   async checkScamRisk(userId: string, targetUserId: string) {
@@ -1068,6 +1113,13 @@ export class MatchingService {
 
   async cleanupExpiredMoments() {
     const result = await this.momentRepo.delete({ expiresAt: LessThan(new Date()) });
+    return { deleted: result.affected || 0 };
+  }
+
+  async cleanupOldMoments() {
+    const thirtyDaysAgo = new Date();
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+    const result = await this.momentRepo.delete({ createdAt: LessThan(thirtyDaysAgo) });
     return { deleted: result.affected || 0 };
   }
 }

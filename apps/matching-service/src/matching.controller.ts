@@ -160,14 +160,22 @@ export class MatchingController {
 
   @Get('moments/mine')
   @ApiOperation({ summary: 'Get own moments' })
-  getMyMoments(@Headers('x-user-id') userId: string) {
-    return this.matchingService.getMyMoments(userId);
+  getMyMoments(
+    @Headers('x-user-id') userId: string,
+    @Query('page') page?: string,
+    @Query('limit') limit?: string,
+  ) {
+    return this.matchingService.getMyMoments(userId, page ? parseInt(page) : 1, limit ? parseInt(limit) : 20);
   }
 
   @Get('moments')
   @ApiOperation({ summary: 'Get moments feed from matches' })
-  getMoments(@Headers('x-user-id') userId: string) {
-    return this.matchingService.getMoments(userId);
+  getMoments(
+    @Headers('x-user-id') userId: string,
+    @Query('page') page?: string,
+    @Query('limit') limit?: string,
+  ) {
+    return this.matchingService.getMoments(userId, page ? parseInt(page) : 1, limit ? parseInt(limit) : 20);
   }
 
   @Post('moments/:id/view')
