@@ -1,4 +1,8 @@
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || "/api";
+const API_BASE = process.env.NEXT_PUBLIC_API_URL;
+
+if (!API_BASE && typeof window !== 'undefined') {
+  console.error('[admin-web] NEXT_PUBLIC_API_URL is not set. API calls will fail.');
+}
 
 let accessToken: string | null = null;
 
@@ -24,6 +28,8 @@ interface ApiOptions extends RequestInit {
 
 async function request<T>(endpoint: string, options: ApiOptions = {}): Promise<T> {
   const { params, ...fetchOptions } = options;
+
+  if (!API_BASE) throw new Error('NEXT_PUBLIC_API_URL environment variable is not set');
 
   let url = `${API_BASE}${endpoint}`;
   if (params) {
