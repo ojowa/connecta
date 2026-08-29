@@ -46,11 +46,16 @@ import { useIncomingCalls } from '../hooks/useIncomingCalls';
 
 const Stack = createNativeStackNavigator();
 
+function IncomingCallsListener() {
+  useIncomingCalls();
+  return null;
+}
+
 export const RootNavigator: React.FC = () => {
   const isAuthenticated = useAppStore((s) => s.isAuthenticated);
-  useIncomingCalls();
   return (
     <NavigationContainer>
+      {isAuthenticated && <IncomingCallsListener />}
       <Stack.Navigator screenOptions={{ headerShown: false }}>
         {!isAuthenticated ? (
           <Stack.Screen name="Auth" component={AuthNavigator} />
