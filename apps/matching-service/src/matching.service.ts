@@ -277,7 +277,27 @@ export class MatchingService {
     }
 
     const existing = await this.likeRepo.findOne({ where: { userId: likerId, likedUserId: likedId } });
-    if (existing) return existing;
+    if (existing) {
+      const mutual = await this.likeRepo.findOne({ where: { userId: likedId, likedUserId: likerId } });
+      if (mutual) {
+        const alreadyMatched = await this.matchRepo.findOne({
+          where: [
+            { user1Id: likerId, user2Id: likedId, isActive: true },
+            { user1Id: likedId, user2Id: likerId, isActive: true },
+          ],
+        });
+        if (!alreadyMatched) {
+          const match = this.matchRepo.create({ user1Id: likerId, user2Id: likedId, matchedAt: new Date(), isActive: true });
+          await this.matchRepo.save(match);
+          await this.enhancementService.updateEloOnMatch(likerId);
+          await this.enhancementService.updateEloOnMatch(likedId);
+          this.eventEmitter.emit('match.created', { matchId: match.id, user1Id: likerId, user2Id: likedId });
+          const updatedMatch = await this.matchRepo.findOne({ where: { id: match.id } });
+          return { liked: true, matched: true, matchId: match.id, conversationId: updatedMatch?.conversationId };
+        }
+      }
+      return existing;
+    }
     const like = this.likeRepo.create({ userId: likerId, likedUserId: likedId });
     await this.likeRepo.save(like);
     await this.dailyLikeRepo.increment({ id: dailyLike.id }, 'likesGiven', 1);
