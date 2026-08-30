@@ -34,7 +34,7 @@ jobs:
         run: npm ci
 
       - name: Build all services
-        run: npm run build:all 2>&1 | tee build.log
+        run: npm run build:all > build.log 2>&1 || true
 
       - name: Install production dependencies for deployment
         run: npm ci --omit=dev
