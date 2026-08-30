@@ -16,9 +16,7 @@ on:
   workflow_dispatch:
 
 env:
-  # Azure Container Registry (ACR) - Basic tier required for free container apps
   AZURE_CONTAINER_REGISTRY: ${{ secrets.AZURE_CONTAINER_REGISTRY }}
-  # Azure Container Apps - has a generous free tier
   CONTAINER_APP_NAME: ojchat-backend
   CONTAINER_APP_ENV: ojchat-env
   RESOURCE_GROUP: ojchat-rg
