@@ -21,7 +21,7 @@ permissions:
 
 env:
   AZURE_WEBAPP_NAME: ojchatapi
-  AZURE_WEBAPP_RESOURCE_GROUP: ojchat-rg
+  AZURE_WEBAPP_RESOURCE_GROUP: ojchat
   NODE_VERSION: '22.x'
 
 jobs:
@@ -59,6 +59,7 @@ jobs:
             package*.json
             libs
             node_modules
+            startup.sh
           retention-days: 1
 
       - name: Upload build log
@@ -95,7 +96,7 @@ jobs:
           app-name: ${{ env.AZURE_WEBAPP_NAME }}
           resource-group: ${{ env.AZURE_WEBAPP_RESOURCE_GROUP }}
           package: .
-          startup-command: npx concurrently --names gw,auth,usr,match,chat,call,media,pay,notif,search,content,support,admin --kill-others "node -r tsconfig-paths/register dist/apps/api-gateway/src/main.js" "node -r tsconfig-paths/register dist/apps/auth-service/src/main.js" "node -r tsconfig-paths/register dist/apps/users-service/src/main.js" "node -r tsconfig-paths/register dist/apps/matching-service/src/main.js" "node -r tsconfig-paths/register dist/apps/chat-service/src/main.js" "node -r tsconfig-paths/register dist/apps/calls-service/src/main.js" "node -r tsconfig-paths/register dist/apps/media-service/src/main.js" "node -r tsconfig-paths/register dist/apps/payments-service/src/main.js" "node -r tsconfig-paths/register dist/apps/notifications-service/src/main.js" "node -r tsconfig-paths/register dist/apps/search-service/src/main.js" "node -r tsconfig-paths/register dist/apps/content-service/src/main.js" "node -r tsconfig-paths/register dist/apps/support-service/src/main.js" "node -r tsconfig-paths/register dist/apps/admin-service/src/main.js"
+          startup-command: bash startup.sh
 
       - name: Configure App Settings
         run: |
