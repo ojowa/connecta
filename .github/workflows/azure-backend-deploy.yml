@@ -16,7 +16,7 @@ on:
   workflow_dispatch:
 
 env:
-  AZURE_WEBAPP_NAME: ojchat-backend
+  AZURE_WEBAPP_NAME: ojchatapi
   AZURE_WEBAPP_RESOURCE_GROUP: ojchat-rg
   NODE_VERSION: '24.x'
 
