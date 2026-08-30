@@ -1,106 +1,65 @@
-name: Build and Deploy Backend to Azure Web App - ojchatapi
+# Docs for the Azure Web Apps Deploy action: https://github.com/Azure/webapps-deploy
+# More GitHub Actions for Azure: https://github.com/Azure/actions
+
+name: Build and deploy Node.js app to Azure Web App - ojchatapi
 
 on:
   push:
-    branches: [main]
-    paths:
-      - 'apps/**'
-      - '!apps/admin-web/**'
-      - 'libs/**'
-      - 'migrations/**'
-      - 'package*.json'
-      - 'tsconfig*.json'
-      - 'nest-cli.json'
-      - 'ormconfig.ts'
-      - '.github/workflows/main_ojchatapi.yml'
+    branches:
+      - main
   workflow_dispatch:
 
 jobs:
   build:
     runs-on: ubuntu-latest
     permissions:
-      contents: read
+      contents: read #This is required for actions/checkout
 
     steps:
       - uses: actions/checkout@v4
 
-      - name: Set up Node.js 24.x
-        uses: actions/setup-node@v4
+      - name: Set up Node.js version
+        uses: actions/setup-node@v3
         with:
           node-version: '24.x'
-          cache: 'npm'
 
-      - name: Install dependencies
-        run: npm ci
+      - name: npm install, build, and test
+        run: |
+          npm install
+          npm run build --if-present
+          npm run test --if-present
 
-      - name: Create build log file
-        run: touch build.log
-
-      - name: Build all services
-        run: npm run build:all 2>&1 | tee build.log || true
-
-      - name: Install production dependencies for deployment
-        run: npm ci --omit=dev
-
-      - name: Upload artifact for deployment
+      - name: Upload artifact for deployment job
         uses: actions/upload-artifact@v4
         with:
-          name: dist
-          path: |
-            dist
-            package*.json
-            libs
-            node_modules
-          retention-days: 1
-
-      - name: Upload build log
-        uses: actions/upload-artifact@v4
-        if: always()
-        with:
-          name: build-log
-          path: build.log
-          retention-days: 1
+          name: node-app
+          path: .
 
   deploy:
     runs-on: ubuntu-latest
     needs: build
     permissions:
-      id-token: write
-      contents: read
+      id-token: write #This is required for requesting the JWT
+      contents: read #This is required for actions/checkout
 
     steps:
       - name: Download artifact from build job
         uses: actions/download-artifact@v4
         with:
-          name: dist
-          path: .
-
+          name: node-app
+      
       - name: Login to Azure
         uses: azure/login@v2
         with:
-          creds: ${{ secrets.AZURE_CREDENTIALS }}
+          client-id: ${{ secrets.AZUREAPPSERVICE_CLIENTID_71130D1D1DF842EB8712F848A49DE8B2 }}
+          tenant-id: ${{ secrets.AZUREAPPSERVICE_TENANTID_E08A0DEBAA68454B935C397FA79B7EF0 }}
+          subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_ABF2F4B98C92447B97D1FF4D57389A7D }}
 
-      - name: Deploy to Azure Web App
+      - name: 'Deploy to Azure Web App'
+        id: deploy-to-webapp
         uses: azure/webapps-deploy@v3
         with:
           app-name: 'ojchatapi'
           slot-name: 'Production'
           package: .
-          startup-command: npx concurrently --names gw,auth,usr,match,chat,call,media,pay,notif,search,content,support,admin --kill-others "node -r tsconfig-paths/register dist/apps/api-gateway/src/main.js" "node -r tsconfig-paths/register dist/apps/auth-service/src/main.js" "node -r tsconfig-paths/register dist/apps/users-service/src/main.js" "node -r tsconfig-paths/register dist/apps/matching-service/src/main.js" "node -r tsconfig-paths/register dist/apps/chat-service/src/main.js" "node -r tsconfig-paths/register dist/apps/calls-service/src/main.js" "node -r tsconfig-paths/register dist/apps/media-service/src/main.js" "node -r tsconfig-paths/register dist/apps/payments-service/src/main.js" "node -r tsconfig-paths/register dist/apps/notifications-service/src/main.js" "node -r tsconfig-paths/register dist/apps/search-service/src/main.js" "node -r tsconfig-paths/register dist/apps/content-service/src/main.js" "node -r tsconfig-paths/register dist/apps/support-service/src/main.js" "node -r tsconfig-paths/register dist/apps/admin-service/src/main.js"
-
-      - name: Configure App Settings
-        run: |
-          az webapp config appsettings set \
-            --name ojchatapi \
-            --resource-group ojchat-rg \
-            --settings \
-              NODE_ENV=production \
-              DATABASE_URL="${{ secrets.DATABASE_URL }}" \
-              JWT_SECRET="${{ secrets.JWT_SECRET }}" \
-              REDIS_URL="${{ secrets.REDIS_URL }}" \
-              ADMIN_JWT_SECRET="${{ secrets.ADMIN_JWT_SECRET }}" \
-              EXPO_PUSH_TOKEN="${{ secrets.EXPO_PUSH_TOKEN }}"
-
-      - name: Run Database Migrations
-        run: |
-          az webapp ssh --name ojchatapi --resource-group ojchat-rg --command "npm run migration:run"
+          
