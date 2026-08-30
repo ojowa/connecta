@@ -36,6 +36,9 @@ jobs:
       - name: Build all services
         run: npm run build:all
 
+      - name: Install production dependencies for deployment
+        run: npm ci --omit=dev
+
       - name: Upload artifact for deployment
         uses: actions/upload-artifact@v4
         with:
@@ -44,9 +47,7 @@ jobs:
             dist
             package*.json
             libs
-            node_modules/tsconfig-paths
-            node_modules/concurrently
-            node_modules/.bin/concurrently
+            node_modules
           retention-days: 1
 
   deploy:
