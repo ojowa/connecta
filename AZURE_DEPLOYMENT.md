@@ -53,19 +53,6 @@ Basic C0 tier (256 MB) - not free after first month
 az redis create --name ojchat-redis --resource-group ojchat-rg --location eastus --sku Basic --vm-size C0
 ```
 
-### 7. Azure Static Web Apps (Admin Web)
-Free tier available
-```bash
-az staticwebapp create \
-  --name ojchat-admin \
-  --resource-group ojchat-rg \
-  --location eastus2 \
-  --source https://github.com/yourusername/OJChat \
-  --branch main \
-  --app-location "/apps/admin-web" \
-  --output-location ".next"
-```
-
 ---
 
 ## GitHub Repository Secrets (Settings → Secrets and variables → Actions)
@@ -81,7 +68,6 @@ az staticwebapp create \
 | `REDIS_URL` | Redis connection string | `redis://ojchat-redis.redis.cache.windows.net:6380` |
 | `ADMIN_JWT_SECRET` | Admin panel JWT secret | `admin-jwt-secret-different-from-above` |
 | `EXPO_PUSH_TOKEN` | Expo push notification token | `xxxxxxxxxxxx` |
-| `AZURE_STATIC_WEB_APPS_API_TOKEN` | From Azure Static Web Apps "Manage deployment token" | `xxxxxxxxxxxx` |
 
 ---
 
