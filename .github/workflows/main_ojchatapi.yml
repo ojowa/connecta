@@ -1,4 +1,4 @@
-name: Deploy Backend to Azure App Service (Node.js 24 LTS)
+name: Build and Deploy Backend to Azure Web App - ojchatapi
 
 on:
   push:
@@ -12,29 +12,22 @@ on:
       - 'tsconfig*.json'
       - 'nest-cli.json'
       - 'ormconfig.ts'
-      - '.github/workflows/azure-backend-deploy.yml'
+      - '.github/workflows/main_ojchatapi.yml'
   workflow_dispatch:
-
-env:
-  AZURE_WEBAPP_NAME: ojchatapi
-  AZURE_WEBAPP_RESOURCE_GROUP: ojchat-rg
-  NODE_VERSION: '24.x'
 
 jobs:
   build:
-    name: Build Application
     runs-on: ubuntu-latest
     permissions:
       contents: read
 
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Setup Node.js ${{ env.NODE_VERSION }}
+      - name: Set up Node.js 24.x
         uses: actions/setup-node@v4
         with:
-          node-version: ${{ env.NODE_VERSION }}
+          node-version: '24.x'
           cache: 'npm'
 
       - name: Install dependencies
@@ -43,7 +36,7 @@ jobs:
       - name: Build all services
         run: npm run build:all
 
-      - name: Upload build artifact
+      - name: Upload artifact for deployment
         uses: actions/upload-artifact@v4
         with:
           name: dist
@@ -57,7 +50,6 @@ jobs:
           retention-days: 1
 
   deploy:
-    name: Deploy to Azure App Service
     runs-on: ubuntu-latest
     needs: build
     permissions:
@@ -65,33 +57,30 @@ jobs:
       contents: read
 
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Download build artifact
+      - name: Download artifact from build job
         uses: actions/download-artifact@v4
         with:
           name: dist
           path: .
 
-      - name: Azure Login
+      - name: Login to Azure
         uses: azure/login@v2
         with:
           creds: ${{ secrets.AZURE_CREDENTIALS }}
 
       - name: Deploy to Azure Web App
-        uses: azure/webapps-deploy@v2
+        uses: azure/webapps-deploy@v3
         with:
-          app-name: ${{ env.AZURE_WEBAPP_NAME }}
-          resource-group: ${{ env.AZURE_WEBAPP_RESOURCE_GROUP }}
+          app-name: 'ojchatapi'
+          slot-name: 'Production'
           package: .
           startup-command: npx concurrently --names gw,auth,usr,match,chat,call,media,pay,notif,search,content,support,admin --kill-others "node -r tsconfig-paths/register dist/apps/api-gateway/src/main.js" "node -r tsconfig-paths/register dist/apps/auth-service/src/main.js" "node -r tsconfig-paths/register dist/apps/users-service/src/main.js" "node -r tsconfig-paths/register dist/apps/matching-service/src/main.js" "node -r tsconfig-paths/register dist/apps/chat-service/src/main.js" "node -r tsconfig-paths/register dist/apps/calls-service/src/main.js" "node -r tsconfig-paths/register dist/apps/media-service/src/main.js" "node -r tsconfig-paths/register dist/apps/payments-service/src/main.js" "node -r tsconfig-paths/register dist/apps/notifications-service/src/main.js" "node -r tsconfig-paths/register dist/apps/search-service/src/main.js" "node -r tsconfig-paths/register dist/apps/content-service/src/main.js" "node -r tsconfig-paths/register dist/apps/support-service/src/main.js" "node -r tsconfig-paths/register dist/apps/admin-service/src/main.js"
 
       - name: Configure App Settings
         run: |
           az webapp config appsettings set \
-            --name ${{ env.AZURE_WEBAPP_NAME }} \
-            --resource-group ${{ env.AZURE_WEBAPP_RESOURCE_GROUP }} \
+            --name ojchatapi \
+            --resource-group ojchat-rg \
             --settings \
               NODE_ENV=production \
               DATABASE_URL="${{ secrets.DATABASE_URL }}" \
@@ -102,4 +91,4 @@ jobs:
 
       - name: Run Database Migrations
         run: |
-          az webapp ssh --name ${{ env.AZURE_WEBAPP_NAME }} --resource-group ${{ env.AZURE_WEBAPP_RESOURCE_GROUP }} --command "npm run migration:run"
+          az webapp ssh --name ojchatapi --resource-group ojchat-rg --command "npm run migration:run"
