@@ -80,12 +80,6 @@ az staticwebapp create \
 | `JWT_SECRET` | JWT signing secret (32+ chars) | `your-super-secret-jwt-key-here` |
 | `REDIS_URL` | Redis connection string | `redis://ojchat-redis.redis.cache.windows.net:6380` |
 | `ADMIN_JWT_SECRET` | Admin panel JWT secret | `admin-jwt-secret-different-from-above` |
-| `PAYSTACK_SECRET_KEY` | Paystack secret key | `sk_test_xxxxxxxxxxxx` |
-| `PAYSTACK_PUBLIC_KEY` | Paystack public key | `pk_test_xxxxxxxxxxxx` |
-| `AWS_ACCESS_KEY_ID` | AWS/S3 access key | `AKIA...` |
-| `AWS_SECRET_ACCESS_KEY` | AWS/S3 secret key | `xxxxxxxxxxxx` |
-| `AWS_REGION` | AWS region | `us-east-1` |
-| `S3_BUCKET` | S3 bucket name | `ojchat-uploads` |
 | `EXPO_PUSH_TOKEN` | Expo push notification token | `xxxxxxxxxxxx` |
 | `AZURE_STATIC_WEB_APPS_API_TOKEN` | From Azure Static Web Apps "Manage deployment token" | `xxxxxxxxxxxx` |
 
@@ -138,3 +132,21 @@ docker run -p 3000:3000 \
   -e REDIS_URL="redis://..." \
   ojchat-backend
 ```
+
+---
+
+## Post-Deployment Configuration (All via Admin Panel)
+
+After deployment, configure these via Admin Web → Settings:
+
+### Payments
+1. Settings → Payments → Set active platform (Paystack/Flutterwave)
+2. Enter secret/public keys → Save
+
+### Media/Storage
+1. Settings → Storage → Choose provider (Local, AWS S3, Cloudflare R2)
+2. For S3: Access Key, Secret Key, Region, Bucket
+3. For R2: Account ID, Access Key, Secret Key, Bucket
+4. Save → Media service auto-reloads
+
+All config stored in `system_settings` table (`platform_settings` key), no env vars needed.
