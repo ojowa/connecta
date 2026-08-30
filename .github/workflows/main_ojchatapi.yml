@@ -111,7 +111,3 @@ jobs:
               REDIS_URL="${{ secrets.REDIS_URL }}" \
               ADMIN_JWT_SECRET="${{ secrets.ADMIN_JWT_SECRET }}" \
               EXPO_PUSH_TOKEN="${{ secrets.EXPO_PUSH_TOKEN }}"
-
-      - name: Run Database Migrations
-        run: |
-          az webapp ssh --name ${{ env.AZURE_WEBAPP_NAME }} --resource-group ${{ env.AZURE_WEBAPP_RESOURCE_GROUP }} --command "npm run migration:run"

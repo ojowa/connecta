@@ -15,6 +15,10 @@ if [ ! -d "dist" ]; then
   exit 1
 fi
 
+# Run database migrations first
+echo "Running database migrations..."
+npm run migration:run || echo "Migration failed or already applied, continuing..."
+
 # Run all services with concurrently
 npx concurrently --names gw,auth,usr,match,chat,call,media,pay,notif,search,content,support,admin --kill-others \
   "node -r tsconfig-paths/register dist/apps/api-gateway/src/main.js" \
