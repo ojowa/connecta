@@ -1,0 +1,42 @@
+name: Deploy Admin Web to Azure (Free Tier)
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'apps/admin-web/**'
+      - '.github/workflows/azure-admin-web-deploy.yml'
+  workflow_dispatch:
+
+env:
+  STATIC_WEB_APP_NAME: ojchat-admin
+  RESOURCE_GROUP: ojchat-rg
+  LOCATION: eastus2
+
+jobs:
+  build-and-deploy:
+    name: Build and Deploy Admin Web
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: read
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Build Admin Web
+        working-directory: ./apps/admin-web
+        run: |
+          npm ci
+          npm run build
+
+      - name: Deploy to Azure Static Web Apps
+        uses: Azure/static-web-apps-deploy@v1
+        with:
+          azure_static_web_apps_api_token: ${{ secrets.AZURE_STATIC_WEB_APPS_API_TOKEN }}
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          action: "upload"
+          app_location: "./apps/admin-web"
+          output_location: ".next"
+          app_build_command: "npm run build"

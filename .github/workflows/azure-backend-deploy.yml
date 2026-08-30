@@ -1,10 +1,11 @@
-name: Deploy to Azure (Free Tier)
+name: Deploy Backend to Azure (Free Tier)
 
 on:
   push:
     branches: [main]
     paths:
       - 'apps/**'
+      - '!apps/admin-web/**'
       - 'libs/**'
       - 'migrations/**'
       - 'package*.json'
@@ -12,7 +13,7 @@ on:
       - 'nest-cli.json'
       - 'ormconfig.ts'
       - 'Dockerfile'
-      - '.github/workflows/azure-deploy.yml'
+      - '.github/workflows/azure-backend-deploy.yml'
   workflow_dispatch:
 
 env:
