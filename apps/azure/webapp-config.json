@@ -1,0 +1,25 @@
+{
+  "properties": {
+    "siteConfig": {
+      "linuxFxVersion": "DOCKER|${{ secrets.AZURE_CONTAINER_REGISTRY }}/ojchat-backend:${{ github.sha }}",
+      "appSettings": [
+        { "name": "NODE_ENV", "value": "production", "slotSetting": false },
+        { "name": "DATABASE_URL", "value": "@DATABASE_URL", "slotSetting": true },
+        { "name": "JWT_SECRET", "value": "@JWT_SECRET", "slotSetting": true },
+        { "name": "REDIS_URL", "value": "@REDIS_URL", "slotSetting": true },
+        { "name": "ADMIN_JWT_SECRET", "value": "@ADMIN_JWT_SECRET", "slotSetting": true },
+        { "name": "PAYSTACK_SECRET_KEY", "value": "@PAYSTACK_SECRET_KEY", "slotSetting": true },
+        { "name": "PAYSTACK_PUBLIC_KEY", "value": "@PAYSTACK_PUBLIC_KEY", "slotSetting": true },
+        { "name": "AWS_ACCESS_KEY_ID", "value": "@AWS_ACCESS_KEY_ID", "slotSetting": true },
+        { "name": "AWS_SECRET_ACCESS_KEY", "value": "@AWS_SECRET_ACCESS_KEY", "slotSetting": true },
+        { "name": "AWS_REGION", "value": "@AWS_REGION", "slotSetting": true },
+        { "name": "S3_BUCKET", "value": "@S3_BUCKET", "slotSetting": true },
+        { "name": "EXPO_PUSH_TOKEN", "value": "@EXPO_PUSH_TOKEN", "slotSetting": true }
+      ],
+      "healthCheckPath": "/v1/health",
+      "http20Enabled": true,
+      "minTlsVersion": "1.2",
+      "ftpsState": "FtpsOnly"
+    }
+  }
+}
