@@ -33,8 +33,8 @@ const useMoments = () =>
   useQuery<MomentWithUser[]>({
     queryKey: ['moments'],
     queryFn: async () => {
-      const { data } = await apiClient.get<MomentWithUser[]>(ENDPOINTS.MATCHING.MOMENTS);
-      return data;
+      const { data } = await apiClient.get<{ moments: MomentWithUser[]; meta: any }>(ENDPOINTS.MATCHING.MOMENTS);
+      return data.moments;
     },
     refetchInterval: 60000,
   });
@@ -65,8 +65,8 @@ const useMyMoments = () =>
   useQuery<MyMoment[]>({
     queryKey: ['myMoments'],
     queryFn: async () => {
-      const { data } = await apiClient.get<MyMoment[]>(ENDPOINTS.MATCHING.MOMENTS_MINE);
-      return data;
+      const { data } = await apiClient.get<{ moments: MyMoment[]; meta: any }>(ENDPOINTS.MATCHING.MOMENTS_MINE);
+      return data.moments;
     },
     refetchInterval: 60000,
   });
