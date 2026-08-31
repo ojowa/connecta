@@ -1033,10 +1033,13 @@ export class MatchingService {
       skip: (page - 1) * limit,
       take: limit,
     });
+    const user = await this.userRepo.findOne({ where: { id: userId }, select: ['id', 'fullName', 'avatarUrl'] });
     return {
       moments: moments.map((m) => ({
         ...m,
         expired: new Date(m.expiresAt) <= new Date(),
+        viewed: true,
+        user: user || null,
       })),
       meta: { page, limit, total, totalPages: Math.ceil(total / limit) },
     };

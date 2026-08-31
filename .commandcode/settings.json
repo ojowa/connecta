@@ -1,0 +1,16 @@
+{
+  "permissions": {
+    "allow": [
+      "Shell(npm:*)",
+      "Shell(type:*)",
+      "Shell(findstr /n \"text()\\|bytes()\\|base64()\\|write(\" \"C:\\Dev\\OJChat\\ojchat-mobile\\node_modules\\expo-file-system\\build\\File.d.ts\" 2>nul || dir \"C:\\Dev\\OJChat\\ojchat-mobile\\node_modules\\expo-file-system\\build\" /b)",
+      "Shell(npx tsc --noEmit 2 >& 1)",
+      "Shell(cd C:\\Dev\\OJChat\\ojchat-mobile && npx tsc --noEmit > tsc-baseline.log 2>&1; echo EXIT=%ERRORLEVEL%)",
+      "Shell(npx tsc --version)",
+      "Shell(cd C:\\Dev\\OJChat\\ojchat-mobile && npx tsc -p tsconfig.json --noEmit > tsc-baseline.log 2>&1; echo EXIT=%ERRORLEVEL%)",
+      "Shell(npx tsc --noEmit)"
+    ],
+    "deny": [],
+    "defaultMode": "default"
+  }
+}

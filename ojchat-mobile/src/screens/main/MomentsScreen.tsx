@@ -126,6 +126,9 @@ const MomentCard: React.FC<{
     }
   };
 
+  const displayName = (moment as any).user?.fullName || moment.userName || 'Unknown';
+  const displayAvatar = (moment as any).user?.avatarUrl || moment.userAvatar;
+
   return (
     <View style={[styles.momentCard, expired && styles.momentCardExpired]}>
       {moment.mediaUrl && (
@@ -134,14 +137,14 @@ const MomentCard: React.FC<{
       <View style={styles.momentOverlay}>
         <View style={styles.momentHeader}>
           <View style={styles.momentUserInfo}>
-            {moment.userAvatar ? (
-              <Image source={{ uri: moment.userAvatar }} style={styles.momentAvatarSmall} />
+            {displayAvatar ? (
+              <Image source={{ uri: displayAvatar }} style={styles.momentAvatarSmall} />
             ) : (
               <View style={[styles.momentAvatarSmall, styles.momentAvatarSmallFallback]}>
-                <Text style={styles.momentAvatarSmallText}>{moment.userName.charAt(0).toUpperCase()}</Text>
+                <Text style={styles.momentAvatarSmallText}>{displayName.charAt(0).toUpperCase()}</Text>
               </View>
             )}
-            <Text style={styles.momentUserName}>{moment.userName}</Text>
+            <Text style={styles.momentUserName}>{displayName}</Text>
           </View>
           {isOwn && (
             <TouchableOpacity onPress={handleDelete} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
@@ -315,9 +318,13 @@ const MomentsScreen: React.FC = () => {
 
   const userMap = React.useMemo(() => {
     const map = new Map<string, { id: string; name: string; avatar?: string }>();
-    currentMoments.forEach((m) => {
+    currentMoments.forEach((m: any) => {
       if (!map.has(m.userId)) {
-        map.set(m.userId, { id: m.userId, name: m.userName, avatar: m.userAvatar });
+        map.set(m.userId, {
+          id: m.userId,
+          name: m.user?.fullName || m.userName || 'Unknown',
+          avatar: m.user?.avatarUrl || m.userAvatar,
+        });
       }
     });
     return map;
