@@ -15,7 +15,13 @@ interface ButtonProps {
 }
 
 export const Button: React.FC<ButtonProps> = ({
-  title, onPress, variant = 'primary', size = 'medium', loading, disabled, style,
+  title,
+  onPress,
+  variant = 'primary',
+  size = 'medium',
+  loading,
+  disabled,
+  style,
 }) => {
   const buttonStyle = [
     styles.base,
@@ -37,13 +43,22 @@ export const Button: React.FC<ButtonProps> = ({
       accessibilityState={{ disabled: disabled || loading, busy: loading }}
       accessibilityLabel={title}
     >
-      {loading ? <ActivityIndicator color={variant === 'primary' ? colors.white : colors.primary} /> : <Text style={textStyle}>{title}</Text>}
+      {loading ? (
+        <ActivityIndicator color={variant === 'primary' ? colors.white : colors.primary} />
+      ) : (
+        <Text style={textStyle}>{title}</Text>
+      )}
     </TouchableOpacity>
   );
 };
 
 const styles = StyleSheet.create({
-  base: { borderRadius: borderRadius.md, alignItems: 'center', justifyContent: 'center', flexDirection: 'row' },
+  base: {
+    borderRadius: borderRadius.md,
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexDirection: 'row',
+  },
   primary: { backgroundColor: colors.primary },
   secondary: { backgroundColor: colors.secondary },
   outline: { backgroundColor: 'transparent', borderWidth: 1, borderColor: colors.primary },

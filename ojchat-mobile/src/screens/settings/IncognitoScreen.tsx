@@ -13,6 +13,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiClient } from '../../services/api/apiClient';
+import { ENDPOINTS } from '../../constants/endpoints';
 import { usePlanInfo } from '../../hooks/useMatch';
 import { colors } from '../../theme/colors';
 import { typography } from '../../theme/typography';
@@ -27,7 +28,7 @@ export default function IncognitoScreen({ navigation }: any) {
 
   const { data: me, isLoading } = useQuery({
     queryKey: ['me'],
-    queryFn: () => apiClient.get('/users/me').then((r) => r.data),
+    queryFn: () => apiClient.get(ENDPOINTS.USERS.ME).then((r) => r.data),
   });
 
   useEffect(() => {
@@ -53,14 +54,16 @@ export default function IncognitoScreen({ navigation }: any) {
       if (!latestPlan.data?.isPremium) {
         throw new Error('NOT_PREMIUM');
       }
-      return apiClient.post('/matching/incognito/toggle');
+      return apiClient.post(ENDPOINTS.MATCHING.INCOGNITO);
     },
     onSuccess: (response) => {
       queryClient.invalidateQueries({ queryKey: ['me'] });
       const newStatus = response.data?.incognito ?? response.data?.incognitoMode;
       Alert.alert(
         'Incognito Mode',
-        newStatus ? 'You are now incognito. You won\'t appear in anyone\'s feed.' : 'Incognito mode disabled. You\'re back in the feed.'
+        newStatus
+          ? "You are now incognito. You won't appear in anyone's feed."
+          : "Incognito mode disabled. You're back in the feed.",
       );
     },
     onError: (error: any) => {
@@ -102,7 +105,17 @@ export default function IncognitoScreen({ navigation }: any) {
         <View style={styles.center}>
           <Text style={{ fontSize: 56, marginBottom: spacing.md }}>🕵️</Text>
           <Text style={typography.h2}>Premium Feature</Text>
-          <Text style={[typography.body, { color: colors.textSecondary, textAlign: 'center', marginTop: spacing.sm, marginBottom: spacing.xl }]}>
+          <Text
+            style={[
+              typography.body,
+              {
+                color: colors.textSecondary,
+                textAlign: 'center',
+                marginTop: spacing.sm,
+                marginBottom: spacing.xl,
+              },
+            ]}
+          >
             Upgrade to Premium to use Incognito Mode and browse profiles privately.
           </Text>
           <TouchableOpacity
@@ -151,9 +164,7 @@ export default function IncognitoScreen({ navigation }: any) {
           <Text style={styles.infoHeading}>How it works</Text>
           <View style={styles.infoRow}>
             <Text style={styles.bullet}>•</Text>
-            <Text style={styles.infoText}>
-              Your profile won't show up in the discovery feed
-            </Text>
+            <Text style={styles.infoText}>Your profile won't show up in the discovery feed</Text>
           </View>
           <View style={styles.infoRow}>
             <Text style={styles.bullet}>•</Text>
@@ -163,9 +174,7 @@ export default function IncognitoScreen({ navigation }: any) {
           </View>
           <View style={styles.infoRow}>
             <Text style={styles.bullet}>•</Text>
-            <Text style={styles.infoText}>
-              Existing matches and conversations are unaffected
-            </Text>
+            <Text style={styles.infoText}>Existing matches and conversations are unaffected</Text>
           </View>
           <View style={styles.infoRow}>
             <Text style={styles.bullet}>•</Text>

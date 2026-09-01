@@ -5,6 +5,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiClient } from '../../services/api/apiClient';
 import { Avatar } from '../../components/common/Avatar';
 import { Button } from '../../components/common/Button';
+import { ENDPOINTS } from '../../constants/endpoints';
 import { colors } from '../../theme/colors';
 import { typography } from '../../theme/typography';
 import { spacing } from '../../theme/spacing';
@@ -43,7 +44,9 @@ export default function BlockListScreen() {
   if (isLoading) {
     return (
       <SafeAreaView style={styles.safeArea}>
-        <View style={styles.center}><ActivityIndicator size="large" color={colors.primary} /></View>
+        <View style={styles.center}>
+          <ActivityIndicator size="large" color={colors.primary} />
+        </View>
       </SafeAreaView>
     );
   }
@@ -62,8 +65,15 @@ export default function BlockListScreen() {
           renderItem={({ item }) => (
             <View style={styles.userRow}>
               <Avatar uri={undefined} size={44} />
-              <Text style={styles.userName} numberOfLines={1}>User {item.blockedId.slice(0, 8)}</Text>
-              <Button title="Unblock" variant="ghost" onPress={() => handleUnblock(item)} style={styles.unblockButton} />
+              <Text style={styles.userName} numberOfLines={1}>
+                User {item.blockedId.slice(0, 8)}
+              </Text>
+              <Button
+                title="Unblock"
+                variant="ghost"
+                onPress={() => handleUnblock(item)}
+                style={styles.unblockButton}
+              />
             </View>
           )}
           contentContainerStyle={styles.list}
@@ -79,7 +89,13 @@ const styles = StyleSheet.create({
   emptyTitle: { ...typography.h3, color: colors.textPrimary, marginBottom: spacing.xs },
   emptySubtitle: { ...typography.body, color: colors.textSecondary },
   list: { padding: spacing.md },
-  userRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: spacing.md, borderBottomWidth: 1, borderBottomColor: colors.gray100 },
+  userRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: spacing.md,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.gray100,
+  },
   userName: { ...typography.body, flex: 1, marginLeft: spacing.md },
   unblockButton: { paddingHorizontal: spacing.sm },
 });

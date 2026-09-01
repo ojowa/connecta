@@ -5,6 +5,7 @@ import SocketManager from '../socket/SocketManager';
 import { CallData } from '../types/webrtc';
 import { useAppStore } from '../store';
 import { apiClient } from '../services/api/apiClient';
+import { logger } from '../utils/logger';
 
 export function useIncomingCalls() {
   const navigation = useNavigation<NativeStackNavigationProp<any>>();
@@ -31,7 +32,12 @@ export function useIncomingCalls() {
           const caller = res.data as any;
           callerName = caller?.fullName || 'Unknown';
           callerAvatar = caller?.photos?.[0]?.url;
-        } catch {}
+        } catch (err) {
+          logger.warn('Failed to fetch caller profile', {
+            callerId: data.callerId,
+            message: err instanceof Error ? err.message : String(err),
+          });
+        }
 
         navigation.navigate('IncomingCall', {
           callId: data.callId,
@@ -40,7 +46,12 @@ export function useIncomingCalls() {
           callerAvatar,
           callType: data.callType,
         });
-      } catch {}
+      } catch (err) {
+        logger.warn('Incoming call handler failed', {
+          callId: data.callId,
+          message: err instanceof Error ? err.message : String(err),
+        });
+      }
     });
 
     socketManager.getCallHandler().setOnCallStateChange((callId, status) => {

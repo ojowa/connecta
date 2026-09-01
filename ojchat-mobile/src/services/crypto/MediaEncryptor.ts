@@ -1,22 +1,11 @@
 import * as Crypto from 'expo-crypto';
-import { AESEncryptionKey, AESSealedData, aesEncryptAsync, aesDecryptAsync, AESKeySize } from 'expo-crypto';
+import { AESEncryptionKey, AESSealedData, aesEncryptAsync, aesDecryptAsync } from 'expo-crypto';
 import { File } from 'expo-file-system';
 import { EncryptedFile } from '../../types/crypto';
 import { fileSystem } from '../storage/fileSystem';
+import { bytesToHex, hexToBytes, concatBytes } from './primitives';
 
-function hexToBytes(hex: string): Uint8Array {
-  const bytes = new Uint8Array(hex.length / 2);
-  for (let i = 0; i < hex.length; i += 2) {
-    bytes[i / 2] = parseInt(hex.substring(i, i + 2), 16);
-  }
-  return bytes;
-}
-
-function bytesToHex(bytes: Uint8Array): string {
-  return Array.from(bytes)
-    .map((b) => b.toString(16).padStart(2, '0'))
-    .join('');
-}
+const GCM_TAG_LENGTH = 16;
 
 export class MediaEncryptor {
   static async encryptFile(fileUri: string): Promise<EncryptedFile> {
@@ -29,35 +18,28 @@ export class MediaEncryptor {
       throw new Error('File not found');
     }
 
-    const base64Data = await this.readFileAsBase64(fileUri);
+    const sourceFile = new File(fileUri);
+    const plaintextBytes = await sourceFile.bytes();
 
-    const key = await AESEncryptionKey.fromHex(fileKey);
-    const plaintextBytes = hexToBytes(
-      Array.from(new TextEncoder().encode(base64Data))
-        .map((b) => b.toString(16).padStart(2, '0'))
-        .join('')
-    );
-
+    const key = await AESEncryptionKey.import(fileKey, 'hex');
     const sealed = await aesEncryptAsync(plaintextBytes, key, {
       nonce: { bytes: ivBytes },
     });
 
-    const ciphertext = bytesToHex(new Uint8Array(await sealed.ciphertext()));
-    const tag = bytesToHex(new Uint8Array(await sealed.tag()));
-    const combined = ciphertext + tag;
+    const ciphertext = new Uint8Array(await sealed.ciphertext());
+    const tag = new Uint8Array(await sealed.tag());
+    const combined = concatBytes(ciphertext, tag);
 
     const cacheDir = await fileSystem.ensureCacheDir();
     const encryptedUri = `${cacheDir}encrypted_${Date.now()}.enc`;
     const encFile = new File(encryptedUri);
     encFile.write(combined);
 
-    const iv = bytesToHex(ivBytes);
-
     return {
       uri: encryptedUri,
       key: fileKey,
-      iv,
-      mac: tag,
+      iv: bytesToHex(ivBytes),
+      mac: bytesToHex(tag),
       mimeType: 'application/octet-stream',
       size: fileInfo.size || 0,
     };
@@ -74,12 +56,20 @@ export class MediaEncryptor {
       throw new Error('Encrypted file not found');
     }
 
-    const encryptedData = await this.readFileAsBase64(encryptedUri);
+    const encFile = new File(encryptedUri);
+    const allBytes = await encFile.bytes();
+    if (allBytes.length < GCM_TAG_LENGTH) {
+      throw new Error('Encrypted file is too short');
+    }
 
-    const aesKey = await AESEncryptionKey.fromHex(key);
+    const aesKey = await AESEncryptionKey.import(key, 'hex');
     const ivBytes = hexToBytes(iv);
-    const ciphertextBytes = hexToBytes(encryptedData);
-    const tagBytes = hexToBytes(expectedMac);
+    const ciphertextBytes = allBytes.slice(0, allBytes.length - GCM_TAG_LENGTH);
+    const tagBytes = allBytes.slice(allBytes.length - GCM_TAG_LENGTH);
+
+    if (bytesToHex(tagBytes) !== expectedMac) {
+      throw new Error('Authentication tag mismatch');
+    }
 
     const sealed = AESSealedData.fromParts(ivBytes, ciphertextBytes, tagBytes);
     const decrypted = await aesDecryptAsync(sealed, aesKey, { output: 'bytes' });
@@ -87,9 +77,38 @@ export class MediaEncryptor {
     const cacheDir = await fileSystem.ensureCacheDir();
     const decryptedUri = `${cacheDir}decrypted_${Date.now()}`;
     const decFile = new File(decryptedUri);
-    decFile.write(new TextDecoder().decode(new Uint8Array(decrypted)));
+    decFile.write(new Uint8Array(decrypted));
 
     return decryptedUri;
+  }
+
+  static async aesEncrypt(plaintext: string, keyHex: string, ivHex: string): Promise<string> {
+    const aesKey = await AESEncryptionKey.import(keyHex, 'hex');
+    const ivBytes = hexToBytes(ivHex);
+    const plaintextBytes = new TextEncoder().encode(plaintext);
+
+    const sealed = await aesEncryptAsync(plaintextBytes, aesKey, {
+      nonce: { bytes: ivBytes },
+    });
+
+    const ciphertext = bytesToHex(new Uint8Array(await sealed.ciphertext()));
+    const tag = bytesToHex(new Uint8Array(await sealed.tag()));
+    return ciphertext + tag;
+  }
+
+  static async aesDecrypt(cipherTextHex: string, keyHex: string, ivHex: string): Promise<string> {
+    const aesKey = await AESEncryptionKey.import(keyHex, 'hex');
+    const ivBytes = hexToBytes(ivHex);
+    const allBytes = hexToBytes(cipherTextHex);
+    if (allBytes.length < GCM_TAG_LENGTH) {
+      throw new Error('Ciphertext is too short');
+    }
+    const ciphertextBytes = allBytes.slice(0, allBytes.length - GCM_TAG_LENGTH);
+    const tagBytes = allBytes.slice(allBytes.length - GCM_TAG_LENGTH);
+
+    const sealed = AESSealedData.fromParts(ivBytes, ciphertextBytes, tagBytes);
+    const decrypted = await aesDecryptAsync(sealed, aesKey, { output: 'bytes' });
+    return new TextDecoder().decode(new Uint8Array(decrypted));
   }
 
   static async encryptData(data: string): Promise<{ cipherText: string; key: string; iv: string }> {
@@ -98,7 +117,7 @@ export class MediaEncryptor {
     const ivBytes = Crypto.getRandomValues(new Uint8Array(12));
     const iv = bytesToHex(ivBytes);
 
-    const aesKey = await AESEncryptionKey.fromHex(key);
+    const aesKey = await AESEncryptionKey.import(key, 'hex');
     const plaintextBytes = new TextEncoder().encode(data);
 
     const sealed = await aesEncryptAsync(plaintextBytes, aesKey, {
@@ -113,28 +132,17 @@ export class MediaEncryptor {
   }
 
   static async decryptData(cipherText: string, key: string, iv: string): Promise<string> {
-    const aesKey = await AESEncryptionKey.fromHex(key);
+    const aesKey = await AESEncryptionKey.import(key, 'hex');
     const ivBytes = hexToBytes(iv);
     const allBytes = hexToBytes(cipherText);
-    const tagBytes = allBytes.slice(allBytes.length - 16);
-    const ciphertextBytes = allBytes.slice(0, allBytes.length - 16);
+    if (allBytes.length < GCM_TAG_LENGTH) {
+      throw new Error('Ciphertext is too short');
+    }
+    const ciphertextBytes = allBytes.slice(0, allBytes.length - GCM_TAG_LENGTH);
+    const tagBytes = allBytes.slice(allBytes.length - GCM_TAG_LENGTH);
 
     const sealed = AESSealedData.fromParts(ivBytes, ciphertextBytes, tagBytes);
     const decrypted = await aesDecryptAsync(sealed, aesKey, { output: 'bytes' });
     return new TextDecoder().decode(new Uint8Array(decrypted));
-  }
-
-  private static async readFileAsBase64(uri: string): Promise<string> {
-    const response = await fetch(uri);
-    const blob = await response.blob();
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        const result = reader.result as string;
-        resolve(result.split(',')[1] || result);
-      };
-      reader.onerror = reject;
-      reader.readAsDataURL(blob);
-    });
   }
 }

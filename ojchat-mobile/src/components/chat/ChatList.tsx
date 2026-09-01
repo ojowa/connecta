@@ -4,12 +4,29 @@ import { ConversationItem } from './ConversationItem';
 import { LoadingSpinner } from '../common/LoadingSpinner';
 import { Conversation } from '../../types/chat';
 
-interface ChatListProps { conversations: Conversation[]; isLoading: boolean; onConversationPress: (id: string) => void; onEndReached?: () => void; }
+interface ChatListProps {
+  conversations: Conversation[];
+  isLoading: boolean;
+  onConversationPress: (id: string) => void;
+  onEndReached?: () => void;
+  refreshing?: boolean;
+  onRefresh?: () => void;
+}
 
-export const ChatList: React.FC<ChatListProps> = ({ conversations, isLoading, onConversationPress, onEndReached }) => {
-  const renderItem = useCallback(({ item }: { item: Conversation }) => (
-    <ConversationItem conversation={item} onPress={onConversationPress} />
-  ), [onConversationPress]);
+export const ChatList: React.FC<ChatListProps> = ({
+  conversations,
+  isLoading,
+  onConversationPress,
+  onEndReached,
+  refreshing,
+  onRefresh,
+}) => {
+  const renderItem = useCallback(
+    ({ item }: { item: Conversation }) => (
+      <ConversationItem conversation={item} onPress={onConversationPress} />
+    ),
+    [onConversationPress],
+  );
 
   return (
     <FlashList
@@ -20,6 +37,8 @@ export const ChatList: React.FC<ChatListProps> = ({ conversations, isLoading, on
       onEndReachedThreshold={0.5}
       showsVerticalScrollIndicator={false}
       ListFooterComponent={isLoading ? <LoadingSpinner size="small" /> : null}
+      refreshing={refreshing}
+      onRefresh={onRefresh}
     />
   );
 };

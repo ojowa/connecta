@@ -22,7 +22,7 @@ export const VoiceMessage: React.FC<VoiceMessageProps> = ({ url, duration, isOwn
   const [isLoaded, setIsLoaded] = useState(false);
   const pulseAnim = useRef(new Animated.Value(1)).current;
   const waveformAnims = useRef(
-    Array.from({ length: WAVEFORM_BARS }, () => new Animated.Value(0.3))
+    Array.from({ length: WAVEFORM_BARS }, () => new Animated.Value(0.3)),
   ).current;
 
   useEffect(() => {
@@ -41,9 +41,9 @@ export const VoiceMessage: React.FC<VoiceMessageProps> = ({ url, duration, isOwn
               duration: 150 + Math.random() * 200,
               easing: Easing.ease,
               useNativeDriver: false,
-            })
-          )
-        )
+            }),
+          ),
+        ),
       ).start();
     } else {
       waveformAnims.forEach((anim) => {
@@ -73,7 +73,7 @@ export const VoiceMessage: React.FC<VoiceMessageProps> = ({ url, duration, isOwn
       const { sound: newSound } = await Audio.Sound.createAsync(
         { uri: url },
         { shouldPlay: true },
-        onPlaybackStatusUpdate
+        onPlaybackStatusUpdate,
       );
       setSound(newSound);
       setIsPlaying(true);
@@ -131,8 +131,12 @@ export const VoiceMessage: React.FC<VoiceMessageProps> = ({ url, duration, isOwn
                       outputRange: [4, 18],
                     }),
                     backgroundColor: isActive
-                      ? isOwn ? 'rgba(255,255,255,0.9)' : colors.primary
-                      : isOwn ? 'rgba(255,255,255,0.3)' : colors.gray300,
+                      ? isOwn
+                        ? 'rgba(255,255,255,0.9)'
+                        : colors.primary
+                      : isOwn
+                        ? 'rgba(255,255,255,0.3)'
+                        : colors.gray300,
                   },
                 ]}
               />

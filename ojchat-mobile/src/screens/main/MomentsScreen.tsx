@@ -12,6 +12,7 @@ import {
   useWindowDimensions,
   Modal,
   TextInput,
+  Platform,
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -22,9 +23,9 @@ import { typography } from '../../theme/typography';
 import { spacing } from '../../theme/spacing';
 import { borderRadius } from '../../theme/borderRadius';
 import { LoadingSpinner } from '../../components/common/LoadingSpinner';
+import { ErrorState } from '../../components/common/ErrorState';
 import { useAppStore } from '../../store';
 import * as ImagePicker from 'expo-image-picker';
-import { Platform } from 'react-native';
 import { Moment, MomentWithUser, MyMoment } from '../../types/moments';
 
 const STORY_DURATION_MS = 24 * 60 * 60 * 1000;
@@ -33,7 +34,9 @@ const useMoments = () =>
   useQuery<MomentWithUser[]>({
     queryKey: ['moments'],
     queryFn: async () => {
-      const { data } = await apiClient.get<{ moments: MomentWithUser[]; meta: any }>(ENDPOINTS.MATCHING.MOMENTS);
+      const { data } = await apiClient.get<{ moments: MomentWithUser[]; meta: any }>(
+        ENDPOINTS.MATCHING.MOMENTS,
+      );
       return data?.moments ?? [];
     },
     refetchInterval: 60000,
@@ -65,7 +68,9 @@ const useMyMoments = () =>
   useQuery<MyMoment[]>({
     queryKey: ['myMoments'],
     queryFn: async () => {
-      const { data } = await apiClient.get<{ moments: MyMoment[]; meta: any }>(ENDPOINTS.MATCHING.MOMENTS_MINE);
+      const { data } = await apiClient.get<{ moments: MyMoment[]; meta: any }>(
+        ENDPOINTS.MATCHING.MOMENTS_MINE,
+      );
       return data?.moments ?? [];
     },
     refetchInterval: 60000,
@@ -92,7 +97,13 @@ const StoryCircle: React.FC<{
   onPress: () => void;
 }> = ({ user, hasUnviewed, isOwn, isSelected, onPress }) => (
   <TouchableOpacity style={styles.storyCircle} onPress={onPress} activeOpacity={0.7}>
-    <View style={[styles.storyRing, hasUnviewed && styles.storyRingActive, isSelected && styles.storyRingSelected]}>
+    <View
+      style={[
+        styles.storyRing,
+        hasUnviewed && styles.storyRingActive,
+        isSelected && styles.storyRingSelected,
+      ]}
+    >
       {user.avatar ? (
         <Image source={{ uri: user.avatar }} style={styles.storyAvatar} />
       ) : (
@@ -100,7 +111,11 @@ const StoryCircle: React.FC<{
           <Text style={styles.storyAvatarText}>{user.name.charAt(0).toUpperCase()}</Text>
         </View>
       )}
-      {isOwn && <View style={styles.addBadge}><Text style={styles.addBadgeText}>+</Text></View>}
+      {isOwn && (
+        <View style={styles.addBadge}>
+          <Text style={styles.addBadgeText}>+</Text>
+        </View>
+      )}
     </View>
     <Text style={[styles.storyName, isSelected && styles.storyNameActive]} numberOfLines={1}>
       {user.name}
@@ -132,7 +147,11 @@ const MomentCard: React.FC<{
   return (
     <View style={[styles.momentCard, expired && styles.momentCardExpired]}>
       {moment.mediaUrl && (
-        <Image source={{ uri: moment.mediaUrl }} style={[styles.momentImage, expired && styles.momentImageExpired]} resizeMode="cover" />
+        <Image
+          source={{ uri: moment.mediaUrl }}
+          style={[styles.momentImage, expired && styles.momentImageExpired]}
+          resizeMode="cover"
+        />
       )}
       <View style={styles.momentOverlay}>
         <View style={styles.momentHeader}>
@@ -141,13 +160,18 @@ const MomentCard: React.FC<{
               <Image source={{ uri: displayAvatar }} style={styles.momentAvatarSmall} />
             ) : (
               <View style={[styles.momentAvatarSmall, styles.momentAvatarSmallFallback]}>
-                <Text style={styles.momentAvatarSmallText}>{displayName.charAt(0).toUpperCase()}</Text>
+                <Text style={styles.momentAvatarSmallText}>
+                  {displayName.charAt(0).toUpperCase()}
+                </Text>
               </View>
             )}
             <Text style={styles.momentUserName}>{displayName}</Text>
           </View>
           {isOwn && (
-            <TouchableOpacity onPress={handleDelete} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
+            <TouchableOpacity
+              onPress={handleDelete}
+              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+            >
               <Text style={[styles.momentDeleteText, confirmDelete && styles.momentDeleteConfirm]}>
                 {confirmDelete ? 'Confirm' : '•••'}
               </Text>
@@ -157,7 +181,9 @@ const MomentCard: React.FC<{
         {moment.caption ? <Text style={styles.momentCaption}>{moment.caption}</Text> : null}
         <View style={styles.momentFooter}>
           <Text style={styles.momentTime}>{timeAgo(moment.createdAt)}</Text>
-          <Text style={styles.momentViews}>{moment.viewCount} {moment.viewCount === 1 ? 'view' : 'views'}</Text>
+          <Text style={styles.momentViews}>
+            {moment.viewCount} {moment.viewCount === 1 ? 'view' : 'views'}
+          </Text>
         </View>
         {expired && (
           <View style={styles.expiredBadge}>
@@ -303,7 +329,7 @@ const MomentsScreen: React.FC = () => {
   const insets = useSafeAreaInsets();
   const user = useAppStore((s) => s.user);
   const queryClient = useQueryClient();
-  const { data: moments = [], isLoading, refetch } = useMoments();
+  const { data: moments = [], isLoading, isError, refetch } = useMoments();
   const { data: myMoments = [], refetch: refetchMyMoments } = useMyMoments();
   const createMoment = useCreateMoment();
   const deleteMoment = useDeleteMoment();
@@ -351,7 +377,7 @@ const MomentsScreen: React.FC = () => {
   const selectedMoments = React.useMemo(() => {
     if (!selectedUserId) return [];
     return (groupedByUser.get(selectedUserId) || []).sort(
-      (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+      (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
     );
   }, [groupedByUser, selectedUserId]);
 
@@ -368,9 +394,13 @@ const MomentsScreen: React.FC = () => {
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
-    await (activeTab === 'feed' ? refetch() : refetchMyMoments());
+    if (activeTab === 'feed') {
+      await refetch();
+    } else {
+      await refetchMyMoments();
+    }
     setRefreshing(false);
-  }, [refetch, refetchMyMoments]);
+  }, [refetch, refetchMyMoments, activeTab]);
 
   const handleCreateMoment = useCallback(
     async (caption: string, mediaUri?: string, type?: string) => {
@@ -378,7 +408,8 @@ const MomentsScreen: React.FC = () => {
       if (mediaUri) {
         try {
           const formData = new FormData();
-          const isVideo = type === 'video' || mediaUri.endsWith('.mp4') || mediaUri.endsWith('.mov');
+          const isVideo =
+            type === 'video' || mediaUri.endsWith('.mp4') || mediaUri.endsWith('.mov');
           if (Platform.OS === 'web' && mediaUri.startsWith('blob:')) {
             const res = await fetch(mediaUri);
             const blob = await res.blob();
@@ -390,7 +421,7 @@ const MomentsScreen: React.FC = () => {
               name: isVideo ? 'moment.mp4' : 'moment.jpg',
             } as any);
           }
-          const uploadRes = await apiClient.post('/media/upload', formData);
+          const uploadRes = await apiClient.post(ENDPOINTS.MEDIA.UPLOAD, formData);
           const uploaded = uploadRes.data?.data || uploadRes.data;
           uploadedUrl = uploaded?.url;
         } catch {
@@ -409,10 +440,10 @@ const MomentsScreen: React.FC = () => {
           onError: () => {
             Alert.alert('Error', 'Failed to share moment. Please try again.');
           },
-        }
+        },
       );
     },
-    [createMoment, queryClient]
+    [createMoment, queryClient],
   );
 
   const handleDeleteMoment = useCallback(
@@ -427,12 +458,20 @@ const MomentsScreen: React.FC = () => {
         },
       });
     },
-    [deleteMoment, queryClient]
+    [deleteMoment, queryClient],
   );
 
   if (isLoading) return <LoadingSpinner />;
 
-  const ownMoments = user ? (groupedByUser.get(user.id) || []) : [];
+  if (isError) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <ErrorState message="Couldn't load moments." onRetry={() => refetch()} />
+      </SafeAreaView>
+    );
+  }
+
+  const ownMoments = user ? groupedByUser.get(user.id) || [] : [];
   const otherUsers = userList.filter((u) => u.id !== user?.id);
 
   return (
@@ -451,22 +490,36 @@ const MomentsScreen: React.FC = () => {
       <View style={styles.tabBar}>
         <TouchableOpacity
           style={[styles.tabButton, activeTab === 'feed' && styles.tabButtonActive]}
-          onPress={() => { setActiveTab('feed'); setSelectedUserId(null); }}
+          onPress={() => {
+            setActiveTab('feed');
+            setSelectedUserId(null);
+          }}
         >
-          <Text style={[styles.tabButtonText, activeTab === 'feed' && styles.tabButtonTextActive]}>Feed</Text>
+          <Text style={[styles.tabButtonText, activeTab === 'feed' && styles.tabButtonTextActive]}>
+            Feed
+          </Text>
         </TouchableOpacity>
         <TouchableOpacity
           style={[styles.tabButton, activeTab === 'mine' && styles.tabButtonActive]}
-          onPress={() => { setActiveTab('mine'); setSelectedUserId(user?.id || null); }}
+          onPress={() => {
+            setActiveTab('mine');
+            setSelectedUserId(user?.id || null);
+          }}
         >
-          <Text style={[styles.tabButtonText, activeTab === 'mine' && styles.tabButtonTextActive]}>My Moments</Text>
+          <Text style={[styles.tabButtonText, activeTab === 'mine' && styles.tabButtonTextActive]}>
+            My Moments
+          </Text>
         </TouchableOpacity>
       </View>
 
       {activeTab === 'feed' && (
         <>
           <View style={styles.storiesContainer}>
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.storiesScroll}>
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.storiesScroll}
+            >
               {user && (
                 <StoryCircle
                   user={{ id: user.id, name: user.fullName || 'You', avatar: user.avatarUrl }}
@@ -481,7 +534,7 @@ const MomentsScreen: React.FC = () => {
                   key={u.id}
                   user={u}
                   hasUnviewed={(groupedByUser.get(u.id) || []).some(
-                    (m) => !isExpired(m.expiresAt) && m.userId !== user?.id
+                    (m) => !isExpired(m.expiresAt) && m.userId !== user?.id,
                   )}
                   isOwn={false}
                   isSelected={selectedUserId === u.id}
@@ -499,17 +552,23 @@ const MomentsScreen: React.FC = () => {
         data={selectedMoments}
         keyExtractor={(item) => item.id}
         contentContainerStyle={styles.momentsList}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            tintColor={colors.primary}
+          />
+        }
         ListEmptyComponent={
           <View style={styles.emptyState}>
             <Text style={styles.emptyIcon}>✨</Text>
             <Text style={styles.emptyText}>No moments yet</Text>
             <Text style={styles.emptySubtext}>
               {activeTab === 'mine'
-                ? 'You haven\'t posted any moments yet.'
+                ? "You haven't posted any moments yet."
                 : selectedUserId === user?.id
-                ? 'Share a moment with your matches!'
-                : 'This user hasn\'t posted any moments.'}
+                  ? 'Share a moment with your matches!'
+                  : "This user hasn't posted any moments."}
             </Text>
           </View>
         }
@@ -566,7 +625,11 @@ const styles = StyleSheet.create({
   storyRingActive: { borderColor: colors.primary },
   storyRingSelected: { borderColor: colors.secondary, borderWidth: 3 },
   storyAvatar: { width: 60, height: 60, borderRadius: 30 },
-  storyAvatarFallback: { backgroundColor: colors.primaryOverlay, justifyContent: 'center', alignItems: 'center' },
+  storyAvatarFallback: {
+    backgroundColor: colors.primaryOverlay,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
   storyAvatarText: { ...typography.h2, color: colors.primary },
   addBadge: {
     position: 'absolute',
@@ -582,7 +645,12 @@ const styles = StyleSheet.create({
     borderColor: colors.white,
   },
   addBadgeText: { color: colors.white, fontSize: 14, fontWeight: '700', lineHeight: 16 },
-  storyName: { ...typography.small, color: colors.textSecondary, marginTop: spacing.xs, textAlign: 'center' },
+  storyName: {
+    ...typography.small,
+    color: colors.textSecondary,
+    marginTop: spacing.xs,
+    textAlign: 'center',
+  },
   storyNameActive: { color: colors.textPrimary, fontWeight: '600' },
   divider: { height: 1, backgroundColor: colors.border },
   tabBar: {
@@ -619,13 +687,22 @@ const styles = StyleSheet.create({
     borderColor: colors.border,
   },
   momentCardExpired: { opacity: 0.6 },
-  momentImage: { width: '100%', height: undefined, aspectRatio: 16/9 },
+  momentImage: { width: '100%', height: undefined, aspectRatio: 16 / 9 },
   momentImageExpired: { opacity: 0.4 },
   momentOverlay: { padding: spacing.md },
-  momentHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: spacing.sm },
+  momentHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: spacing.sm,
+  },
   momentUserInfo: { flexDirection: 'row', alignItems: 'center', flex: 1 },
   momentAvatarSmall: { width: 28, height: 28, borderRadius: 14, marginRight: spacing.sm },
-  momentAvatarSmallFallback: { backgroundColor: colors.primaryOverlay, justifyContent: 'center', alignItems: 'center' },
+  momentAvatarSmallFallback: {
+    backgroundColor: colors.primaryOverlay,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
   momentAvatarSmallText: { fontSize: 12, fontWeight: '600', color: colors.primary },
   momentUserName: { ...typography.caption, fontWeight: '600', color: colors.textPrimary },
   momentDeleteText: { ...typography.caption, color: colors.gray400 },
@@ -679,8 +756,18 @@ const styles = StyleSheet.create({
   },
   mediaButtonIcon: { fontSize: 32, marginBottom: spacing.sm },
   mediaButtonText: { ...typography.caption, color: colors.textSecondary },
-  previewContainer: { position: 'relative', borderRadius: borderRadius.lg, overflow: 'hidden', marginBottom: spacing.md },
-  previewImage: { width: '100%', height: undefined, aspectRatio: 16/9, borderRadius: borderRadius.lg },
+  previewContainer: {
+    position: 'relative',
+    borderRadius: borderRadius.lg,
+    overflow: 'hidden',
+    marginBottom: spacing.md,
+  },
+  previewImage: {
+    width: '100%',
+    height: undefined,
+    aspectRatio: 16 / 9,
+    borderRadius: borderRadius.lg,
+  },
   removeMedia: {
     position: 'absolute',
     top: spacing.sm,

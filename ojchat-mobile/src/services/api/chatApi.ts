@@ -24,12 +24,18 @@ export const chatApi = {
   },
 
   async getMessages(conversationId: string, page = 1, limit = 50) {
-    const response = await apiClient.get(ENDPOINTS.CHAT.MESSAGES(conversationId), { params: { page, limit } });
+    const response = await apiClient.get(ENDPOINTS.CHAT.MESSAGES(conversationId), {
+      params: { page, limit },
+    });
     return response.data as MessagesResponse;
   },
 
   async sendMessage(conversationId: string, content: string, type = 'text', duration?: number) {
-    const response = await apiClient.post(ENDPOINTS.CHAT.SEND(conversationId), { content, type, duration });
+    const response = await apiClient.post(ENDPOINTS.CHAT.SEND(conversationId), {
+      content,
+      type,
+      duration,
+    });
     return response.data as Message;
   },
 
@@ -39,7 +45,9 @@ export const chatApi = {
   },
 
   async reactToMessage(conversationId: string, messageId: string, emoji: string) {
-    const response = await apiClient.post(ENDPOINTS.CHAT.REACT(conversationId, messageId), { emoji });
+    const response = await apiClient.post(ENDPOINTS.CHAT.REACT(conversationId, messageId), {
+      emoji,
+    });
     return response.data;
   },
 
@@ -59,7 +67,9 @@ export const chatApi = {
   },
 
   async searchMessages(query: string, conversationId?: string) {
-    const response = await apiClient.get(ENDPOINTS.CHAT.SEARCH, { params: { q: query, conversationId } });
+    const response = await apiClient.get(ENDPOINTS.CHAT.SEARCH, {
+      params: { q: query, conversationId },
+    });
     return response.data;
   },
 };

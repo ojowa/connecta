@@ -1,5 +1,15 @@
 import React, { useState, useRef } from 'react';
-import { View, Text, StyleSheet, ScrollView, KeyboardAvoidingView, Platform, TouchableOpacity, Alert } from 'react-native';
+import {
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  KeyboardAvoidingView,
+  Platform,
+  TouchableOpacity,
+  Alert,
+  Linking,
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Input } from '../../components/common/Input';
 import { Button } from '../../components/common/Button';
@@ -9,10 +19,11 @@ import { colors } from '../../theme/colors';
 import { typography } from '../../theme/typography';
 import { spacing } from '../../theme/spacing';
 import { borderRadius } from '../../theme/borderRadius';
-import { Linking } from 'react-native';
 import { DOBPicker } from '../../components/common/DOBPicker';
 
-interface RegisterScreenProps { navigation: any; }
+interface RegisterScreenProps {
+  navigation: any;
+}
 
 interface FormErrors {
   fullName?: string;
@@ -46,11 +57,18 @@ function formatDobDisplay(iso: string): string {
 const STRENGTH_COLORS = { weak: colors.error, medium: colors.warning, strong: colors.success };
 
 function validate(values: {
-  fullName: string; email: string; dateOfBirth: string; gender: string; password: string; confirmPassword: string; termsAccepted: boolean;
+  fullName: string;
+  email: string;
+  dateOfBirth: string;
+  gender: string;
+  password: string;
+  confirmPassword: string;
+  termsAccepted: boolean;
 }): FormErrors {
   const errors: FormErrors = {};
   if (!values.fullName.trim()) errors.fullName = 'Full name is required';
-  else if (values.fullName.trim().length < 2) errors.fullName = 'Name must be at least 2 characters';
+  else if (values.fullName.trim().length < 2)
+    errors.fullName = 'Name must be at least 2 characters';
   if (!values.email.trim()) errors.email = 'Email is required';
   else if (!EMAIL_RE.test(values.email.trim())) errors.email = 'Enter a valid email address';
   if (!values.dateOfBirth) errors.dateOfBirth = 'Date of birth is required';
@@ -66,9 +84,11 @@ function validate(values: {
   if (!values.gender) errors.gender = 'Select your gender';
   if (!values.password) errors.password = 'Password is required';
   else if (values.password.length < 8) errors.password = 'At least 8 characters';
-  else if (!/[A-Z]/.test(values.password) || !/[0-9]/.test(values.password)) errors.password = 'Include 1 uppercase and 1 number';
+  else if (!/[A-Z]/.test(values.password) || !/[0-9]/.test(values.password))
+    errors.password = 'Include 1 uppercase and 1 number';
   if (!values.confirmPassword) errors.confirmPassword = 'Confirm your password';
-  else if (values.password !== values.confirmPassword) errors.confirmPassword = 'Passwords do not match';
+  else if (values.password !== values.confirmPassword)
+    errors.confirmPassword = 'Passwords do not match';
   if (!values.termsAccepted) errors.terms = 'You must accept the terms';
   return errors;
 }
@@ -91,16 +111,34 @@ export const RegisterScreen: React.FC<RegisterScreenProps> = ({ navigation }) =>
   const passwordStrength = password ? getPasswordStrength(password) : null;
 
   const handleRegister = async () => {
-    const fieldErrors = validate({ fullName, email, dateOfBirth, gender, password, confirmPassword, termsAccepted });
+    const fieldErrors = validate({
+      fullName,
+      email,
+      dateOfBirth,
+      gender,
+      password,
+      confirmPassword,
+      termsAccepted,
+    });
     setErrors(fieldErrors);
     setSubmitted(true);
     if (Object.keys(fieldErrors).length > 0 || cooldown > 0) return;
 
     setServerError(null);
     try {
-      await register({ email: email.trim(), password, fullName: fullName.trim(), dateOfBirth, gender: gender.toLowerCase().replace(/[- ]/g, '_') });
+      await register({
+        email: email.trim(),
+        password,
+        fullName: fullName.trim(),
+        dateOfBirth,
+        gender: gender.toLowerCase().replace(/[- ]/g, '_'),
+      });
     } catch (err: any) {
-      const msg = err?.response?.data?.error?.message || err?.response?.data?.message || err?.message || 'Registration failed';
+      const msg =
+        err?.response?.data?.error?.message ||
+        err?.response?.data?.message ||
+        err?.message ||
+        'Registration failed';
       setServerError(msg);
       setCooldown(5);
       if (cooldownRef.current) clearInterval(cooldownRef.current);
@@ -117,7 +155,15 @@ export const RegisterScreen: React.FC<RegisterScreenProps> = ({ navigation }) =>
   };
 
   const updateField = (field: string, value: string) => {
-    const updated = { fullName, email, dateOfBirth, gender, password, confirmPassword, termsAccepted };
+    const updated = {
+      fullName,
+      email,
+      dateOfBirth,
+      gender,
+      password,
+      confirmPassword,
+      termsAccepted,
+    };
     (updated as any)[field] = value;
     if (field === 'fullName') setFullName(value);
     else if (field === 'email') setEmail(value);
@@ -130,14 +176,36 @@ export const RegisterScreen: React.FC<RegisterScreenProps> = ({ navigation }) =>
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      <KeyboardAvoidingView style={styles.container} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+      <KeyboardAvoidingView
+        style={styles.container}
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      >
         <ScrollView contentContainerStyle={styles.content}>
           <Text style={styles.title}>Create Account</Text>
           <Text style={styles.subtitle}>Find your perfect match</Text>
 
-          <Input label="Full Name" placeholder="Enter your full name" value={fullName} onChangeText={(v) => updateField('fullName', v)} autoCapitalize="words" error={errors.fullName} />
-          <Input label="Email" placeholder="Enter your email" value={email} onChangeText={(v) => updateField('email', v)} keyboardType="email-address" autoCapitalize="none" error={errors.email} />
-          <DOBPicker value={dateOfBirth} onChange={(v) => updateField('dateOfBirth', v)} error={errors.dateOfBirth} />
+          <Input
+            label="Full Name"
+            placeholder="Enter your full name"
+            value={fullName}
+            onChangeText={(v) => updateField('fullName', v)}
+            autoCapitalize="words"
+            error={errors.fullName}
+          />
+          <Input
+            label="Email"
+            placeholder="Enter your email"
+            value={email}
+            onChangeText={(v) => updateField('email', v)}
+            keyboardType="email-address"
+            autoCapitalize="none"
+            error={errors.email}
+          />
+          <DOBPicker
+            value={dateOfBirth}
+            onChange={(v) => updateField('dateOfBirth', v)}
+            error={errors.dateOfBirth}
+          />
 
           <Text style={styles.fieldLabel}>Gender</Text>
           <View style={styles.genderRow}>
@@ -148,21 +216,41 @@ export const RegisterScreen: React.FC<RegisterScreenProps> = ({ navigation }) =>
                 onPress={() => updateField('gender', g)}
                 activeOpacity={0.7}
               >
-                <Text style={[styles.genderText, gender === g && styles.genderTextSelected]}>{g}</Text>
+                <Text style={[styles.genderText, gender === g && styles.genderTextSelected]}>
+                  {g}
+                </Text>
               </TouchableOpacity>
             ))}
           </View>
           {errors.gender && <Text style={styles.fieldError}>{errors.gender}</Text>}
 
-          <Input label="Password" placeholder="Min 8 chars, 1 uppercase, 1 number" value={password} onChangeText={(v) => updateField('password', v)} secureTextEntry error={errors.password} />
+          <Input
+            label="Password"
+            placeholder="Min 8 chars, 1 uppercase, 1 number"
+            value={password}
+            onChangeText={(v) => updateField('password', v)}
+            secureTextEntry
+            error={errors.password}
+          />
           {passwordStrength && (
             <View style={styles.strengthRow}>
-              <View style={[styles.strengthBar, { backgroundColor: STRENGTH_COLORS[passwordStrength] }]} />
-              <Text style={[styles.strengthText, { color: STRENGTH_COLORS[passwordStrength] }]}>{passwordStrength.charAt(0).toUpperCase() + passwordStrength.slice(1)}</Text>
+              <View
+                style={[styles.strengthBar, { backgroundColor: STRENGTH_COLORS[passwordStrength] }]}
+              />
+              <Text style={[styles.strengthText, { color: STRENGTH_COLORS[passwordStrength] }]}>
+                {passwordStrength.charAt(0).toUpperCase() + passwordStrength.slice(1)}
+              </Text>
             </View>
           )}
 
-          <Input label="Confirm Password" placeholder="Confirm your password" value={confirmPassword} onChangeText={(v) => updateField('confirmPassword', v)} secureTextEntry error={errors.confirmPassword} />
+          <Input
+            label="Confirm Password"
+            placeholder="Confirm your password"
+            value={confirmPassword}
+            onChangeText={(v) => updateField('confirmPassword', v)}
+            secureTextEntry
+            error={errors.confirmPassword}
+          />
 
           <TouchableOpacity
             style={styles.termsRow}
@@ -174,16 +262,41 @@ export const RegisterScreen: React.FC<RegisterScreenProps> = ({ navigation }) =>
             </View>
             <Text style={styles.termsText}>
               I agree to the{' '}
-              <Text style={styles.termsLink} onPress={() => Linking.openURL('https://ojchat.ng/terms')}>Terms of Service</Text>
-              {' '}and{' '}
-              <Text style={styles.termsLink} onPress={() => Linking.openURL('https://ojchat.ng/privacy')}>Privacy Policy</Text>
+              <Text
+                style={styles.termsLink}
+                onPress={() => Linking.openURL('https://ojchat.ng/terms')}
+              >
+                Terms of Service
+              </Text>{' '}
+              and{' '}
+              <Text
+                style={styles.termsLink}
+                onPress={() => Linking.openURL('https://ojchat.ng/privacy')}
+              >
+                Privacy Policy
+              </Text>
             </Text>
           </TouchableOpacity>
           {errors.terms && <Text style={styles.fieldError}>{errors.terms}</Text>}
 
-          {(authError || serverError) && <Text style={styles.error}>{authError || serverError}{cooldown > 0 ? ` (${cooldown}s)` : ''}</Text>}
-          <Button title={cooldown > 0 ? `Try again in ${cooldown}s` : "Create Account"} onPress={handleRegister} loading={loading} disabled={cooldown > 0} style={styles.button} />
-          <Button title="Already have an account? Sign In" variant="ghost" onPress={() => navigation.goBack()} />
+          {(authError || serverError) && (
+            <Text style={styles.error}>
+              {authError || serverError}
+              {cooldown > 0 ? ` (${cooldown}s)` : ''}
+            </Text>
+          )}
+          <Button
+            title={cooldown > 0 ? `Try again in ${cooldown}s` : 'Create Account'}
+            onPress={handleRegister}
+            loading={loading}
+            disabled={cooldown > 0}
+            style={styles.button}
+          />
+          <Button
+            title="Already have an account? Sign In"
+            variant="ghost"
+            onPress={() => navigation.goBack()}
+          />
         </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>
@@ -196,18 +309,52 @@ const styles = StyleSheet.create({
   content: { padding: spacing.xl, paddingTop: spacing.md },
   title: { ...typography.h1, marginBottom: spacing.xs },
   subtitle: { ...typography.body, color: colors.textSecondary, marginBottom: spacing.xl },
-  fieldLabel: { ...typography.caption, color: colors.textSecondary, fontWeight: '600', marginBottom: spacing.sm, marginTop: spacing.sm },
+  fieldLabel: {
+    ...typography.caption,
+    color: colors.textSecondary,
+    fontWeight: '600',
+    marginBottom: spacing.sm,
+    marginTop: spacing.sm,
+  },
   genderRow: { flexDirection: 'row', gap: spacing.sm, marginBottom: spacing.sm },
-  genderOption: { flex: 1, paddingVertical: spacing.sm, borderRadius: borderRadius.input, borderWidth: 1, borderColor: colors.border, alignItems: 'center' },
+  genderOption: {
+    flex: 1,
+    paddingVertical: spacing.sm,
+    borderRadius: borderRadius.input,
+    borderWidth: 1,
+    borderColor: colors.border,
+    alignItems: 'center',
+  },
   genderSelected: { backgroundColor: colors.primary, borderColor: colors.primary },
   genderText: { ...typography.body, color: colors.textPrimary },
   genderTextSelected: { color: colors.white },
   fieldError: { ...typography.small, color: colors.error, marginBottom: spacing.sm },
-  strengthRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginBottom: spacing.md, marginTop: -spacing.sm },
+  strengthRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    marginBottom: spacing.md,
+    marginTop: -spacing.sm,
+  },
   strengthBar: { height: 3, width: 40, borderRadius: 2 },
   strengthText: { ...typography.small, fontWeight: '600' },
-  termsRow: { flexDirection: 'row', alignItems: 'flex-start', marginBottom: spacing.sm, marginTop: spacing.sm },
-  checkbox: { width: 22, height: 22, borderRadius: 4, borderWidth: 2, borderColor: colors.border, alignItems: 'center', justifyContent: 'center', marginRight: spacing.sm, marginTop: 2 },
+  termsRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    marginBottom: spacing.sm,
+    marginTop: spacing.sm,
+  },
+  checkbox: {
+    width: 22,
+    height: 22,
+    borderRadius: 4,
+    borderWidth: 2,
+    borderColor: colors.border,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: spacing.sm,
+    marginTop: 2,
+  },
   checkboxChecked: { backgroundColor: colors.primary, borderColor: colors.primary },
   checkmark: { color: colors.white, fontSize: 14, fontWeight: '700' },
   termsText: { ...typography.caption, color: colors.textSecondary, flex: 1, lineHeight: 20 },

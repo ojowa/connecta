@@ -15,6 +15,7 @@ import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { apiClient } from '../../services/api/apiClient';
+import { ENDPOINTS } from '../../constants/endpoints';
 import { useAppStore } from '../../store';
 import { useAuth } from '../../hooks/useAuth';
 import { colors } from '../../theme/colors';
@@ -36,10 +37,7 @@ const SettingsRow: React.FC<RowProps> = ({ label, onPress, rightElement, destruc
     disabled={!onPress}
     activeOpacity={onPress ? 0.6 : 1}
   >
-    <Text
-      style={[styles.rowLabel, destructive && styles.destructiveText]}
-      numberOfLines={1}
-    >
+    <Text style={[styles.rowLabel, destructive && styles.destructiveText]} numberOfLines={1}>
       {label}
     </Text>
     {rightElement || <Text style={styles.chevron}>›</Text>}
@@ -58,7 +56,7 @@ const SettingsScreen: React.FC = () => {
 
   const { data: prefs } = useQuery({
     queryKey: ['notificationPrefs'],
-    queryFn: () => apiClient.get('/notifications/preferences').then((r) => r.data),
+    queryFn: () => apiClient.get(ENDPOINTS.NOTIFICATIONS.PREFERENCES).then((r) => r.data),
   });
 
   const [matchNotifications, setMatchNotifications] = useState(true);
@@ -74,7 +72,7 @@ const SettingsScreen: React.FC = () => {
   }, [prefs]);
 
   const updatePrefsMutation = useMutation({
-    mutationFn: (p: any) => apiClient.put('/notifications/preferences', p),
+    mutationFn: (p: any) => apiClient.put(ENDPOINTS.NOTIFICATIONS.PREFERENCES, p),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['notificationPrefs'] }),
   });
 
@@ -97,7 +95,7 @@ const SettingsScreen: React.FC = () => {
           onPress: async (password?: string) => {
             if (!password) return;
             try {
-              await apiClient.delete('/users/me', { data: { password } });
+              await apiClient.delete(ENDPOINTS.USERS.DELETE, { data: { password } });
               authLogout();
             } catch {
               Alert.alert('Error', 'Failed to delete account. Check your password.');
@@ -105,15 +103,18 @@ const SettingsScreen: React.FC = () => {
           },
         },
       ],
-      'secure-text'
+      'secure-text',
     );
   };
 
   const handleDownloadData = async () => {
     setExporting(true);
     try {
-      await apiClient.post('/users/me/export-data');
-      Alert.alert('Request Submitted', 'Your data export is being prepared. You will receive a download link via email within 24 hours.');
+      await apiClient.post(ENDPOINTS.USERS.EXPORT_DATA);
+      Alert.alert(
+        'Request Submitted',
+        'Your data export is being prepared. You will receive a download link via email within 24 hours.',
+      );
     } catch {
       Alert.alert('Error', 'Failed to request data export. Please try again.');
     } finally {
@@ -138,8 +139,14 @@ const SettingsScreen: React.FC = () => {
         <View style={styles.section}>
           <SettingsRow label="Edit Phone" onPress={() => navigation.navigate('EditPhone')} />
           <SettingsRow label="Edit Email" onPress={() => navigation.navigate('EditEmail')} />
-          <SettingsRow label="Change Password" onPress={() => navigation.navigate('ChangePassword')} />
-          <SettingsRow label="Two-Factor Auth" onPress={() => navigation.navigate('TwoFactorAuth')} />
+          <SettingsRow
+            label="Change Password"
+            onPress={() => navigation.navigate('ChangePassword')}
+          />
+          <SettingsRow
+            label="Two-Factor Auth"
+            onPress={() => navigation.navigate('TwoFactorAuth')}
+          />
           <SettingsRow label="Devices" onPress={() => navigation.navigate('Devices')} />
         </View>
 
@@ -157,7 +164,10 @@ const SettingsScreen: React.FC = () => {
             rightElement={
               <Switch
                 value={matchNotifications}
-                onValueChange={(v) => { setMatchNotifications(v); updatePrefsMutation.mutate({ matchNotify: v }); }}
+                onValueChange={(v) => {
+                  setMatchNotifications(v);
+                  updatePrefsMutation.mutate({ matchNotify: v });
+                }}
                 trackColor={{ false: colors.gray300, true: colors.primary }}
                 thumbColor={colors.white}
               />
@@ -168,7 +178,10 @@ const SettingsScreen: React.FC = () => {
             rightElement={
               <Switch
                 value={messageNotifications}
-                onValueChange={(v) => { setMessageNotifications(v); updatePrefsMutation.mutate({ messageNotify: v }); }}
+                onValueChange={(v) => {
+                  setMessageNotifications(v);
+                  updatePrefsMutation.mutate({ messageNotify: v });
+                }}
                 trackColor={{ false: colors.gray300, true: colors.primary }}
                 thumbColor={colors.white}
               />
@@ -179,7 +192,10 @@ const SettingsScreen: React.FC = () => {
             rightElement={
               <Switch
                 value={callNotifications}
-                onValueChange={(v) => { setCallNotifications(v); updatePrefsMutation.mutate({ callNotify: v }); }}
+                onValueChange={(v) => {
+                  setCallNotifications(v);
+                  updatePrefsMutation.mutate({ callNotify: v });
+                }}
                 trackColor={{ false: colors.gray300, true: colors.primary }}
                 thumbColor={colors.white}
               />
@@ -196,7 +212,9 @@ const SettingsScreen: React.FC = () => {
           <SettingsRow
             label={exporting ? 'Requesting...' : 'Download Data'}
             onPress={handleDownloadData}
-            rightElement={exporting ? <ActivityIndicator size="small" color={colors.primary} /> : undefined}
+            rightElement={
+              exporting ? <ActivityIndicator size="small" color={colors.primary} /> : undefined
+            }
           />
           <SettingsRow label="Delete Account" onPress={handleDeleteAccount} destructive />
         </View>
@@ -204,22 +222,43 @@ const SettingsScreen: React.FC = () => {
         <SectionHeader title="Subscription" />
         <View style={styles.section}>
           <SettingsRow label="Current Plan" onPress={() => navigation.navigate('Subscription')} />
-          <SettingsRow label="Manage Subscription" onPress={() => navigation.navigate('Subscription')} />
+          <SettingsRow
+            label="Manage Subscription"
+            onPress={() => navigation.navigate('Subscription')}
+          />
           <SettingsRow label="Payment History" onPress={() => navigation.navigate('Wallet')} />
         </View>
 
         <SectionHeader title="Support" />
         <View style={styles.section}>
-          <SettingsRow label="Help Center" onPress={() => handleOpenUrl('https://ojchat.ng/help', 'Help Center')} />
-          <SettingsRow label="Report a Problem" onPress={() => navigation.navigate('ReportProblem')} />
-          <SettingsRow label="Community Guidelines" onPress={() => handleOpenUrl('https://ojchat.ng/guidelines', 'Community Guidelines')} />
+          <SettingsRow
+            label="Help Center"
+            onPress={() => handleOpenUrl('https://ojchat.ng/help', 'Help Center')}
+          />
+          <SettingsRow
+            label="Report a Problem"
+            onPress={() => navigation.navigate('ReportProblem')}
+          />
+          <SettingsRow
+            label="Community Guidelines"
+            onPress={() => handleOpenUrl('https://ojchat.ng/guidelines', 'Community Guidelines')}
+          />
         </View>
 
         <SectionHeader title="About" />
         <View style={styles.section}>
-          <SettingsRow label="App Version" rightElement={<Text style={styles.versionText}>1.0.0</Text>} />
-          <SettingsRow label="Terms of Service" onPress={() => handleOpenUrl('https://ojchat.ng/terms', 'Terms of Service')} />
-          <SettingsRow label="Privacy Policy" onPress={() => handleOpenUrl('https://ojchat.ng/privacy', 'Privacy Policy')} />
+          <SettingsRow
+            label="App Version"
+            rightElement={<Text style={styles.versionText}>1.0.0</Text>}
+          />
+          <SettingsRow
+            label="Terms of Service"
+            onPress={() => handleOpenUrl('https://ojchat.ng/terms', 'Terms of Service')}
+          />
+          <SettingsRow
+            label="Privacy Policy"
+            onPress={() => handleOpenUrl('https://ojchat.ng/privacy', 'Privacy Policy')}
+          />
         </View>
 
         <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>

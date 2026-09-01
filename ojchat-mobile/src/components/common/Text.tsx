@@ -9,5 +9,10 @@ interface CustomTextProps extends TextProps {
 }
 
 export const Text: React.FC<CustomTextProps> = ({ variant = 'body', color, style, ...props }) => {
-  return <RNText style={[typography[variant], { color: color || colors.textPrimary }, style]} {...props} />;
+  return (
+    <RNText
+      style={[typography[variant], { color: color || colors.textPrimary }, style]}
+      {...props}
+    />
+  );
 };

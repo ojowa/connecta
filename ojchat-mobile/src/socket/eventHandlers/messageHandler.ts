@@ -27,7 +27,11 @@ export class MessageHandler {
     useAppStore.getState().removeMessage(data.id);
   };
 
-  onMessageRead = async (data: { conversationId: string; readAt: string; userId: string }): Promise<void> => {
+  onMessageRead = async (data: {
+    conversationId: string;
+    readAt: string;
+    userId: string;
+  }): Promise<void> => {
     await MessageRepository.markAsRead(data.conversationId, data.readAt);
     useAppStore.getState().markMessagesRead(data.conversationId);
   };

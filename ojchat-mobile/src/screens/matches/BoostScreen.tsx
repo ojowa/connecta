@@ -11,6 +11,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiClient } from '../../services/api/apiClient';
+import { ENDPOINTS } from '../../constants/endpoints';
 import { usePlanInfo } from '../../hooks/useMatch';
 import { colors } from '../../theme/colors';
 import { typography } from '../../theme/typography';
@@ -50,7 +51,7 @@ export default function BoostScreen() {
 
   const { data: boostData, isLoading } = useQuery({
     queryKey: ['boost'],
-    queryFn: () => apiClient.get('/matching/boost').then((r) => r.data as BoostData),
+    queryFn: () => apiClient.get(ENDPOINTS.MATCHING.BOOST).then((r) => r.data as BoostData),
     refetchInterval: 30000,
   });
 
@@ -77,7 +78,7 @@ export default function BoostScreen() {
       if (!latestPlan.data?.isPremium) {
         throw new Error('NOT_PREMIUM');
       }
-      return apiClient.post('/matching/boost');
+      return apiClient.post(ENDPOINTS.MATCHING.BOOST);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['boost'] });
@@ -156,7 +157,9 @@ export default function BoostScreen() {
                   {
                     width: `${Math.max(
                       0,
-                      (new Date(activeBoost!.expiresAt).getTime() - Date.now()) / (30 * 60 * 1000) * 100
+                      ((new Date(activeBoost!.expiresAt).getTime() - Date.now()) /
+                        (30 * 60 * 1000)) *
+                        100,
                     )}%`,
                   },
                 ]}
@@ -194,10 +197,10 @@ export default function BoostScreen() {
             {activateMutation.isPending
               ? 'Activating...'
               : isActive
-              ? 'Boost Active'
-              : !isPremium
-              ? 'Upgrade to Boost'
-              : '⚡ Activate Boost'}
+                ? 'Boost Active'
+                : !isPremium
+                  ? 'Upgrade to Boost'
+                  : '⚡ Activate Boost'}
           </Text>
         </TouchableOpacity>
 

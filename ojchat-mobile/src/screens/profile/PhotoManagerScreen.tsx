@@ -1,19 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  ScrollView,
-  TouchableOpacity,
-  Alert,
-  Image,
-} from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, Image } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Button } from '../../components/common/Button';
 import { ImageProcessor } from '../../utils/imageProcessing';
 import { profileApi } from '../../services/api/profileApi';
+import { logger } from '../../utils/logger';
 import { colors } from '../../theme/colors';
 import { typography } from '../../theme/typography';
 import { spacing } from '../../theme/spacing';
@@ -27,10 +20,10 @@ interface PhotoManagerScreenProps {
 const MAX_PHOTOS = 6;
 
 const PhotoManagerScreen: React.FC<PhotoManagerScreenProps> = ({ navigation }) => {
-  const [photos, setPhotos] = useState<(string | null)[]>([
-    null, null, null, null, null, null,
-  ]);
-  const [existingPhotos, setExistingPhotos] = useState<{ id: string; url: string; order: number }[]>([]);
+  const [photos, setPhotos] = useState<(string | null)[]>([null, null, null, null, null, null]);
+  const [existingPhotos, setExistingPhotos] = useState<
+    { id: string; url: string; order: number }[]
+  >([]);
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
@@ -60,7 +53,11 @@ const PhotoManagerScreen: React.FC<PhotoManagerScreenProps> = ({ navigation }) =
         if (i < MAX_PHOTOS) newPhotos[i] = p.url;
       });
       setPhotos(newPhotos);
-    } catch {}
+    } catch (err) {
+      logger.warn('Failed to load existing photos', {
+        message: err instanceof Error ? err.message : String(err),
+      });
+    }
   };
 
   const handleSave = async () => {
@@ -162,7 +159,8 @@ const PhotoManagerScreen: React.FC<PhotoManagerScreenProps> = ({ navigation }) =
             <Ionicons name="bulb-outline" size={18} color={colors.warning} />
           </View>
           <Text style={styles.tipText}>
-            Your first photo is shown to everyone. Choose a clear, well-lit photo where your face is visible.
+            Your first photo is shown to everyone. Choose a clear, well-lit photo where your face is
+            visible.
           </Text>
         </View>
 
@@ -214,7 +212,9 @@ const PhotoManagerScreen: React.FC<PhotoManagerScreenProps> = ({ navigation }) =
         {/* Photo Counter */}
         <View style={styles.counterRow}>
           <Ionicons name="images-outline" size={16} color={colors.textTertiary} />
-          <Text style={styles.counterText}>{photoCount} of {MAX_PHOTOS} photos</Text>
+          <Text style={styles.counterText}>
+            {photoCount} of {MAX_PHOTOS} photos
+          </Text>
         </View>
 
         {/* Add Photo Button */}

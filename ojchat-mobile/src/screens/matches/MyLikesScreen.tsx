@@ -4,10 +4,12 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useMyLikes } from '../../hooks/useMatch';
 import { LoadingSpinner } from '../../components/common/LoadingSpinner';
+import { ErrorState } from '../../components/common/ErrorState';
 import { colors } from '../../theme/colors';
 import { typography } from '../../theme/typography';
 import { spacing } from '../../theme/spacing';
 import { borderRadius } from '../../theme/borderRadius';
+import type { RootStackScreenProps } from '../../navigation/types';
 
 interface LikedUser {
   user: {
@@ -18,10 +20,18 @@ interface LikedUser {
   likedAt: string;
 }
 
-export const MyLikesScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
-  const { data, isLoading } = useMyLikes();
+export const MyLikesScreen: React.FC<RootStackScreenProps<'MyLikes'>> = ({ navigation }) => {
+  const { data, isLoading, isError, refetch } = useMyLikes();
 
   if (isLoading) return <LoadingSpinner />;
+
+  if (isError) {
+    return (
+      <SafeAreaView style={styles.safeArea}>
+        <ErrorState message="Couldn't load your likes." onRetry={() => refetch()} />
+      </SafeAreaView>
+    );
+  }
 
   const likes = data?.likes || [];
   const totalCount = data?.meta?.total ?? likes.length;
@@ -43,20 +53,24 @@ export const MyLikesScreen: React.FC<{ navigation: any }> = ({ navigation }) => 
         <View style={{ width: 24 }} />
       </View>
 
-
       <FlatList
         data={likes}
-        keyExtractor={(item: any, index: number) => item.user?.id || item.likedUserId || `like-${index}`}
+        keyExtractor={(item: any, index: number) =>
+          item.user?.id || item.likedUserId || `like-${index}`
+        }
         contentContainerStyle={styles.list}
         ListEmptyComponent={
           <View style={styles.empty}>
             <Ionicons name="heart-outline" size={64} color={colors.gray300} />
             <Text style={styles.emptyText}>No pending likes</Text>
-            <Text style={styles.emptySubtext}>People you like will appear here until they like you back</Text>
+            <Text style={styles.emptySubtext}>
+              People you like will appear here until they like you back
+            </Text>
           </View>
         }
         renderItem={({ item }: { item: LikedUser }) => {
-          const primaryPhoto = item.user?.photos?.find((p) => p.isPrimary) || item.user?.photos?.[0];
+          const primaryPhoto =
+            item.user?.photos?.find((p) => p.isPrimary) || item.user?.photos?.[0];
           const timeAgo = item.likedAt ? getTimeAgo(item.likedAt) : '';
 
           return (
@@ -97,7 +111,12 @@ function getTimeAgo(date: string): string {
 
 const styles = StyleSheet.create({
   safeArea: { flex: 1, backgroundColor: colors.background },
-  header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: spacing.md },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    padding: spacing.md,
+  },
   headerCenter: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs },
   headerTitle: { ...typography.h3 },
   countBadge: {
@@ -110,11 +129,21 @@ const styles = StyleSheet.create({
     paddingHorizontal: 6,
   },
   countBadgeText: { color: colors.white, fontSize: 11, fontWeight: '700' },
-  subtitle: { ...typography.caption, color: colors.textSecondary, paddingHorizontal: spacing.md, marginBottom: spacing.md },
+  subtitle: {
+    ...typography.caption,
+    color: colors.textSecondary,
+    paddingHorizontal: spacing.md,
+    marginBottom: spacing.md,
+  },
   list: { padding: spacing.md },
   empty: { alignItems: 'center', paddingTop: 100 },
   emptyText: { ...typography.h3, marginTop: spacing.md },
-  emptySubtext: { ...typography.body, color: colors.textSecondary, textAlign: 'center', marginTop: spacing.xs },
+  emptySubtext: {
+    ...typography.body,
+    color: colors.textSecondary,
+    textAlign: 'center',
+    marginTop: spacing.xs,
+  },
   userCard: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -124,7 +153,11 @@ const styles = StyleSheet.create({
     marginBottom: spacing.sm,
   },
   avatar: { width: 50, height: 50, borderRadius: 25 },
-  avatarPlaceholder: { backgroundColor: colors.gray200, alignItems: 'center', justifyContent: 'center' },
+  avatarPlaceholder: {
+    backgroundColor: colors.gray200,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   avatarText: { ...typography.h3, color: colors.gray500 },
   userInfo: { flex: 1, marginLeft: spacing.md },
   userName: { ...typography.body, fontWeight: '600' },

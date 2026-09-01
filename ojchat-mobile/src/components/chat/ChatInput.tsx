@@ -19,7 +19,15 @@ interface ChatInputProps {
   onCancelReply?: () => void;
 }
 
-export const ChatInput: React.FC<ChatInputProps> = ({ onSend, onSendImage, onSendVoice, onSendGif, onTyping, replyTo, onCancelReply }) => {
+export const ChatInput: React.FC<ChatInputProps> = ({
+  onSend,
+  onSendImage,
+  onSendVoice,
+  onSendGif,
+  onTyping,
+  replyTo,
+  onCancelReply,
+}) => {
   const [text, setText] = useState('');
   const [isRecording, setIsRecording] = useState(false);
   const [recording, setRecording] = useState<Audio.Recording | null>(null);
@@ -38,7 +46,7 @@ export const ChatInput: React.FC<ChatInputProps> = ({ onSend, onSendImage, onSen
       await Audio.requestPermissionsAsync();
       await Audio.setAudioModeAsync({ allowsRecordingIOS: true, playsInSilentModeIOS: true });
       const { recording: newRecording } = await Audio.Recording.createAsync(
-        Audio.RecordingOptionsPresets.HIGH_QUALITY
+        Audio.RecordingOptionsPresets.HIGH_QUALITY,
       );
       setRecording(newRecording);
       setIsRecording(true);
@@ -52,7 +60,7 @@ export const ChatInput: React.FC<ChatInputProps> = ({ onSend, onSendImage, onSen
         Animated.sequence([
           Animated.timing(pulseAnim, { toValue: 1.2, duration: 500, useNativeDriver: true }),
           Animated.timing(pulseAnim, { toValue: 1, duration: 500, useNativeDriver: true }),
-        ])
+        ]),
       ).start();
     } catch (err) {
       console.error('Failed to start recording', err);
@@ -110,7 +118,10 @@ export const ChatInput: React.FC<ChatInputProps> = ({ onSend, onSendImage, onSen
         onPress: async () => {
           const { status } = await ImagePicker.requestCameraPermissionsAsync();
           if (status !== 'granted') return;
-          const result = await ImagePicker.launchCameraAsync({ mediaTypes: ['images'], quality: 0.8 });
+          const result = await ImagePicker.launchCameraAsync({
+            mediaTypes: ['images'],
+            quality: 0.8,
+          });
           if (!result.canceled && result.assets[0]) onSendImage?.(result.assets[0].uri);
         },
       },
@@ -119,7 +130,10 @@ export const ChatInput: React.FC<ChatInputProps> = ({ onSend, onSendImage, onSen
         onPress: async () => {
           const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
           if (status !== 'granted') return;
-          const result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'], quality: 0.8 });
+          const result = await ImagePicker.launchImageLibraryAsync({
+            mediaTypes: ['images'],
+            quality: 0.8,
+          });
           if (!result.canceled && result.assets[0]) onSendImage?.(result.assets[0].uri);
         },
       },
@@ -144,7 +158,9 @@ export const ChatInput: React.FC<ChatInputProps> = ({ onSend, onSendImage, onSen
         <View style={styles.replyPreview}>
           <View style={styles.replyPreviewContent}>
             <Text style={styles.replyPreviewLabel}>Replying to</Text>
-            <Text style={styles.replyPreviewText} numberOfLines={1}>{replyTo.content}</Text>
+            <Text style={styles.replyPreviewText} numberOfLines={1}>
+              {replyTo.content}
+            </Text>
           </View>
           <TouchableOpacity onPress={onCancelReply}>
             <Ionicons name="close" size={18} color={colors.gray400} />
@@ -172,7 +188,10 @@ export const ChatInput: React.FC<ChatInputProps> = ({ onSend, onSendImage, onSen
           <TextInput
             style={styles.input}
             value={text}
-            onChangeText={(t) => { setText(t); onTyping?.(); }}
+            onChangeText={(t) => {
+              setText(t);
+              onTyping?.();
+            }}
             placeholder="Type a message..."
             placeholderTextColor={colors.gray400}
             multiline
@@ -194,15 +213,46 @@ export const ChatInput: React.FC<ChatInputProps> = ({ onSend, onSendImage, onSen
 
 const styles = StyleSheet.create({
   container: { borderTopWidth: 1, borderTopColor: colors.border, backgroundColor: colors.white },
-  replyPreview: { flexDirection: 'row', alignItems: 'center', padding: spacing.sm, paddingBottom: 0, backgroundColor: colors.gray50 },
+  replyPreview: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: spacing.sm,
+    paddingBottom: 0,
+    backgroundColor: colors.gray50,
+  },
   replyPreviewContent: { flex: 1, marginLeft: spacing.xs },
   replyPreviewLabel: { ...typography.small, color: colors.primary, fontWeight: '600' },
   replyPreviewText: { ...typography.caption, color: colors.textSecondary },
   inputRow: { flexDirection: 'row', alignItems: 'flex-end', padding: spacing.sm },
-  attachButton: { width: 36, height: 36, borderRadius: 18, backgroundColor: colors.gray100, alignItems: 'center', justifyContent: 'center', marginRight: spacing.sm },
+  attachButton: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: colors.gray100,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: spacing.sm,
+  },
   attachIcon: { fontSize: 22, color: colors.primary, fontWeight: '700' },
-  input: { flex: 1, ...typography.body, borderWidth: 1, borderColor: colors.border, borderRadius: borderRadius.input, paddingHorizontal: spacing.md, paddingVertical: spacing.sm, maxHeight: 100, marginRight: spacing.sm },
-  sendButton: { width: 36, height: 36, borderRadius: 18, backgroundColor: colors.primary, alignItems: 'center', justifyContent: 'center' },
+  input: {
+    flex: 1,
+    ...typography.body,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: borderRadius.input,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    maxHeight: 100,
+    marginRight: spacing.sm,
+  },
+  sendButton: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: colors.primary,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   sendDisabled: { opacity: 0.5 },
   sendIcon: { fontSize: 18, color: colors.white, fontWeight: '700' },
   recordingRow: {

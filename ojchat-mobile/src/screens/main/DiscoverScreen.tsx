@@ -2,9 +2,17 @@ import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { View, Text, StyleSheet, ScrollView, RefreshControl, TouchableOpacity } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { useMatchFeed, useLike, usePass, useSuperLike, useUndo, usePlanInfo } from '../../hooks/useMatch';
+import {
+  useMatchFeed,
+  useLike,
+  usePass,
+  useSuperLike,
+  useUndo,
+  usePlanInfo,
+} from '../../hooks/useMatch';
 import { SwipeableCard } from '../../components/dating/SwipeableCard';
 import { LoadingSpinner } from '../../components/common/LoadingSpinner';
+import { ErrorState } from '../../components/common/ErrorState';
 import { apiClient } from '../../services/api/apiClient';
 import { ENDPOINTS } from '../../constants/endpoints';
 import { colors } from '../../theme/colors';
@@ -12,9 +20,11 @@ import { typography } from '../../theme/typography';
 import { spacing } from '../../theme/spacing';
 import { borderRadius } from '../../theme/borderRadius';
 import { useAppStore } from '../../store';
+import { logger } from '../../utils/logger';
+import type { MainTabScreenProps } from '../../navigation/types';
 
-export const DiscoverScreen: React.FC<{ navigation?: any }> = ({ navigation }) => {
-  const { data, isLoading, refetch } = useMatchFeed();
+export const DiscoverScreen: React.FC<MainTabScreenProps<'Discover'>> = ({ navigation }) => {
+  const { data, isLoading, isError, refetch } = useMatchFeed();
   const { data: planInfo } = usePlanInfo();
   const likeMutation = useLike();
   const passMutation = usePass();
@@ -37,9 +47,9 @@ export const DiscoverScreen: React.FC<{ navigation?: any }> = ({ navigation }) =
     if (pendingNewMatch && navigation) {
       navigation.navigate('Match', {
         matchedUser: {
-          userId: pendingNewMatch.otherUser?.id || pendingNewMatch.user2Id || '',
-          fullName: pendingNewMatch.otherUser?.fullName || pendingNewMatch.user2Name || 'Someone',
-          avatar: pendingNewMatch.otherUser?.avatarUrl || pendingNewMatch.user2Avatar,
+          userId: pendingNewMatch.otherUser?.id || '',
+          fullName: pendingNewMatch.otherUser?.fullName || 'Someone',
+          avatar: pendingNewMatch.otherUser?.avatarUrl,
         },
         conversationId: pendingNewMatch.conversationId,
       });
@@ -52,17 +62,38 @@ export const DiscoverScreen: React.FC<{ navigation?: any }> = ({ navigation }) =
       const uid = profiles[0].user.id;
       if (!viewedIds.current.has(uid)) {
         viewedIds.current.add(uid);
-        apiClient.post(ENDPOINTS.MATCHING.PROFILE_VIEW(uid)).catch(() => {});
+        apiClient.post(ENDPOINTS.MATCHING.PROFILE_VIEW(uid)).catch((err) => {
+          logger.debug('Profile view tracking failed', {
+            message: err instanceof Error ? err.message : String(err),
+          });
+        });
       }
     }
   }, [profiles]);
 
   if (isLoading) return <LoadingSpinner />;
 
+  if (isError) {
+    return (
+      <SafeAreaView style={styles.safeArea}>
+        <ErrorState message="Couldn't load profiles." onRetry={onRefresh} />
+      </SafeAreaView>
+    );
+  }
+
   if (profiles.length === 0) {
     return (
       <SafeAreaView style={styles.safeArea}>
-        <ScrollView contentContainerStyle={styles.empty} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />}>
+        <ScrollView
+          contentContainerStyle={styles.empty}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={onRefresh}
+              tintColor={colors.primary}
+            />
+          }
+        >
           <Text style={styles.emptyText}>No more profiles to show</Text>
           <Text style={styles.emptySubtext}>Pull to refresh or check back later</Text>
         </ScrollView>

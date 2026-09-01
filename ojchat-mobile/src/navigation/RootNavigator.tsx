@@ -2,6 +2,7 @@ import React from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { useAppStore } from '../store';
+import type { RootStackParamList } from './types';
 import { AuthNavigator } from './AuthNavigator';
 import { MainTabNavigator } from './MainTabNavigator';
 import { ConversationScreen } from '../screens/chat/ConversationScreen';
@@ -44,7 +45,7 @@ import { DailyStreakScreen } from '../screens/gamification/DailyStreakScreen';
 
 import { useIncomingCalls } from '../hooks/useIncomingCalls';
 
-const Stack = createNativeStackNavigator();
+const Stack = createNativeStackNavigator<RootStackParamList>();
 
 function IncomingCallsListener() {
   useIncomingCalls();
@@ -63,50 +64,198 @@ export const RootNavigator: React.FC = () => {
           <>
             <Stack.Screen name="Main" component={MainTabNavigator} />
             {/* Chat */}
-            <Stack.Screen name="Conversation" component={ConversationScreen} options={{ headerShown: true, title: 'Chat' }} />
+            <Stack.Screen
+              name="Conversation"
+              component={ConversationScreen}
+              options={{ headerShown: true, title: 'Chat' }}
+            />
             {/* Profile */}
-            <Stack.Screen name="EditProfile" component={EditProfileScreen} options={{ headerShown: true, title: 'Edit Profile' }} />
-            <Stack.Screen name="InterestSelector" component={InterestSelectorScreen} options={{ headerShown: false }} />
-            <Stack.Screen name="PhotoManager" component={PhotoManagerScreen} options={{ headerShown: true, title: 'Manage Photos' }} />
-            <Stack.Screen name="ProfilePrompts" component={ProfilePromptsScreen} options={{ headerShown: true, title: 'Profile Prompts' }} />
-            <Stack.Screen name="UserProfile" component={UserProfileScreen} options={{ headerShown: false }} />
-            <Stack.Screen name="Verification" component={VerificationScreen} options={{ headerShown: true, title: 'Verify Profile' }} />
+            <Stack.Screen
+              name="EditProfile"
+              component={EditProfileScreen}
+              options={{ headerShown: true, title: 'Edit Profile' }}
+            />
+            <Stack.Screen
+              name="InterestSelector"
+              component={InterestSelectorScreen}
+              options={{ headerShown: false }}
+            />
+            <Stack.Screen
+              name="PhotoManager"
+              component={PhotoManagerScreen}
+              options={{ headerShown: true, title: 'Manage Photos' }}
+            />
+            <Stack.Screen
+              name="ProfilePrompts"
+              component={ProfilePromptsScreen}
+              options={{ headerShown: true, title: 'Profile Prompts' }}
+            />
+            <Stack.Screen
+              name="UserProfile"
+              component={UserProfileScreen}
+              options={{ headerShown: false }}
+            />
+            <Stack.Screen
+              name="Verification"
+              component={VerificationScreen}
+              options={{ headerShown: true, title: 'Verify Profile' }}
+            />
             {/* Settings & Notifications */}
-            <Stack.Screen name="Settings" component={SettingsScreen} options={{ headerShown: true, title: 'Settings' }} />
-            <Stack.Screen name="Preferences" component={PreferencesScreen} options={{ headerShown: true, title: 'Preferences' }} />
-            <Stack.Screen name="Passport" component={PassportScreen} options={{ headerShown: true, title: 'Passport' }} />
-            <Stack.Screen name="EditPhone" component={EditPhoneScreen} options={{ headerShown: true, title: 'Edit Phone' }} />
-            <Stack.Screen name="EditEmail" component={EditEmailScreen} options={{ headerShown: true, title: 'Edit Email' }} />
-            <Stack.Screen name="ChangePassword" component={ChangePasswordScreen} options={{ headerShown: true, title: 'Change Password' }} />
-            <Stack.Screen name="BiometricSetup" component={BiometricSetupScreen} options={{ headerShown: true, title: 'Biometric Login' }} />
-            <Stack.Screen name="TwoFactorAuth" component={TwoFactorAuthScreen} options={{ headerShown: true, title: 'Two-Factor Auth' }} />
-            <Stack.Screen name="Devices" component={DevicesScreen} options={{ headerShown: true, title: 'Devices' }} />
-            <Stack.Screen name="QuietHours" component={QuietHoursScreen} options={{ headerShown: true, title: 'Quiet Hours' }} />
-            <Stack.Screen name="BlockList" component={BlockListScreen} options={{ headerShown: true, title: 'Block List' }} />
-            <Stack.Screen name="Incognito" component={IncognitoScreen} options={{ headerShown: true, title: 'Incognito Mode' }} />
-            <Stack.Screen name="ReportProblem" component={ReportProblemScreen} options={{ headerShown: true, title: 'Report a Problem' }} />
-            <Stack.Screen name="Notifications" component={NotificationsScreen} options={{ headerShown: true, title: 'Notifications' }} />
+            <Stack.Screen
+              name="Settings"
+              component={SettingsScreen}
+              options={{ headerShown: true, title: 'Settings' }}
+            />
+            <Stack.Screen
+              name="Preferences"
+              component={PreferencesScreen}
+              options={{ headerShown: true, title: 'Preferences' }}
+            />
+            <Stack.Screen
+              name="Passport"
+              component={PassportScreen}
+              options={{ headerShown: true, title: 'Passport' }}
+            />
+            <Stack.Screen
+              name="EditPhone"
+              component={EditPhoneScreen}
+              options={{ headerShown: true, title: 'Edit Phone' }}
+            />
+            <Stack.Screen
+              name="EditEmail"
+              component={EditEmailScreen}
+              options={{ headerShown: true, title: 'Edit Email' }}
+            />
+            <Stack.Screen
+              name="ChangePassword"
+              component={ChangePasswordScreen}
+              options={{ headerShown: true, title: 'Change Password' }}
+            />
+            <Stack.Screen
+              name="BiometricSetup"
+              component={BiometricSetupScreen}
+              options={{ headerShown: true, title: 'Biometric Login' }}
+            />
+            <Stack.Screen
+              name="TwoFactorAuth"
+              component={TwoFactorAuthScreen}
+              options={{ headerShown: true, title: 'Two-Factor Auth' }}
+            />
+            <Stack.Screen
+              name="Devices"
+              component={DevicesScreen}
+              options={{ headerShown: true, title: 'Devices' }}
+            />
+            <Stack.Screen
+              name="QuietHours"
+              component={QuietHoursScreen}
+              options={{ headerShown: true, title: 'Quiet Hours' }}
+            />
+            <Stack.Screen
+              name="BlockList"
+              component={BlockListScreen}
+              options={{ headerShown: true, title: 'Block List' }}
+            />
+            <Stack.Screen
+              name="Incognito"
+              component={IncognitoScreen}
+              options={{ headerShown: true, title: 'Incognito Mode' }}
+            />
+            <Stack.Screen
+              name="ReportProblem"
+              component={ReportProblemScreen}
+              options={{ headerShown: true, title: 'Report a Problem' }}
+            />
+            <Stack.Screen
+              name="Notifications"
+              component={NotificationsScreen}
+              options={{ headerShown: true, title: 'Notifications' }}
+            />
             {/* Subscription */}
-            <Stack.Screen name="Subscription" component={SubscriptionScreen} options={{ headerShown: true, title: 'Subscription' }} />
-            <Stack.Screen name="Wallet" component={WalletScreen} options={{ headerShown: true, title: 'Wallet' }} />
-            <Stack.Screen name="Boost" component={BoostScreen} options={{ headerShown: true, title: 'Boost' }} />
+            <Stack.Screen
+              name="Subscription"
+              component={SubscriptionScreen}
+              options={{ headerShown: true, title: 'Subscription' }}
+            />
+            <Stack.Screen
+              name="Wallet"
+              component={WalletScreen}
+              options={{ headerShown: true, title: 'Wallet' }}
+            />
+            <Stack.Screen
+              name="Boost"
+              component={BoostScreen}
+              options={{ headerShown: true, title: 'Boost' }}
+            />
             {/* Matches & Social */}
-            <Stack.Screen name="LikesYou" component={LikesYouScreen} options={{ headerShown: false }} />
-            <Stack.Screen name="MyLikes" component={MyLikesScreen} options={{ headerShown: false }} />
-            <Stack.Screen name="WhoViewed" component={WhoViewedScreen} options={{ headerShown: false }} />
-            <Stack.Screen name="Moments" component={MomentsScreen} options={{ headerShown: true, title: 'Moments' }} />
-            <Stack.Screen name="DailyStreak" component={DailyStreakScreen} options={{ headerShown: false }} />
+            <Stack.Screen
+              name="LikesYou"
+              component={LikesYouScreen}
+              options={{ headerShown: false }}
+            />
+            <Stack.Screen
+              name="MyLikes"
+              component={MyLikesScreen}
+              options={{ headerShown: false }}
+            />
+            <Stack.Screen
+              name="WhoViewed"
+              component={WhoViewedScreen}
+              options={{ headerShown: false }}
+            />
+            <Stack.Screen
+              name="Moments"
+              component={MomentsScreen}
+              options={{ headerShown: true, title: 'Moments' }}
+            />
+            <Stack.Screen
+              name="DailyStreak"
+              component={DailyStreakScreen}
+              options={{ headerShown: false }}
+            />
             {/* Safety */}
-            <Stack.Screen name="Report" component={ReportScreen} options={{ headerShown: true, title: 'Report', presentation: 'modal' }} />
-            <Stack.Screen name="BlockConfirmation" component={BlockConfirmation} options={{ headerShown: true, title: 'Block User', presentation: 'modal' }} />
-            <Stack.Screen name="SafetyTips" component={SafetyTips} options={{ headerShown: true, title: 'Safety Tips' }} />
-            <Stack.Screen name="Appeal" component={AppealScreen} options={{ headerShown: true, title: 'Appeal', presentation: 'modal' }} />
+            <Stack.Screen
+              name="Report"
+              component={ReportScreen}
+              options={{ headerShown: true, title: 'Report', presentation: 'modal' }}
+            />
+            <Stack.Screen
+              name="BlockConfirmation"
+              component={BlockConfirmation}
+              options={{ headerShown: true, title: 'Block User', presentation: 'modal' }}
+            />
+            <Stack.Screen
+              name="SafetyTips"
+              component={SafetyTips}
+              options={{ headerShown: true, title: 'Safety Tips' }}
+            />
+            <Stack.Screen
+              name="Appeal"
+              component={AppealScreen}
+              options={{ headerShown: true, title: 'Appeal', presentation: 'modal' }}
+            />
             {/* Calls */}
-            <Stack.Screen name="IncomingCall" component={IncomingCallScreen} options={{ headerShown: false, presentation: 'fullScreenModal' }} />
-            <Stack.Screen name="ActiveVoiceCall" component={ActiveVoiceCallScreen} options={{ headerShown: false, presentation: 'fullScreenModal' }} />
-            <Stack.Screen name="ActiveVideoCall" component={ActiveVideoCallScreen} options={{ headerShown: false, presentation: 'fullScreenModal' }} />
+            <Stack.Screen
+              name="IncomingCall"
+              component={IncomingCallScreen}
+              options={{ headerShown: false, presentation: 'fullScreenModal' }}
+            />
+            <Stack.Screen
+              name="ActiveVoiceCall"
+              component={ActiveVoiceCallScreen}
+              options={{ headerShown: false, presentation: 'fullScreenModal' }}
+            />
+            <Stack.Screen
+              name="ActiveVideoCall"
+              component={ActiveVideoCallScreen}
+              options={{ headerShown: false, presentation: 'fullScreenModal' }}
+            />
             {/* Match */}
-            <Stack.Screen name="Match" component={MatchScreen} options={{ headerShown: false, presentation: 'modal' }} />
+            <Stack.Screen
+              name="Match"
+              component={MatchScreen}
+              options={{ headerShown: false, presentation: 'modal' }}
+            />
           </>
         )}
       </Stack.Navigator>

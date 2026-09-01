@@ -8,7 +8,9 @@ import { typography } from '../../theme/typography';
 import { spacing } from '../../theme/spacing';
 import { borderRadius } from '../../theme/borderRadius';
 
-interface TwoFactorVerifyProps { navigation: any; }
+interface TwoFactorVerifyProps {
+  navigation: any;
+}
 
 export const TwoFactorVerifyScreen: React.FC<TwoFactorVerifyProps> = ({ navigation }) => {
   const [code, setCode] = useState(['', '', '', '', '', '']);
@@ -55,7 +57,12 @@ export const TwoFactorVerifyScreen: React.FC<TwoFactorVerifyProps> = ({ navigati
         </View>
         {(authError || serverError) && <Text style={styles.error}>{authError || serverError}</Text>}
         <Button title="Verify" onPress={handleVerify} loading={loading} />
-        <Button title="Back to Login" variant="ghost" onPress={() => navigation.goBack()} style={styles.backButton} />
+        <Button
+          title="Back to Login"
+          variant="ghost"
+          onPress={() => navigation.goBack()}
+          style={styles.backButton}
+        />
       </View>
     </SafeAreaView>
   );
@@ -63,11 +70,40 @@ export const TwoFactorVerifyScreen: React.FC<TwoFactorVerifyProps> = ({ navigati
 
 const styles = StyleSheet.create({
   safeArea: { flex: 1, backgroundColor: colors.white },
-  container: { flex: 1, backgroundColor: colors.white, padding: spacing.xl, justifyContent: 'center' },
+  container: {
+    flex: 1,
+    backgroundColor: colors.white,
+    padding: spacing.xl,
+    justifyContent: 'center',
+  },
   title: { ...typography.h1, textAlign: 'center', marginBottom: spacing.xs },
-  subtitle: { ...typography.body, color: colors.textSecondary, textAlign: 'center', marginBottom: spacing.xl },
-  otpContainer: { flexDirection: 'row', justifyContent: 'center', gap: spacing.sm, marginBottom: spacing.lg },
-  otpInput: { flex: 1, maxWidth: 56, height: 56, borderWidth: 1, borderColor: colors.border, borderRadius: borderRadius.md, textAlign: 'center', ...typography.h2 },
-  error: { ...typography.caption, color: colors.error, textAlign: 'center', marginBottom: spacing.md },
+  subtitle: {
+    ...typography.body,
+    color: colors.textSecondary,
+    textAlign: 'center',
+    marginBottom: spacing.xl,
+  },
+  otpContainer: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    gap: spacing.sm,
+    marginBottom: spacing.lg,
+  },
+  otpInput: {
+    flex: 1,
+    maxWidth: 56,
+    height: 56,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: borderRadius.md,
+    textAlign: 'center',
+    ...typography.h2,
+  },
+  error: {
+    ...typography.caption,
+    color: colors.error,
+    textAlign: 'center',
+    marginBottom: spacing.md,
+  },
   backButton: { marginTop: spacing.md },
 });

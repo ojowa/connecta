@@ -28,6 +28,10 @@ import { LoadingSpinner } from '../../components/common/LoadingSpinner';
 import { useConversations } from '../../hooks/useChat';
 import { usePlanInfo } from '../../hooks/useMatch';
 import { useAppStore } from '../../store';
+import { logger } from '../../utils/logger';
+import type { RootStackScreenProps } from '../../navigation/types';
+import { ErrorState } from '../../components/common/ErrorState';
+import { useEnsureConversation } from '../../hooks/useEnsureConversation';
 
 function calculateAge(dob: string): number {
   const birth = new Date(dob);
@@ -38,15 +42,18 @@ function calculateAge(dob: string): number {
   return age;
 }
 
-export const UserProfileScreen: React.FC<{ navigation: any; route: any }> = ({ navigation, route }) => {
+export const UserProfileScreen: React.FC<RootStackScreenProps<'UserProfile'>> = ({
+  navigation,
+  route,
+}) => {
   const { userId, isMatched: routeIsMatched } = route.params;
   const { width: screenWidth, height: screenHeight } = useWindowDimensions();
   const queryClient = useQueryClient();
   const { data: convData } = useConversations();
   const currentUserId = useAppStore((s) => s.user?.id);
   const conversations = convData?.conversations || [];
-  const conversation = conversations.find((c: any) =>
-    c.participantIds?.includes(userId) && c.participantIds?.includes(currentUserId)
+  const conversation = conversations.find(
+    (c: any) => c.participantIds?.includes(userId) && c.participantIds?.includes(currentUserId),
   );
   const isMatched = routeIsMatched || !!conversation;
   const conversationId = conversation?.id;
@@ -59,12 +66,16 @@ export const UserProfileScreen: React.FC<{ navigation: any; route: any }> = ({ n
 
   const { data: profile, isLoading } = useQuery({
     queryKey: ['userProfile', userId],
-    queryFn: () => apiClient.get(`/users/${userId}`).then((r) => r.data),
+    queryFn: () => apiClient.get(ENDPOINTS.USERS.PUBLIC(userId)).then((r) => r.data),
   });
 
   useEffect(() => {
     if (userId) {
-      apiClient.post(ENDPOINTS.MATCHING.PROFILE_VIEW(userId)).catch(() => {});
+      apiClient.post(ENDPOINTS.MATCHING.PROFILE_VIEW(userId)).catch((err) => {
+        logger.debug('Profile view tracking failed', {
+          message: err instanceof Error ? err.message : String(err),
+        });
+      });
     }
   }, [userId]);
 
@@ -77,7 +88,7 @@ export const UserProfileScreen: React.FC<{ navigation: any; route: any }> = ({ n
   });
 
   const passMutation = useMutation({
-    mutationFn: () => apiClient.post(`/matching/pass/${userId}`),
+    mutationFn: () => apiClient.post(ENDPOINTS.MATCHING.PASS(userId)),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['matchFeed'] });
       navigation.goBack();
@@ -165,19 +176,26 @@ export const UserProfileScreen: React.FC<{ navigation: any; route: any }> = ({ n
             <TouchableOpacity
               style={styles.headerIcon}
               onPress={async () => {
-                const convId = conversationId || await (async () => {
-                  try {
-                    const res = await apiClient.post(ENDPOINTS.CHAT.CONVERSATIONS, { otherUserId: userId });
-                    const data = res.data as any;
-                    return data?.id || data;
-                  } catch { return null; }
-                })();
-                if (convId) navigation.navigate('ActiveVoiceCall', {
-                  conversationId: convId,
-                  callerId: userId,
-                  callerName: p.firstName,
-                  callType: 'audio',
-                });
+                const convId =
+                  conversationId ||
+                  (await (async () => {
+                    try {
+                      const res = await apiClient.post(ENDPOINTS.CHAT.CONVERSATIONS, {
+                        otherUserId: userId,
+                      });
+                      const data = res.data as any;
+                      return data?.id || data;
+                    } catch {
+                      return null;
+                    }
+                  })());
+                if (convId)
+                  navigation.navigate('ActiveVoiceCall', {
+                    conversationId: convId,
+                    callerId: userId,
+                    callerName: p.firstName,
+                    callType: 'voice',
+                  });
               }}
             >
               <Ionicons name="call-outline" size={20} color={colors.primary} />
@@ -185,19 +203,26 @@ export const UserProfileScreen: React.FC<{ navigation: any; route: any }> = ({ n
             <TouchableOpacity
               style={styles.headerIcon}
               onPress={async () => {
-                const convId = conversationId || await (async () => {
-                  try {
-                    const res = await apiClient.post(ENDPOINTS.CHAT.CONVERSATIONS, { otherUserId: userId });
-                    const data = res.data as any;
-                    return data?.id || data;
-                  } catch { return null; }
-                })();
-                if (convId) navigation.navigate('ActiveVideoCall', {
-                  conversationId: convId,
-                  callerId: userId,
-                  callerName: p.firstName,
-                  callType: 'video',
-                });
+                const convId =
+                  conversationId ||
+                  (await (async () => {
+                    try {
+                      const res = await apiClient.post(ENDPOINTS.CHAT.CONVERSATIONS, {
+                        otherUserId: userId,
+                      });
+                      const data = res.data as any;
+                      return data?.id || data;
+                    } catch {
+                      return null;
+                    }
+                  })());
+                if (convId)
+                  navigation.navigate('ActiveVideoCall', {
+                    conversationId: convId,
+                    callerId: userId,
+                    callerName: p.firstName,
+                    callType: 'video',
+                  });
               }}
             >
               <Ionicons name="videocam-outline" size={20} color={colors.primary} />
@@ -212,13 +237,16 @@ export const UserProfileScreen: React.FC<{ navigation: any; route: any }> = ({ n
         )}
       </View>
 
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContentContainer}>
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={styles.scrollContentContainer}
+      >
         {/* Photo Carousel */}
         {photos.length > 0 ? (
           <View style={[styles.carouselContainer, { height: PHOTO_HEIGHT }]}>
             <FlatList
               data={photos.slice(0, 6)}
-              keyExtractor={(item: any) => item.id || String(Math.random())}
+              keyExtractor={(item: any, index) => String(item?.id ?? `photo-${index}`)}
               horizontal
               pagingEnabled
               showsHorizontalScrollIndicator={false}
@@ -238,7 +266,9 @@ export const UserProfileScreen: React.FC<{ navigation: any; route: any }> = ({ n
             <View style={[styles.photoOverlayInfo, { bottom: PHOTO_HEIGHT * 0.15 }]}>
               <View style={styles.nameRow}>
                 <Text style={styles.photoName}>
-                  {p.firstName}{p.lastName ? ` ${p.lastName}` : ''}{age ? `, ${age}` : ''}
+                  {p.firstName}
+                  {p.lastName ? ` ${p.lastName}` : ''}
+                  {age ? `, ${age}` : ''}
                 </Text>
                 {p.verified && (
                   <Ionicons name="checkmark-circle" size={24} color={colors.primary} />
@@ -248,7 +278,8 @@ export const UserProfileScreen: React.FC<{ navigation: any; route: any }> = ({ n
                 <View style={styles.locationRow}>
                   <Ionicons name="location" size={14} color="rgba(255,255,255,0.8)" />
                   <Text style={styles.locationText}>
-                    {p.city}{p.country ? `, ${p.country}` : ''}
+                    {p.city}
+                    {p.country ? `, ${p.country}` : ''}
                   </Text>
                 </View>
               )}
@@ -266,7 +297,18 @@ export const UserProfileScreen: React.FC<{ navigation: any; route: any }> = ({ n
             )}
           </View>
         ) : (
-          <View style={[styles.photoSlide, { width: screenWidth, height: PHOTO_HEIGHT, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.gray100 }]}>
+          <View
+            style={[
+              styles.photoSlide,
+              {
+                width: screenWidth,
+                height: PHOTO_HEIGHT,
+                alignItems: 'center',
+                justifyContent: 'center',
+                backgroundColor: colors.gray100,
+              },
+            ]}
+          >
             <Ionicons name="person" size={80} color={colors.gray300} />
           </View>
         )}
@@ -281,7 +323,10 @@ export const UserProfileScreen: React.FC<{ navigation: any; route: any }> = ({ n
                 <View style={styles.detailIconContainer}>
                   <Ionicons name="briefcase-outline" size={18} color={colors.primary} />
                 </View>
-                <Text style={styles.detailText}>{p.jobTitle}{p.company ? ` at ${p.company}` : ''}</Text>
+                <Text style={styles.detailText}>
+                  {p.jobTitle}
+                  {p.company ? ` at ${p.company}` : ''}
+                </Text>
               </View>
             )}
             {p.school && (
@@ -409,7 +454,12 @@ const styles = StyleSheet.create({
   },
   nameRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs },
   photoName: { ...typography.h1, color: colors.white },
-  locationRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs, marginTop: spacing.xs },
+  locationRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+    marginTop: spacing.xs,
+  },
   locationText: { ...typography.body, color: 'rgba(255,255,255,0.8)' },
   pagination: {
     position: 'absolute',

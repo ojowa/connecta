@@ -10,9 +10,12 @@ export interface FeedCacheItem {
 export class FeedCacheRepository {
   static async getAll(): Promise<FeedCacheItem[]> {
     const db = await getDatabase();
-    const rows = await db.getAllAsync<{ user_id: string; data: string; score: number; cached_at: number }>(
-      'SELECT user_id, data, score, cached_at FROM local_feed_cache ORDER BY score DESC',
-    );
+    const rows = await db.getAllAsync<{
+      user_id: string;
+      data: string;
+      score: number;
+      cached_at: number;
+    }>('SELECT user_id, data, score, cached_at FROM local_feed_cache ORDER BY score DESC');
     return rows.map((row: { user_id: string; data: string; score: number; cached_at: number }) => ({
       userId: row.user_id,
       data: row.data,
@@ -47,7 +50,9 @@ export class FeedCacheRepository {
     );
   }
 
-  static async upsertBatch(items: Array<{ userId: string; data: string; score: number }>): Promise<void> {
+  static async upsertBatch(
+    items: Array<{ userId: string; data: string; score: number }>,
+  ): Promise<void> {
     const db = await getDatabase();
     const now = Date.now();
 
@@ -85,7 +90,9 @@ export class FeedCacheRepository {
 
   static async getCount(): Promise<number> {
     const db = await getDatabase();
-    const row = await db.getFirstAsync<{ count: number }>('SELECT COUNT(*) as count FROM local_feed_cache');
+    const row = await db.getFirstAsync<{ count: number }>(
+      'SELECT COUNT(*) as count FROM local_feed_cache',
+    );
     return row?.count || 0;
   }
 }

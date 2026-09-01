@@ -13,7 +13,10 @@ export const BiometricSetupScreen: React.FC = ({ navigation }: any) => {
 
   const handleEnable = async () => {
     const result = await BiometricAuthService.authenticate('Enable biometric login');
-    if (result.success) { setBiometricEnabled(true); navigation.goBack(); }
+    if (result.success) {
+      setBiometricEnabled(true);
+      navigation.goBack();
+    }
   };
 
   return (
@@ -30,7 +33,17 @@ export const BiometricSetupScreen: React.FC = ({ navigation }: any) => {
 
 const styles = StyleSheet.create({
   safeArea: { flex: 1, backgroundColor: colors.white },
-  container: { flex: 1, backgroundColor: colors.white, padding: spacing.xl, justifyContent: 'center' },
+  container: {
+    flex: 1,
+    backgroundColor: colors.white,
+    padding: spacing.xl,
+    justifyContent: 'center',
+  },
   title: { ...typography.h1, textAlign: 'center', marginBottom: spacing.xs },
-  subtitle: { ...typography.body, color: colors.textSecondary, textAlign: 'center', marginBottom: spacing.xl },
+  subtitle: {
+    ...typography.body,
+    color: colors.textSecondary,
+    textAlign: 'center',
+    marginBottom: spacing.xl,
+  },
 });

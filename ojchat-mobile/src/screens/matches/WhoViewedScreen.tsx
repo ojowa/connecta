@@ -11,6 +11,8 @@ import { typography } from '../../theme/typography';
 import { spacing } from '../../theme/spacing';
 import { borderRadius } from '../../theme/borderRadius';
 import { LoadingSpinner } from '../../components/common/LoadingSpinner';
+import { ErrorState } from '../../components/common/ErrorState';
+import type { RootStackScreenProps } from '../../navigation/types';
 
 interface ProfileViewer {
   id: string;
@@ -20,53 +22,72 @@ interface ProfileViewer {
   viewedAt: string;
 }
 
-export const WhoViewedScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
-  const [viewers, setViewers] = useState<ProfileViewer[]>([]);
-  const [loading, setLoading] = useState(true);
+interface ProfileViewersResponse {
+  viewers?: ProfileViewer[];
+}
+
+export const WhoViewedScreen: React.FC<RootStackScreenProps<'WhoViewed'>> = ({ navigation }) => {
   const appState = useRef(AppState.currentState);
   const { data: planInfo, refetch: refetchPlan } = usePlanInfo();
   const isPremium = planInfo?.isPremium;
 
-  const fetchViewers = () => {
-    setLoading(true);
-    apiClient.get(ENDPOINTS.MATCHING.PROFILE_VIEWERS, { params: { filter: 'discovery' } })
-      .then((res: any) => {
-        const data = res?.data || res;
-        const list = data?.viewers || [];
-        setViewers(list.map((v: any) => ({
-          id: v.id,
-          userId: v.userId,
-          fullName: v.user?.fullName || 'Anonymous',
-          avatar: v.user?.photos?.[0]?.url,
-          viewedAt: v.viewedAt,
-        })));
-      })
-      .catch(() => {})
-      .finally(() => setLoading(false));
-  };
+  const {
+    data: viewersData,
+    isLoading,
+    isError,
+    refetch,
+  } = useQuery<ProfileViewersResponse>({
+    queryKey: ['profile-viewers', 'discovery'],
+    queryFn: () =>
+      apiClient
+        .get(ENDPOINTS.MATCHING.PROFILE_VIEWERS, { params: { filter: 'discovery' } })
+        .then((r) => r.data),
+    enabled: isPremium === true,
+  });
 
-  useEffect(() => {
-    fetchViewers();
-  }, []);
+  const viewers: ProfileViewer[] = (viewersData?.viewers || []).map((v: any) => ({
+    id: v.id,
+    userId: v.userId,
+    fullName: v.user?.fullName || 'Anonymous',
+    avatar: v.user?.photos?.[0]?.url,
+    viewedAt: v.viewedAt,
+  }));
 
   useEffect(() => {
     const sub = AppState.addEventListener('change', (next) => {
       if (appState.current.match(/inactive|background/) && next === 'active') {
         refetchPlan();
+        refetch();
       }
       appState.current = next;
     });
     return () => sub.remove();
-  }, [refetchPlan]);
+  }, [refetchPlan, refetch]);
 
   useEffect(() => {
     const unsub = navigation?.addListener?.('focus', () => {
       refetchPlan();
+      refetch();
     });
     return unsub;
-  }, [navigation, refetchPlan]);
+  }, [navigation, refetchPlan, refetch]);
 
-  if (loading) return <LoadingSpinner />;
+  if (isLoading) return <LoadingSpinner />;
+
+  if (isError) {
+    return (
+      <SafeAreaView style={styles.safeArea}>
+        <View style={styles.header}>
+          <TouchableOpacity onPress={() => navigation.goBack()}>
+            <Ionicons name="arrow-back" size={24} color={colors.textPrimary} />
+          </TouchableOpacity>
+          <Text style={styles.headerTitle}>Who Viewed You</Text>
+          <View style={{ width: 24 }} />
+        </View>
+        <ErrorState message="Couldn't load profile viewers." onRetry={() => refetch()} />
+      </SafeAreaView>
+    );
+  }
 
   if (!isPremium) {
     return (
@@ -105,7 +126,7 @@ export const WhoViewedScreen: React.FC<{ navigation: any }> = ({ navigation }) =
           <Text style={styles.premiumSubtitle}>
             {viewers.length > 0
               ? `${viewers.length} ${viewers.length === 1 ? 'person' : 'people'} viewed your profile`
-              : 'When someone views your profile, they\'ll appear here'}
+              : "When someone views your profile, they'll appear here"}
           </Text>
           <Text style={styles.premiumHint}>
             Upgrade to premium to see who viewed your profile and view their full profiles.
@@ -142,11 +163,16 @@ export const WhoViewedScreen: React.FC<{ navigation: any }> = ({ navigation }) =
           <View style={styles.empty}>
             <Ionicons name="eye-off-outline" size={64} color={colors.gray300} />
             <Text style={styles.emptyText}>No profile views yet</Text>
-            <Text style={styles.emptySubtext}>When someone views your profile, they'll appear here</Text>
+            <Text style={styles.emptySubtext}>
+              When someone views your profile, they'll appear here
+            </Text>
           </View>
         }
         renderItem={({ item }) => (
-          <TouchableOpacity style={styles.viewerCard} onPress={() => navigation.navigate('UserProfile', { userId: item.userId })}>
+          <TouchableOpacity
+            style={styles.viewerCard}
+            onPress={() => navigation.navigate('UserProfile', { userId: item.userId })}
+          >
             {item.avatar ? (
               <Image source={{ uri: item.avatar }} style={styles.avatar} />
             ) : (
@@ -168,28 +194,99 @@ export const WhoViewedScreen: React.FC<{ navigation: any }> = ({ navigation }) =
 
 const styles = StyleSheet.create({
   safeArea: { flex: 1, backgroundColor: colors.background },
-  header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: spacing.md },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    padding: spacing.md,
+  },
   headerTitle: { ...typography.h3 },
   list: { padding: spacing.md },
   empty: { alignItems: 'center', paddingTop: 100 },
   emptyText: { ...typography.h3, marginTop: spacing.md },
-  emptySubtext: { ...typography.body, color: colors.textSecondary, textAlign: 'center', marginTop: spacing.xs },
-  viewerCard: { flexDirection: 'row', alignItems: 'center', padding: spacing.md, backgroundColor: colors.white, borderRadius: borderRadius.md, marginBottom: spacing.sm },
+  emptySubtext: {
+    ...typography.body,
+    color: colors.textSecondary,
+    textAlign: 'center',
+    marginTop: spacing.xs,
+  },
+  viewerCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: spacing.md,
+    backgroundColor: colors.white,
+    borderRadius: borderRadius.md,
+    marginBottom: spacing.sm,
+  },
   avatar: { width: 50, height: 50, borderRadius: 25 },
-  avatarPlaceholder: { backgroundColor: colors.gray200, alignItems: 'center', justifyContent: 'center' },
+  avatarPlaceholder: {
+    backgroundColor: colors.gray200,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   avatarText: { ...typography.h3, color: colors.gray500 },
   viewerInfo: { flex: 1, marginLeft: spacing.md },
   viewerName: { ...typography.body, fontWeight: '600' },
   viewerTime: { ...typography.caption, color: colors.textSecondary },
-  premiumContainer: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: spacing.xl },
+  premiumContainer: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: spacing.xl,
+  },
   lockedOverlay: { width: '100%', marginBottom: spacing.xl },
-  blurredCard: { flexDirection: 'row', alignItems: 'center', padding: spacing.md, backgroundColor: colors.white, borderRadius: borderRadius.md, opacity: 0.5 },
+  blurredCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: spacing.md,
+    backgroundColor: colors.white,
+    borderRadius: borderRadius.md,
+    opacity: 0.5,
+  },
   blurredAvatar: { width: 50, height: 50, borderRadius: 25 },
-  blurredLine: { height: 14, width: '80%', backgroundColor: colors.gray200, borderRadius: 4, marginBottom: spacing.xs },
-  lockIconContainer: { position: 'absolute', alignSelf: 'center', top: '50%', transform: [{ translateY: -20 }], backgroundColor: colors.white, borderRadius: 30, padding: spacing.sm, elevation: 4, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.15, shadowRadius: 8 },
+  blurredLine: {
+    height: 14,
+    width: '80%',
+    backgroundColor: colors.gray200,
+    borderRadius: 4,
+    marginBottom: spacing.xs,
+  },
+  lockIconContainer: {
+    position: 'absolute',
+    alignSelf: 'center',
+    top: '50%',
+    transform: [{ translateY: -20 }],
+    backgroundColor: colors.white,
+    borderRadius: 30,
+    padding: spacing.sm,
+    elevation: 4,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 8,
+  },
   premiumTitle: { ...typography.h2, marginBottom: spacing.sm },
-  premiumSubtitle: { ...typography.body, color: colors.textSecondary, textAlign: 'center', marginBottom: spacing.xs },
-  premiumHint: { ...typography.caption, color: colors.textSecondary, textAlign: 'center', marginBottom: spacing.xl, paddingHorizontal: spacing.lg },
-  upgradeButton: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, backgroundColor: colors.primary, paddingHorizontal: spacing.xl, paddingVertical: spacing.md, borderRadius: borderRadius.button },
+  premiumSubtitle: {
+    ...typography.body,
+    color: colors.textSecondary,
+    textAlign: 'center',
+    marginBottom: spacing.xs,
+  },
+  premiumHint: {
+    ...typography.caption,
+    color: colors.textSecondary,
+    textAlign: 'center',
+    marginBottom: spacing.xl,
+    paddingHorizontal: spacing.lg,
+  },
+  upgradeButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    backgroundColor: colors.primary,
+    paddingHorizontal: spacing.xl,
+    paddingVertical: spacing.md,
+    borderRadius: borderRadius.button,
+  },
   upgradeButtonText: { ...typography.button, color: colors.white },
 });

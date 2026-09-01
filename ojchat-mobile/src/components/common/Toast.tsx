@@ -21,7 +21,12 @@ const TYPE_COLORS: Record<ToastType, string> = {
   warning: colors.warning,
 };
 
-export const Toast: React.FC<ToastProps> = ({ message, type = 'info', duration = 3000, onHide }) => {
+export const Toast: React.FC<ToastProps> = ({
+  message,
+  type = 'info',
+  duration = 3000,
+  onHide,
+}) => {
   const opacity = useRef(new Animated.Value(0)).current;
   const translateY = useRef(new Animated.Value(-50)).current;
 
@@ -42,7 +47,12 @@ export const Toast: React.FC<ToastProps> = ({ message, type = 'info', duration =
   }, []);
 
   return (
-    <Animated.View style={[styles.container, { opacity, transform: [{ translateY }], backgroundColor: TYPE_COLORS[type] }]}>
+    <Animated.View
+      style={[
+        styles.container,
+        { opacity, transform: [{ translateY }], backgroundColor: TYPE_COLORS[type] },
+      ]}
+    >
       <Text style={styles.message}>{message}</Text>
     </Animated.View>
   );
@@ -51,7 +61,9 @@ export const Toast: React.FC<ToastProps> = ({ message, type = 'info', duration =
 let toastRef: { show: (message: string, type?: ToastType) => void } | null = null;
 
 export const ToastProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [toast, setToast] = useState<{ message: string; type: ToastType; key: number } | null>(null);
+  const [toast, setToast] = useState<{ message: string; type: ToastType; key: number } | null>(
+    null,
+  );
 
   useEffect(() => {
     toastRef = {
@@ -59,7 +71,9 @@ export const ToastProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         setToast({ message, type, key: Date.now() });
       },
     };
-    return () => { toastRef = null; };
+    return () => {
+      toastRef = null;
+    };
   }, []);
 
   return (

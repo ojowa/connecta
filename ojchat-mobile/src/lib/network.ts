@@ -44,8 +44,8 @@ export async function resolveApiUrl(): Promise<string> {
   if (!cachedApiUrl) {
     throw new Error(
       `No valid API URL configured. Set EXPO_PUBLIC_API_URL or EXPO_PUBLIC_LOCAL_API_URL.` +
-      `\nLOCAL_API=${LOCAL_API || '(empty)'}` +
-      `\nPUBLIC_API=${PUBLIC_API || '(empty)'}`
+        `\nLOCAL_API=${LOCAL_API || '(empty)'}` +
+        `\nPUBLIC_API=${PUBLIC_API || '(empty)'}`,
     );
   }
   return cachedApiUrl!;
@@ -65,8 +65,8 @@ export async function resolveWsUrl(): Promise<string> {
   if (!cachedWsUrl) {
     throw new Error(
       `No valid WS URL configured. Set EXPO_PUBLIC_WS_URL or EXPO_PUBLIC_LOCAL_WS_URL.` +
-      `\nLOCAL_WS=${LOCAL_WS || '(empty)'}` +
-      `\nPUBLIC_WS=${PUBLIC_WS || '(empty)'}`
+        `\nLOCAL_WS=${LOCAL_WS || '(empty)'}` +
+        `\nPUBLIC_WS=${PUBLIC_WS || '(empty)'}`,
     );
   }
   return cachedWsUrl!;

@@ -1,33 +1,19 @@
 import * as Crypto from 'expo-crypto';
-import { AESEncryptionKey, AESSealedData, aesEncryptAsync, aesDecryptAsync, AESKeySize } from 'expo-crypto';
-import { hkdf } from '@stablelib/hkdf';
+import { AESEncryptionKey, AESSealedData, aesEncryptAsync, aesDecryptAsync } from 'expo-crypto';
 import { RatchetState } from '../../types/crypto';
 import { KeyManager } from './KeyManager';
+import { bytesToHex, hexToBytes, stringToBytes, hkdfSha256 } from './primitives';
 
-function hexToBytes(hex: string): Uint8Array {
-  const bytes = new Uint8Array(hex.length / 2);
-  for (let i = 0; i < hex.length; i += 2) {
-    bytes[i / 2] = parseInt(hex.substring(i, i + 2), 16);
-  }
-  return bytes;
-}
-
-function bytesToHex(bytes: Uint8Array): string {
-  return Array.from(bytes)
-    .map((b) => b.toString(16).padStart(2, '0'))
-    .join('');
-}
-
-function stringToBytes(str: string): Uint8Array {
-  return new TextEncoder().encode(str);
-}
-
-async function hkdfDerive(ikm: string, salt: string, info: string, length: number = 32): Promise<string> {
+async function hkdfDerive(
+  ikm: string,
+  salt: string,
+  info: string,
+  length: number = 32,
+): Promise<string> {
   const ikmBytes = hexToBytes(ikm);
   const saltBytes = stringToBytes(salt);
   const infoBytes = stringToBytes(info);
-  const okm = hkdf(ikmBytes, saltBytes, infoBytes, length);
-  return bytesToHex(new Uint8Array(okm));
+  return bytesToHex(hkdfSha256(ikmBytes, saltBytes, infoBytes, length));
 }
 
 export class DoubleRatchet {
@@ -95,11 +81,9 @@ export class DoubleRatchet {
     state: RatchetState,
     plaintext: string,
   ): Promise<{ ciphertext: string; iv: string; mac: string; newState: RatchetState }> {
-    const { messageKey, chainKey: newSendingChainKey } = await this.kdfCK(
-      state.sendingChainKey,
-    );
+    const { messageKey, chainKey: newSendingChainKey } = await this.kdfCK(state.sendingChainKey);
 
-    const key = await AESEncryptionKey.fromHex(messageKey);
+    const key = await AESEncryptionKey.import(messageKey, 'hex');
     const ivBytes = Crypto.getRandomValues(new Uint8Array(12));
     const plaintextBytes = new TextEncoder().encode(plaintext);
 
@@ -185,14 +169,17 @@ export class DoubleRatchet {
     }
 
     if (messageNumber < workingState.receivingMessageNumber) {
-      throw new Error(`Message ${messageNumber} already received (expected ${workingState.receivingMessageNumber})`);
+      throw new Error(
+        `Message ${messageNumber} already received (expected ${workingState.receivingMessageNumber})`,
+      );
     }
 
     let currentChainKey = workingState.receivingChainKey;
     let skippedKeysNeeded = messageNumber - workingState.receivingMessageNumber;
 
     while (skippedKeysNeeded > 0) {
-      const { messageKey: skipMessageKey, chainKey: nextChainKey } = await this.kdfCK(currentChainKey);
+      const { messageKey: skipMessageKey, chainKey: nextChainKey } =
+        await this.kdfCK(currentChainKey);
       workingState.skippedMessageKeys.push({
         messageNumber: workingState.receivingMessageNumber + (messageNumber - skippedKeysNeeded),
         chainKey: currentChainKey,
@@ -224,9 +211,7 @@ export class DoubleRatchet {
     return { rootKey: newRootKey, chainKey };
   }
 
-  static async kdfCK(
-    chainKey: string,
-  ): Promise<{ messageKey: string; chainKey: string }> {
+  static async kdfCK(chainKey: string): Promise<{ messageKey: string; chainKey: string }> {
     const messageKey = await hkdfDerive('01', chainKey, 'ojchat-ck-mk', 32);
     const newChainKey = await hkdfDerive('02', chainKey, 'ojchat-ck-ck', 32);
     return { messageKey, chainKey: newChainKey };
@@ -238,7 +223,7 @@ export class DoubleRatchet {
     mac: string,
     messageKey: string,
   ): Promise<string> {
-    const key = await AESEncryptionKey.fromHex(messageKey);
+    const key = await AESEncryptionKey.import(messageKey, 'hex');
     const ivBytes = hexToBytes(iv);
     const ciphertextBytes = hexToBytes(ciphertext);
     const tagBytes = hexToBytes(mac);

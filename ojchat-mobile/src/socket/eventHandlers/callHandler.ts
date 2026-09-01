@@ -15,7 +15,11 @@ export class CallHandler {
     this.onCallStateCallback = callback;
   }
 
-  onIncomingCall = (data: { callId: string; callerId: string; callType: 'audio' | 'video' }): void => {
+  onIncomingCall = (data: {
+    callId: string;
+    callerId: string;
+    callType: 'audio' | 'video';
+  }): void => {
     if (this.onIncomingCallCallback) {
       this.onIncomingCallCallback({
         callId: data.callId,
@@ -41,7 +45,11 @@ export class CallHandler {
     WebRTCManager.getInstance().endCall();
   };
 
-  onCallEnded = async (data: { callId: string; endedBy: string; reason?: string }): Promise<void> => {
+  onCallEnded = async (data: {
+    callId: string;
+    endedBy: string;
+    reason?: string;
+  }): Promise<void> => {
     if (this.onCallStateCallback) {
       this.onCallStateCallback(data.callId, 'ended');
     }
@@ -49,18 +57,30 @@ export class CallHandler {
     WebRTCManager.getInstance().endCall();
   };
 
-  onOffer = async (data: { callId: string; sdp: RTCSessionDescriptionInit; fromUserId: string }): Promise<void> => {
+  onOffer = async (data: {
+    callId: string;
+    sdp: RTCSessionDescriptionInit;
+    fromUserId: string;
+  }): Promise<void> => {
     const { default: WebRTCManager } = await import('../../webrtc/WebRTCManager');
     const manager = WebRTCManager.getInstance();
     await manager.acceptCall(data.callId, data.sdp, 'video', data.fromUserId);
   };
 
-  onAnswer = async (data: { callId: string; sdp: RTCSessionDescriptionInit; fromUserId: string }): Promise<void> => {
+  onAnswer = async (data: {
+    callId: string;
+    sdp: RTCSessionDescriptionInit;
+    fromUserId: string;
+  }): Promise<void> => {
     const { default: WebRTCManager } = await import('../../webrtc/WebRTCManager');
     await WebRTCManager.getInstance().handleAnswer(data.sdp);
   };
 
-  onIceCandidate = async (data: { callId: string; candidate: RTCIceCandidateInit; fromUserId: string }): Promise<void> => {
+  onIceCandidate = async (data: {
+    callId: string;
+    candidate: RTCIceCandidateInit;
+    fromUserId: string;
+  }): Promise<void> => {
     const { default: WebRTCManager } = await import('../../webrtc/WebRTCManager');
     await WebRTCManager.getInstance().handleIceCandidate(data.candidate);
   };

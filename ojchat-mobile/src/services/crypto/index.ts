@@ -1,3 +1,4 @@
+export * as cryptoPrimitives from './primitives';
 export { KeyManager } from './KeyManager';
 export { X3DH } from './X3DH';
 export { DoubleRatchet } from './DoubleRatchet';

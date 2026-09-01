@@ -9,12 +9,15 @@ import MomentsScreen from '../screens/main/MomentsScreen';
 import { ProfileScreen } from '../screens/main/ProfileScreen';
 import { useAppStore } from '../store';
 import { colors } from '../theme/colors';
+import type { MainTabParamList } from './types';
 
-const Tab = createBottomTabNavigator();
+const Tab = createBottomTabNavigator<MainTabParamList>();
 
-const TabIcon: React.FC<{ emoji: string; focused: boolean; color: string }> = ({ emoji, focused, color }) => (
-  <Text style={{ fontSize: 22, opacity: focused ? 1 : 0.5 }}>{emoji}</Text>
-);
+const TabIcon: React.FC<{ emoji: string; focused: boolean; color: string }> = ({
+  emoji,
+  focused,
+  color,
+}) => <Text style={{ fontSize: 22, opacity: focused ? 1 : 0.5 }}>{emoji}</Text>;
 
 export const MainTabNavigator: React.FC = () => {
   const totalUnread = useAppStore((s) => s.totalUnread);
@@ -25,7 +28,10 @@ export const MainTabNavigator: React.FC = () => {
         headerShown: false,
         tabBarActiveTintColor: colors.primary,
         tabBarInactiveTintColor: colors.gray400,
-        tabBarStyle: { paddingBottom: Math.max(insets.bottom, 8), height: 60 + Math.max(insets.bottom - 8, 0) },
+        tabBarStyle: {
+          paddingBottom: Math.max(insets.bottom, 8),
+          height: 60 + Math.max(insets.bottom - 8, 0),
+        },
       }}
     >
       <Tab.Screen
@@ -33,7 +39,9 @@ export const MainTabNavigator: React.FC = () => {
         component={DiscoverScreen}
         options={{
           tabBarLabel: 'Discover',
-          tabBarIcon: ({ focused, color }) => <TabIcon emoji="🔥" focused={focused} color={color} />,
+          tabBarIcon: ({ focused, color }) => (
+            <TabIcon emoji="🔥" focused={focused} color={color} />
+          ),
         }}
       />
       <Tab.Screen
@@ -41,7 +49,9 @@ export const MainTabNavigator: React.FC = () => {
         component={MatchesScreen}
         options={{
           tabBarLabel: 'Matches',
-          tabBarIcon: ({ focused, color }) => <TabIcon emoji="💜" focused={focused} color={color} />,
+          tabBarIcon: ({ focused, color }) => (
+            <TabIcon emoji="💜" focused={focused} color={color} />
+          ),
         }}
       />
       <Tab.Screen
@@ -49,7 +59,9 @@ export const MainTabNavigator: React.FC = () => {
         component={ChatsScreen}
         options={{
           tabBarLabel: 'Chats',
-          tabBarIcon: ({ focused, color }) => <TabIcon emoji="💬" focused={focused} color={color} />,
+          tabBarIcon: ({ focused, color }) => (
+            <TabIcon emoji="💬" focused={focused} color={color} />
+          ),
           tabBarBadge: totalUnread > 0 ? totalUnread : undefined,
         }}
       />
@@ -58,7 +70,9 @@ export const MainTabNavigator: React.FC = () => {
         component={MomentsScreen}
         options={{
           tabBarLabel: 'Moments',
-          tabBarIcon: ({ focused, color }) => <TabIcon emoji="✨" focused={focused} color={color} />,
+          tabBarIcon: ({ focused, color }) => (
+            <TabIcon emoji="✨" focused={focused} color={color} />
+          ),
         }}
       />
       <Tab.Screen
@@ -66,7 +80,9 @@ export const MainTabNavigator: React.FC = () => {
         component={ProfileScreen}
         options={{
           tabBarLabel: 'Profile',
-          tabBarIcon: ({ focused, color }) => <TabIcon emoji="👤" focused={focused} color={color} />,
+          tabBarIcon: ({ focused, color }) => (
+            <TabIcon emoji="👤" focused={focused} color={color} />
+          ),
         }}
       />
     </Tab.Navigator>

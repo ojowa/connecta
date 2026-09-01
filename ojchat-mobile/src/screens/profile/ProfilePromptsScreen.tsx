@@ -4,6 +4,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { apiClient } from '../../services/api/apiClient';
+import { ENDPOINTS } from '../../constants/endpoints';
 import { colors } from '../../theme/colors';
 import { typography } from '../../theme/typography';
 import { spacing } from '../../theme/spacing';
@@ -36,8 +37,8 @@ export default function ProfilePromptsScreen() {
   const loadData = async () => {
     try {
       const [allPromptsRes, userPromptsRes] = await Promise.all([
-        apiClient.get('/users/prompts'),
-        apiClient.get('/users/me/prompts'),
+        apiClient.get(ENDPOINTS.USERS.AVAILABLE_PROMPTS),
+        apiClient.get(ENDPOINTS.USERS.PROMPTS),
       ]);
       setPrompts(allPromptsRes.data?.prompts ?? allPromptsRes.data ?? []);
       const saved: UserPrompt[] = userPromptsRes.data?.prompts ?? userPromptsRes.data ?? [];
@@ -49,8 +50,7 @@ export default function ProfilePromptsScreen() {
     }
   };
 
-  const isSelected = (question: string) =>
-    selectedPrompts.some((p) => p.question === question);
+  const isSelected = (question: string) => selectedPrompts.some((p) => p.question === question);
 
   const togglePrompt = (prompt: Prompt) => {
     if (isSelected(prompt.question)) {
@@ -65,9 +65,7 @@ export default function ProfilePromptsScreen() {
   };
 
   const updateAnswer = (question: string, answer: string) => {
-    setSelectedPrompts((prev) =>
-      prev.map((p) => (p.question === question ? { ...p, answer } : p))
-    );
+    setSelectedPrompts((prev) => prev.map((p) => (p.question === question ? { ...p, answer } : p)));
   };
 
   const handleSave = async () => {
@@ -78,7 +76,7 @@ export default function ProfilePromptsScreen() {
     }
     setSaving(true);
     try {
-      await apiClient.put('/users/me/prompts', { prompts: selectedPrompts });
+      await apiClient.put(ENDPOINTS.USERS.PROMPTS, { prompts: selectedPrompts });
       Alert.alert('Saved', 'Your prompts have been updated');
     } catch {
       Alert.alert('Error', 'Failed to save prompts');
@@ -118,9 +116,7 @@ export default function ProfilePromptsScreen() {
                   multiline
                   maxLength={200}
                 />
-                <Text style={styles.answerCharCount}>
-                  {(userPrompt?.answer ?? '').length}/200
-                </Text>
+                <Text style={styles.answerCharCount}>{(userPrompt?.answer ?? '').length}/200</Text>
               </View>
             )}
           </View>

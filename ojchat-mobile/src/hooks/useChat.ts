@@ -11,10 +11,10 @@ export function useConversations(page = 1) {
   });
 }
 
-export function useMessages(conversationId: string, page = 1) {
+export function useMessages(conversationId: string | undefined, page = 1) {
   return useQuery({
     queryKey: ['messages', conversationId, page],
-    queryFn: () => chatApi.getMessages(conversationId, page),
+    queryFn: () => chatApi.getMessages(conversationId as string, page),
     enabled: !!conversationId,
     staleTime: 10000,
   });
@@ -23,8 +23,17 @@ export function useMessages(conversationId: string, page = 1) {
 export function useSendMessage() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: ({ conversationId, content, type, duration }: { conversationId: string; content: string; type?: string; duration?: number }) =>
-      chatApi.sendMessage(conversationId, content, type, duration),
+    mutationFn: ({
+      conversationId,
+      content,
+      type,
+      duration,
+    }: {
+      conversationId: string;
+      content: string;
+      type?: string;
+      duration?: number;
+    }) => chatApi.sendMessage(conversationId, content, type, duration),
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ['messages', variables.conversationId] });
       queryClient.invalidateQueries({ queryKey: ['conversations'] });
@@ -32,23 +41,30 @@ export function useSendMessage() {
   });
 }
 
-export function useDeleteMessage(conversationId: string) {
+export function useDeleteMessage(conversationId: string | undefined) {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (messageId: string) => chatApi.deleteMessage(conversationId, messageId),
+    mutationFn: (messageId: string) => {
+      if (!conversationId) throw new Error('No conversation id');
+      return chatApi.deleteMessage(conversationId, messageId);
+    },
     onSuccess: () => {
+      if (!conversationId) return;
       queryClient.invalidateQueries({ queryKey: ['messages', conversationId] });
       queryClient.invalidateQueries({ queryKey: ['conversations'] });
     },
   });
 }
 
-export function useReactToMessage(conversationId: string) {
+export function useReactToMessage(conversationId: string | undefined) {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: ({ messageId, emoji }: { messageId: string; emoji: string }) =>
-      chatApi.reactToMessage(conversationId, messageId, emoji),
+    mutationFn: ({ messageId, emoji }: { messageId: string; emoji: string }) => {
+      if (!conversationId) throw new Error('No conversation id');
+      return chatApi.reactToMessage(conversationId, messageId, emoji);
+    },
     onSuccess: () => {
+      if (!conversationId) return;
       queryClient.invalidateQueries({ queryKey: ['messages', conversationId] });
     },
   });
@@ -68,7 +84,7 @@ export function useSearchMessages() {
   });
 }
 
-export function useTypingIndicator(conversationId: string) {
+export function useTypingIndicator(conversationId: string | undefined) {
   const [typingUsers, setTypingUsers] = useState<string[]>([]);
 
   useEffect(() => {
@@ -78,13 +94,13 @@ export function useTypingIndicator(conversationId: string) {
 
     const handleTypingStart = (data: { conversationId: string; userId: string }) => {
       if (data.conversationId === conversationId) {
-        setTypingUsers(prev => [...new Set([...prev, data.userId])]);
+        setTypingUsers((prev) => [...new Set([...prev, data.userId])]);
       }
     };
 
     const handleTypingStop = (data: { conversationId: string; userId: string }) => {
       if (data.conversationId === conversationId) {
-        setTypingUsers(prev => prev.filter(id => id !== data.userId));
+        setTypingUsers((prev) => prev.filter((id) => id !== data.userId));
       }
     };
 

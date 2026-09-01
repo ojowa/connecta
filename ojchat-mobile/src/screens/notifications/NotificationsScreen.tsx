@@ -10,6 +10,8 @@ import {
 } from 'react-native';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiClient } from '../../services/api/apiClient';
+import { ErrorState } from '../../components/common/ErrorState';
+import { ENDPOINTS } from '../../constants/endpoints';
 import { colors } from '../../theme/colors';
 import { typography } from '../../theme/typography';
 import { spacing } from '../../theme/spacing';
@@ -46,15 +48,22 @@ const getIcon = (type: NotificationType): string => {
   }
 };
 
+const NotificationSeparator = () => <View style={styles.separator} />;
+
 const NotificationsScreen: React.FC = ({ navigation }: any) => {
-  const { data: notifications = [], isLoading, refetch } = useQuery({
+  const {
+    data: notifications = [],
+    isLoading,
+    isError,
+    refetch,
+  } = useQuery({
     queryKey: ['notifications'],
-    queryFn: () => apiClient.get('/notifications').then((r) => r.data),
+    queryFn: () => apiClient.get(ENDPOINTS.NOTIFICATIONS.LIST).then((r) => r.data),
   });
 
   const queryClient = useQueryClient();
   const markAllMutation = useMutation({
-    mutationFn: () => apiClient.put('/notifications/read', { markAs: 'all' }),
+    mutationFn: () => apiClient.put(ENDPOINTS.NOTIFICATIONS.MARK_READ, { markAs: 'all' }),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['notifications'] }),
   });
 
@@ -103,9 +112,7 @@ const NotificationsScreen: React.FC = ({ navigation }: any) => {
     <View style={styles.emptyContainer}>
       <Text style={styles.emptyEmoji}>🔔</Text>
       <Text style={styles.emptyTitle}>No notifications yet</Text>
-      <Text style={styles.emptySubtitle}>
-        When you get notifications, they'll show up here
-      </Text>
+      <Text style={styles.emptySubtitle}>When you get notifications, they'll show up here</Text>
     </View>
   );
 
@@ -127,26 +134,28 @@ const NotificationsScreen: React.FC = ({ navigation }: any) => {
           </View>
         )}
       </View>
-      <FlatList
-        data={notifications}
-        keyExtractor={(item) => item.id}
-        renderItem={renderNotification}
-        ListHeaderComponent={renderHeader}
-        ListEmptyComponent={renderEmpty}
-        contentContainerStyle={
-          notifications.length === 0 ? styles.emptyList : styles.listContent
-        }
-        ItemSeparatorComponent={() => <View style={styles.separator} />}
-        refreshControl={
-          <RefreshControl
-            refreshing={isLoading}
-            onRefresh={refetch}
-            tintColor={colors.primary}
-            colors={[colors.primary]}
-          />
-        }
-        showsVerticalScrollIndicator={false}
-      />
+      {isError ? (
+        <ErrorState message="Couldn't load notifications." onRetry={() => refetch()} />
+      ) : (
+        <FlatList
+          data={notifications}
+          keyExtractor={(item) => item.id}
+          renderItem={renderNotification}
+          ListHeaderComponent={renderHeader}
+          ListEmptyComponent={renderEmpty}
+          contentContainerStyle={notifications.length === 0 ? styles.emptyList : styles.listContent}
+          ItemSeparatorComponent={NotificationSeparator}
+          refreshControl={
+            <RefreshControl
+              refreshing={isLoading}
+              onRefresh={refetch}
+              tintColor={colors.primary}
+              colors={[colors.primary]}
+            />
+          }
+          showsVerticalScrollIndicator={false}
+        />
+      )}
     </SafeAreaView>
   );
 };

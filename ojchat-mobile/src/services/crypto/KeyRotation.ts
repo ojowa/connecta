@@ -1,5 +1,10 @@
 import { KeyManager } from './KeyManager';
-import { DEFAULT_KEY_ROTATION_CONFIG, KeyRotationConfig, SignedPreKey, OneTimePreKey } from '../../types/crypto';
+import {
+  DEFAULT_KEY_ROTATION_CONFIG,
+  KeyRotationConfig,
+  SignedPreKey,
+  OneTimePreKey,
+} from '../../types/crypto';
 
 export class KeyRotation {
   private config: KeyRotationConfig;
@@ -48,10 +53,7 @@ export class KeyRotation {
   }
 
   async rotateSignedPreKey(): Promise<SignedPreKey> {
-    const identityKeyPair = await KeyManager.getIdentityKeyPair();
-    if (!identityKeyPair) {
-      throw new Error('No identity key pair found');
-    }
+    const signingKeyPair = await KeyManager.getOrCreateSigningKeyPair();
 
     const db = await (await import('../../database/connection')).getDatabase();
     const row = await db.getFirstAsync<{ max_key_id: number }>(
@@ -61,7 +63,7 @@ export class KeyRotation {
     const nextKeyId = (row?.max_key_id || 0) + 1;
 
     const signedPreKey = await KeyManager.generateSignedPreKey(
-      identityKeyPair.privateKey,
+      signingKeyPair.privateKey,
       nextKeyId,
     );
 
@@ -90,6 +92,7 @@ export class KeyRotation {
 
   async getPreKeyBundle(): Promise<{
     identityKey: string;
+    identitySigningKey: string;
     signedPreKeyId: number;
     signedPreKey: string;
     signedPreKeySignature: string;
@@ -100,6 +103,8 @@ export class KeyRotation {
     if (!identityKeyPair) {
       throw new Error('No identity key pair found');
     }
+
+    const signingKeyPair = await KeyManager.getOrCreateSigningKeyPair();
 
     const signedPreKey = await KeyManager.getLatestSignedPreKey();
     if (!signedPreKey) {
@@ -117,6 +122,7 @@ export class KeyRotation {
       await KeyManager.markOneTimePreKeyUsed(opk.keyId);
       return {
         identityKey: identityKeyPair.publicKey,
+        identitySigningKey: signingKeyPair.publicKey,
         signedPreKeyId: signedPreKey.keyId,
         signedPreKey: signedPreKey.publicKey,
         signedPreKeySignature: signedPreKey.signature,
@@ -130,6 +136,7 @@ export class KeyRotation {
 
     return {
       identityKey: identityKeyPair.publicKey,
+      identitySigningKey: signingKeyPair.publicKey,
       signedPreKeyId: signedPreKey.keyId,
       signedPreKey: signedPreKey.publicKey,
       signedPreKeySignature: signedPreKey.signature,
@@ -145,8 +152,19 @@ export class KeyRotation {
       await KeyManager.storeIdentityKeyPair(newIdentityKeyPair);
     }
 
+    const signingKeyPair = await KeyManager.getOrCreateSigningKeyPair();
+
     const latestSPK = await KeyManager.getLatestSignedPreKey();
-    if (!latestSPK) {
+    const spkValid =
+      !!latestSPK &&
+      KeyManager.verifySignedPreKeySignature(
+        signingKeyPair.publicKey,
+        latestSPK.publicKey,
+        latestSPK.keyId,
+        latestSPK.signature,
+      );
+
+    if (!spkValid) {
       await this.rotateSignedPreKey();
     }
 

@@ -70,7 +70,12 @@ class WebRTCManager {
     }
   }
 
-  async acceptCall(callId: string, offer: any, callType: 'audio' | 'video' = 'video', callerId: string = ''): Promise<void> {
+  async acceptCall(
+    callId: string,
+    offer: any,
+    callType: 'audio' | 'video' = 'video',
+    callerId: string = '',
+  ): Promise<void> {
     const localStream = await this.fetchLocalStream(callType);
     const peerConnection = this.createPeerConnection();
 
@@ -129,7 +134,7 @@ class WebRTCManager {
 
   private createPeerConnection(): RTCPeerConnection {
     try {
-      const pc = new RTCPeerConnection(WEBRTC_CONFIG);
+      const pc = new RTCPeerConnection(WEBRTC_CONFIG as any);
 
       (pc as any).onicecandidate = (event: any) => {
         if (event.candidate && this.state?.peerId) {
@@ -227,9 +232,10 @@ class WebRTCManager {
     stats.forEach((report: any) => {
       if (report.type === 'inbound-rtp' && report.kind === 'video') {
         bitrate = report.bytesReceived ? (report.bytesReceived * 8) / 5 : 0;
-        packetLoss = report.packetsLost && report.packetsReceived
-          ? report.packetsLost / report.packetsReceived
-          : 0;
+        packetLoss =
+          report.packetsLost && report.packetsReceived
+            ? report.packetsLost / report.packetsReceived
+            : 0;
         jitter = report.jitter || 0;
       }
       if (report.type === 'candidate-pair' && report.state === 'succeeded') {
@@ -290,11 +296,17 @@ class WebRTCManager {
         try {
           const newStream = await mediaDevices.getUserMedia({
             audio: false,
-            video: { facingMode: newFacing, width: CALL_QUALITY.VIDEO.width, height: CALL_QUALITY.VIDEO.height },
+            video: {
+              facingMode: newFacing,
+              width: CALL_QUALITY.VIDEO.width,
+              height: CALL_QUALITY.VIDEO.height,
+            },
           });
           const newVideoTrack = newStream.getVideoTracks()[0];
           if (this.state?.peerConnection && newVideoTrack) {
-            const sender = this.state.peerConnection.getSenders().find((s: any) => s.track?.kind === 'video');
+            const sender = this.state.peerConnection
+              .getSenders()
+              .find((s: any) => s.track?.kind === 'video');
             if (sender) await sender.replaceTrack(newVideoTrack);
             videoTrack.stop();
             this.state.localStream.removeTrack(videoTrack);
@@ -339,17 +351,27 @@ class WebRTCManager {
 
   onStateChangeHandler(handler: (state: CallState | null) => void): () => void {
     this.onStateChange = handler;
-    return () => { this.onStateChange = null; };
+    return () => {
+      this.onStateChange = null;
+    };
   }
 
   onQualityUpdateHandler(handler: (stats: CallQualityStats) => void): () => void {
     this.onQualityUpdate = handler;
-    return () => { this.onQualityUpdate = null; };
+    return () => {
+      this.onQualityUpdate = null;
+    };
   }
 
-  getActiveLocalStream(): MediaStream | null { return this.state?.localStream ?? null; }
-  getRemoteStream(): MediaStream | null { return this.state?.remoteStream ?? null; }
-  getCallState(): CallState | null { return this.state ? { ...this.state } : null; }
+  getActiveLocalStream(): MediaStream | null {
+    return this.state?.localStream ?? null;
+  }
+  getRemoteStream(): MediaStream | null {
+    return this.state?.remoteStream ?? null;
+  }
+  getCallState(): CallState | null {
+    return this.state ? { ...this.state } : null;
+  }
 
   private async generateCallId(): Promise<string> {
     const array = new Uint8Array(16);

@@ -20,7 +20,9 @@ import { typography } from '../../theme/typography';
 import { spacing } from '../../theme/spacing';
 import { borderRadius } from '../../theme/borderRadius';
 import { LoadingSpinner } from '../../components/common/LoadingSpinner';
+import { ErrorState } from '../../components/common/ErrorState';
 import { Photo } from '../../types/match';
+import type { RootStackScreenProps } from '../../navigation/types';
 
 interface LikeYouItem {
   id: string;
@@ -41,14 +43,14 @@ interface LikesYouResponse {
   isBlurred: boolean;
 }
 
-const LikesYouScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
+const LikesYouScreen: React.FC<RootStackScreenProps<'LikesYou'>> = ({ navigation }) => {
   const queryClient = useQueryClient();
   const [likedUserIds, setLikedUserIds] = useState<Set<string>>(new Set());
   const [refreshing, setRefreshing] = useState(false);
   const appState = useRef(AppState.currentState);
   const { data: planInfo, refetch: refetchPlan } = usePlanInfo();
 
-  const { data, isLoading, refetch } = useQuery<LikesYouResponse>({
+  const { data, isLoading, isError, refetch } = useQuery<LikesYouResponse>({
     queryKey: ['likedYou'],
     queryFn: () => matchApi.getLikedYou(1, 50) as Promise<LikesYouResponse>,
     refetchOnMount: true,
@@ -212,7 +214,7 @@ const LikesYouScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
       <Text style={styles.sectionHint}>
         {totalCount > 0
           ? 'Like someone back to start a conversation'
-          : 'When someone likes you, they\'ll appear here'}
+          : "When someone likes you, they'll appear here"}
       </Text>
     </View>
   );
@@ -276,10 +278,18 @@ const LikesYouScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
         </View>
       );
     },
-    [likedUserIds, navigation, likeBackMutation]
+    [likedUserIds, navigation, likeBackMutation],
   );
 
   if (isLoading) return <LoadingSpinner message="Loading likes..." />;
+
+  if (isError) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <ErrorState message="Couldn't load who likes you." onRetry={() => refetch()} />
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView style={styles.container}>

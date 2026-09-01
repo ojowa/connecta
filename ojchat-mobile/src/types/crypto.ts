@@ -7,6 +7,10 @@ export interface IdentityKeyPair extends KeyPair {
   keyId: string;
 }
 
+export interface SigningKeyPair extends KeyPair {
+  keyId: string;
+}
+
 export interface SignedPreKey extends KeyPair {
   keyId: number;
   signature: string;
@@ -23,6 +27,7 @@ export interface PreKeyBundle {
   userId: string;
   deviceId: number;
   identityKey: string;
+  identitySigningKey: string;
   signedPreKeyId: number;
   signedPreKey: string;
   signedPreKeySignature: string;
@@ -75,6 +80,7 @@ export interface BackupData {
   encryptedBundle: string;
   verificationMac: string;
   salt: string;
+  iv: string;
   iterations: number;
   deviceId: string;
   timestamp: number;

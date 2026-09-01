@@ -1,5 +1,14 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Image, Alert, Animated, ScrollView } from 'react-native';
+import {
+  View,
+  Text,
+  StyleSheet,
+  TouchableOpacity,
+  Image,
+  Alert,
+  Animated,
+  ScrollView,
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -42,7 +51,7 @@ export const VerificationScreen: React.FC<{ navigation: any }> = ({ navigation }
       Animated.sequence([
         Animated.timing(pulseAnim, { toValue: 1.05, duration: 1000, useNativeDriver: true }),
         Animated.timing(pulseAnim, { toValue: 1, duration: 1000, useNativeDriver: true }),
-      ])
+      ]),
     ).start();
   };
 
@@ -70,7 +79,7 @@ export const VerificationScreen: React.FC<{ navigation: any }> = ({ navigation }
         const manipulated = await ImageManipulator.manipulateAsync(
           asset.uri,
           [{ resize: { width: 800 } }],
-          { compress: 0.85, format: ImageManipulator.SaveFormat.JPEG }
+          { compress: 0.85, format: ImageManipulator.SaveFormat.JPEG },
         );
 
         setSelfie(manipulated.uri);
@@ -101,7 +110,7 @@ export const VerificationScreen: React.FC<{ navigation: any }> = ({ navigation }
         const manipulated = await ImageManipulator.manipulateAsync(
           asset.uri,
           [{ resize: { width: 800 } }],
-          { compress: 0.85, format: ImageManipulator.SaveFormat.JPEG }
+          { compress: 0.85, format: ImageManipulator.SaveFormat.JPEG },
         );
 
         setSelfie(manipulated.uri);
@@ -123,7 +132,11 @@ export const VerificationScreen: React.FC<{ navigation: any }> = ({ navigation }
     setLoading(true);
     try {
       const formData = new FormData();
-      formData.append('photo', { uri: selfie, type: 'image/jpeg', name: 'verification.jpg' } as any);
+      formData.append('photo', {
+        uri: selfie,
+        type: 'image/jpeg',
+        name: 'verification.jpg',
+      } as any);
       const uploadRes = await apiClient.post(ENDPOINTS.MEDIA.UPLOAD, formData, {
         headers: { 'Content-Type': 'multipart/form-data' },
       });
@@ -175,7 +188,11 @@ export const VerificationScreen: React.FC<{ navigation: any }> = ({ navigation }
           <Text style={styles.successSubtitle}>
             Your profile has the blue checkmark. Other users can trust your profile.
           </Text>
-          <TouchableOpacity style={styles.button} onPress={() => navigation.goBack()} activeOpacity={0.8}>
+          <TouchableOpacity
+            style={styles.button}
+            onPress={() => navigation.goBack()}
+            activeOpacity={0.8}
+          >
             <LinearGradient
               colors={[colors.gradientStart, colors.gradientEnd]}
               style={styles.buttonGradient}
@@ -201,7 +218,11 @@ export const VerificationScreen: React.FC<{ navigation: any }> = ({ navigation }
           <Text style={styles.successSubtitle}>
             Your verification request is being reviewed. This usually takes less than 24 hours.
           </Text>
-          <TouchableOpacity style={styles.button} onPress={() => navigation.goBack()} activeOpacity={0.8}>
+          <TouchableOpacity
+            style={styles.button}
+            onPress={() => navigation.goBack()}
+            activeOpacity={0.8}
+          >
             <LinearGradient
               colors={[colors.gradientStart, colors.gradientEnd]}
               style={styles.buttonGradient}
@@ -225,11 +246,15 @@ export const VerificationScreen: React.FC<{ navigation: any }> = ({ navigation }
           </View>
           <Text style={styles.successTitle}>Verification Rejected</Text>
           <Text style={styles.successSubtitle}>
-            {verificationStatus.request?.rejectionReason || 'Your verification was not approved. Please try again with a clear selfie.'}
+            {verificationStatus.request?.rejectionReason ||
+              'Your verification was not approved. Please try again with a clear selfie.'}
           </Text>
           <TouchableOpacity
             style={styles.button}
-            onPress={() => { setVerificationStatus(null); setSelfie(null); }}
+            onPress={() => {
+              setVerificationStatus(null);
+              setSelfie(null);
+            }}
             activeOpacity={0.8}
           >
             <LinearGradient
@@ -241,7 +266,11 @@ export const VerificationScreen: React.FC<{ navigation: any }> = ({ navigation }
               <Text style={styles.buttonText}>Try Again</Text>
             </LinearGradient>
           </TouchableOpacity>
-          <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()} activeOpacity={0.8}>
+          <TouchableOpacity
+            style={styles.backButton}
+            onPress={() => navigation.goBack()}
+            activeOpacity={0.8}
+          >
             <Text style={styles.backButtonText}>Back to Profile</Text>
           </TouchableOpacity>
         </ScrollView>
@@ -271,7 +300,11 @@ export const VerificationScreen: React.FC<{ navigation: any }> = ({ navigation }
         </Text>
 
         <Animated.View style={[styles.selfieContainer, { transform: [{ scale: pulseAnim }] }]}>
-          <TouchableOpacity style={styles.selfieButton} onPress={selfie ? undefined : takeSelfie} activeOpacity={0.8}>
+          <TouchableOpacity
+            style={styles.selfieButton}
+            onPress={selfie ? undefined : takeSelfie}
+            activeOpacity={0.8}
+          >
             {selfie ? (
               <Image source={{ uri: selfie }} style={styles.selfiePreview} />
             ) : (
@@ -288,15 +321,22 @@ export const VerificationScreen: React.FC<{ navigation: any }> = ({ navigation }
         {selfie && (
           <View style={styles.qualityCard}>
             <View style={styles.qualityRow}>
-              <Ionicons name={faceDetected ? "checkmark-circle" : "alert-circle"}
-                size={18} color={faceDetected ? colors.success : colors.error} />
+              <Ionicons
+                name={faceDetected ? 'checkmark-circle' : 'alert-circle'}
+                size={18}
+                color={faceDetected ? colors.success : colors.error}
+              />
               <Text style={styles.qualityText}>
-                {faceDetected ? "Face detected" : "No face detected — try again"}
+                {faceDetected ? 'Face detected' : 'No face detected — try again'}
               </Text>
             </View>
             {imageQuality && (
               <View style={styles.qualityRow}>
-                <Ionicons name="information-circle-outline" size={18} color={colors.textSecondary} />
+                <Ionicons
+                  name="information-circle-outline"
+                  size={18}
+                  color={colors.textSecondary}
+                />
                 <Text style={styles.qualityText}>
                   {imageQuality.width}x{imageQuality.height}
                 </Text>
@@ -306,7 +346,11 @@ export const VerificationScreen: React.FC<{ navigation: any }> = ({ navigation }
         )}
 
         {!selfie && (
-          <TouchableOpacity style={styles.galleryButton} onPress={pickFromGallery} activeOpacity={0.8}>
+          <TouchableOpacity
+            style={styles.galleryButton}
+            onPress={pickFromGallery}
+            activeOpacity={0.8}
+          >
             <Ionicons name="images-outline" size={18} color={colors.primary} />
             <Text style={styles.galleryButtonText}>Choose from Gallery</Text>
           </TouchableOpacity>
@@ -343,7 +387,10 @@ export const VerificationScreen: React.FC<{ navigation: any }> = ({ navigation }
         >
           <LinearGradient
             colors={[colors.gradientStart, colors.gradientEnd]}
-            style={[styles.buttonGradient, (!selfie || !faceDetected) && styles.buttonGradientDisabled]}
+            style={[
+              styles.buttonGradient,
+              (!selfie || !faceDetected) && styles.buttonGradientDisabled,
+            ]}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 0 }}
           >
@@ -368,40 +415,124 @@ const styles = StyleSheet.create({
   centered: { flex: 1, padding: spacing.xl, alignItems: 'center', justifyContent: 'center' },
   loadingText: { ...typography.body, color: colors.textSecondary },
 
-  stepsContainer: { flexDirection: 'row', alignItems: 'center', marginBottom: spacing.xl, marginTop: spacing.md },
+  stepsContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: spacing.xl,
+    marginTop: spacing.md,
+  },
   stepDot: { width: 12, height: 12, borderRadius: 6, backgroundColor: colors.gray200 },
   stepDotActive: { backgroundColor: colors.primary },
   stepLine: { width: 40, height: 2, backgroundColor: colors.gray200, marginHorizontal: spacing.xs },
-  stepLabels: { flexDirection: 'row', marginTop: spacing.xs, marginBottom: spacing.xl, width: 180, justifyContent: 'space-between' },
+  stepLabels: {
+    flexDirection: 'row',
+    marginTop: spacing.xs,
+    marginBottom: spacing.xl,
+    width: 180,
+    justifyContent: 'space-between',
+  },
   stepLabel: { ...typography.small, color: colors.textTertiary },
   stepLabelActive: { color: colors.primary, fontWeight: '600' },
 
-  title: { ...typography.h2, marginBottom: spacing.sm, textAlign: 'center', color: colors.textPrimary },
-  subtitle: { ...typography.body, color: colors.textSecondary, textAlign: 'center', marginBottom: spacing.xl, paddingHorizontal: spacing.md },
+  title: {
+    ...typography.h2,
+    marginBottom: spacing.sm,
+    textAlign: 'center',
+    color: colors.textPrimary,
+  },
+  subtitle: {
+    ...typography.body,
+    color: colors.textSecondary,
+    textAlign: 'center',
+    marginBottom: spacing.xl,
+    paddingHorizontal: spacing.md,
+  },
 
   selfieContainer: { marginBottom: spacing.lg },
-  selfieButton: { width: 220, height: 220, borderRadius: 110, overflow: 'hidden', borderWidth: 4, borderColor: colors.primary },
+  selfieButton: {
+    width: 220,
+    height: 220,
+    borderRadius: 110,
+    overflow: 'hidden',
+    borderWidth: 4,
+    borderColor: colors.primary,
+  },
   selfiePreview: { width: '100%', height: '100%' },
-  selfiePlaceholder: { flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.primaryOverlay },
-  cameraIconContainer: { width: 64, height: 64, borderRadius: 32, backgroundColor: colors.white, alignItems: 'center', justifyContent: 'center', marginBottom: spacing.sm, ...shadows.md },
+  selfiePlaceholder: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.primaryOverlay,
+  },
+  cameraIconContainer: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    backgroundColor: colors.white,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: spacing.sm,
+    ...shadows.md,
+  },
   selfieText: { ...typography.caption, color: colors.primary, fontWeight: '600' },
 
-  qualityCard: { width: '100%', backgroundColor: colors.white, borderRadius: borderRadius.card, padding: spacing.md, marginBottom: spacing.lg, ...shadows.card },
-  qualityRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs, marginBottom: spacing.xs },
+  qualityCard: {
+    width: '100%',
+    backgroundColor: colors.white,
+    borderRadius: borderRadius.card,
+    padding: spacing.md,
+    marginBottom: spacing.lg,
+    ...shadows.card,
+  },
+  qualityRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+    marginBottom: spacing.xs,
+  },
   qualityText: { ...typography.caption, color: colors.textSecondary },
 
-  galleryButton: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs, marginBottom: spacing.lg, paddingVertical: spacing.sm, paddingHorizontal: spacing.md, backgroundColor: colors.white, borderRadius: borderRadius.card, ...shadows.card },
+  galleryButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+    marginBottom: spacing.lg,
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.md,
+    backgroundColor: colors.white,
+    borderRadius: borderRadius.card,
+    ...shadows.card,
+  },
   galleryButtonText: { ...typography.caption, color: colors.primary, fontWeight: '600' },
 
-  tipsCard: { width: '100%', backgroundColor: colors.white, borderRadius: borderRadius.card, padding: spacing.md, marginBottom: spacing.xl, ...shadows.card },
-  tipsHeader: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs, marginBottom: spacing.md },
+  tipsCard: {
+    width: '100%',
+    backgroundColor: colors.white,
+    borderRadius: borderRadius.card,
+    padding: spacing.md,
+    marginBottom: spacing.xl,
+    ...shadows.card,
+  },
+  tipsHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+    marginBottom: spacing.md,
+  },
   tipsTitle: { ...typography.caption, fontWeight: '600', color: colors.textPrimary },
   tipRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs, marginBottom: spacing.xs },
   tipText: { ...typography.caption, color: colors.textSecondary },
 
   button: { width: '100%', borderRadius: borderRadius.button, overflow: 'hidden' },
   buttonDisabled: {},
-  buttonGradient: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: spacing.xs, paddingVertical: spacing.md, borderRadius: borderRadius.button },
+  buttonGradient: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.xs,
+    paddingVertical: spacing.md,
+    borderRadius: borderRadius.button,
+  },
   buttonGradientDisabled: { opacity: 0.5 },
   buttonText: { ...typography.button, color: colors.white },
 
@@ -409,11 +540,45 @@ const styles = StyleSheet.create({
   backButtonText: { ...typography.caption, color: colors.textSecondary },
 
   successIconContainer: { marginBottom: spacing.xl },
-  successIconGradient: { width: 96, height: 96, borderRadius: 48, alignItems: 'center', justifyContent: 'center', ...shadows.lg },
-  pendingIconContainer: { width: 96, height: 96, borderRadius: 48, backgroundColor: colors.primaryOverlay, alignItems: 'center', justifyContent: 'center', marginBottom: spacing.xl },
-  rejectedIconContainer: { width: 96, height: 96, borderRadius: 48, backgroundColor: '#FEE2E2', alignItems: 'center', justifyContent: 'center', marginBottom: spacing.xl },
-  successTitle: { ...typography.h2, marginBottom: spacing.sm, textAlign: 'center', color: colors.textPrimary },
-  successSubtitle: { ...typography.body, color: colors.textSecondary, textAlign: 'center', marginBottom: spacing.xl, paddingHorizontal: spacing.md },
+  successIconGradient: {
+    width: 96,
+    height: 96,
+    borderRadius: 48,
+    alignItems: 'center',
+    justifyContent: 'center',
+    ...shadows.lg,
+  },
+  pendingIconContainer: {
+    width: 96,
+    height: 96,
+    borderRadius: 48,
+    backgroundColor: colors.primaryOverlay,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: spacing.xl,
+  },
+  rejectedIconContainer: {
+    width: 96,
+    height: 96,
+    borderRadius: 48,
+    backgroundColor: '#FEE2E2',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: spacing.xl,
+  },
+  successTitle: {
+    ...typography.h2,
+    marginBottom: spacing.sm,
+    textAlign: 'center',
+    color: colors.textPrimary,
+  },
+  successSubtitle: {
+    ...typography.body,
+    color: colors.textSecondary,
+    textAlign: 'center',
+    marginBottom: spacing.xl,
+    paddingHorizontal: spacing.md,
+  },
 });
 
 export default VerificationScreen;

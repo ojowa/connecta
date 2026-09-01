@@ -1,7 +1,8 @@
 import { createMMKV, MMKV } from 'react-native-mmkv';
 import { Platform } from 'react-native';
 import * as Crypto from 'expo-crypto';
-import { secureStorage } from './secureStorage';
+import { secureStorage, SecureStorageError } from './secureStorage';
+import { logger } from '../../utils/logger';
 
 const MMKV_KEY_NAME = 'com.ojchat.mmkv.encryption';
 
@@ -20,7 +21,17 @@ async function getOrCreateEncryptionKey(): Promise<string> {
 
   const keyBytes = Crypto.getRandomValues(new Uint8Array(32));
   const key = bytesToHex(keyBytes);
-  await secureStorage.set(MMKV_KEY_NAME, key);
+  try {
+    await secureStorage.set(MMKV_KEY_NAME, key);
+  } catch (err) {
+    if (err instanceof SecureStorageError) {
+      logger.error('Failed to persist MMKV encryption key', { message: err.message });
+      throw new Error(
+        'Cannot safely store MMKV encryption key. Refusing to proceed with an unpersisted key — previously encrypted data would become unreadable on the next launch.',
+      );
+    }
+    throw err;
+  }
   return key;
 }
 

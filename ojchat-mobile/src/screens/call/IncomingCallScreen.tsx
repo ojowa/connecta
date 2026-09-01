@@ -1,5 +1,12 @@
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ImageBackground, useWindowDimensions } from 'react-native';
+import {
+  View,
+  Text,
+  StyleSheet,
+  TouchableOpacity,
+  ImageBackground,
+  useWindowDimensions,
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import SocketManager from '../../socket/SocketManager';
 import { colors } from '../../theme/colors';
@@ -8,6 +15,7 @@ import { spacing } from '../../theme/spacing';
 import { useAppStore } from '../../store';
 import { apiClient } from '../../services/api/apiClient';
 import { ENDPOINTS } from '../../constants/endpoints';
+import { logger } from '../../utils/logger';
 
 interface IncomingCallScreenProps {
   navigation?: any;
@@ -24,7 +32,14 @@ interface IncomingCallScreenProps {
 }
 
 export const IncomingCallScreen: React.FC<IncomingCallScreenProps> = ({ navigation, route }) => {
-  const { callId, callerId, callerName = '', callerAvatar, callType = 'audio', conversationId } = route?.params || {};
+  const {
+    callId,
+    callerId,
+    callerName = '',
+    callerAvatar,
+    callType = 'audio',
+    conversationId,
+  } = route?.params || {};
   const { width: screenWidth } = useWindowDimensions();
   const avatarSize = Math.min(120, screenWidth * 0.3);
   const buttonSize = Math.min(70, screenWidth * 0.18);
@@ -35,7 +50,13 @@ export const IncomingCallScreen: React.FC<IncomingCallScreenProps> = ({ navigati
     }
     if (conversationId) {
       const label = callType === 'video' ? 'Missed video call' : 'Missed voice call';
-      apiClient.post(ENDPOINTS.CHAT.SEND(conversationId), { content: label, type: 'missed_call' }).catch(() => {});
+      apiClient
+        .post(ENDPOINTS.CHAT.SEND(conversationId), { content: label, type: 'missed_call' })
+        .catch((err) => {
+          logger.warn('Failed to log missed call', {
+            message: err instanceof Error ? err.message : String(err),
+          });
+        });
     }
     navigation.goBack();
   };
@@ -60,7 +81,12 @@ export const IncomingCallScreen: React.FC<IncomingCallScreenProps> = ({ navigati
         <View style={styles.overlay} />
         <View style={styles.content}>
           <View style={styles.avatarContainer}>
-            <View style={[styles.avatar, { width: avatarSize, height: avatarSize, borderRadius: avatarSize / 2 }]}>
+            <View
+              style={[
+                styles.avatar,
+                { width: avatarSize, height: avatarSize, borderRadius: avatarSize / 2 },
+              ]}
+            >
               {callerAvatar ? (
                 <ImageBackground
                   source={{ uri: callerAvatar }}
@@ -77,15 +103,43 @@ export const IncomingCallScreen: React.FC<IncomingCallScreenProps> = ({ navigati
           <Text style={styles.callType}>{callType === 'video' ? 'Video Call' : 'Voice Call'}</Text>
 
           <View style={styles.actions}>
-            <TouchableOpacity style={styles.declineButton} onPress={handleDecline} activeOpacity={0.8}>
-              <View style={[styles.actionIcon, { backgroundColor: colors.error, width: buttonSize, height: buttonSize, borderRadius: buttonSize / 2 }]}>
+            <TouchableOpacity
+              style={styles.declineButton}
+              onPress={handleDecline}
+              activeOpacity={0.8}
+            >
+              <View
+                style={[
+                  styles.actionIcon,
+                  {
+                    backgroundColor: colors.error,
+                    width: buttonSize,
+                    height: buttonSize,
+                    borderRadius: buttonSize / 2,
+                  },
+                ]}
+              >
                 <Text style={styles.actionIconText}>✕</Text>
               </View>
               <Text style={styles.actionLabel}>Decline</Text>
             </TouchableOpacity>
 
-            <TouchableOpacity style={styles.acceptButton} onPress={handleAccept} activeOpacity={0.8}>
-              <View style={[styles.actionIcon, { backgroundColor: colors.success, width: buttonSize, height: buttonSize, borderRadius: buttonSize / 2 }]}>
+            <TouchableOpacity
+              style={styles.acceptButton}
+              onPress={handleAccept}
+              activeOpacity={0.8}
+            >
+              <View
+                style={[
+                  styles.actionIcon,
+                  {
+                    backgroundColor: colors.success,
+                    width: buttonSize,
+                    height: buttonSize,
+                    borderRadius: buttonSize / 2,
+                  },
+                ]}
+              >
                 <Text style={styles.actionIconText}>📞</Text>
               </View>
               <Text style={styles.actionLabel}>Accept</Text>
@@ -123,10 +177,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     overflow: 'hidden',
   },
-  avatarImage: {
-  },
-  avatarImageInner: {
-  },
+  avatarImage: {},
+  avatarImageInner: {},
   avatarInitial: {
     ...typography.h1,
     color: colors.white,

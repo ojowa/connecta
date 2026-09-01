@@ -107,7 +107,8 @@ class SocketManager {
   }
 
   emit(event: string, data?: unknown, callback?: (response: unknown) => void): void {
-    const isCallEvent = event.startsWith('call.') || event.startsWith('sdp.') || event.startsWith('ice.');
+    const isCallEvent =
+      event.startsWith('call.') || event.startsWith('sdp.') || event.startsWith('ice.');
     const socket = isCallEvent ? this.callsSocket : this.chatSocket;
 
     if (!socket?.connected) return;

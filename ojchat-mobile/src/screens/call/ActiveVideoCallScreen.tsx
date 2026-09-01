@@ -10,6 +10,7 @@ import { spacing } from '../../theme/spacing';
 import { borderRadius } from '../../theme/borderRadius';
 import { apiClient } from '../../services/api/apiClient';
 import { ENDPOINTS } from '../../constants/endpoints';
+import { logger } from '../../utils/logger';
 
 interface ActiveVideoCallScreenProps {
   navigation?: any;
@@ -26,25 +27,44 @@ interface ActiveVideoCallScreenProps {
   };
 }
 
-export const ActiveVideoCallScreen: React.FC<ActiveVideoCallScreenProps> = ({ navigation, route }) => {
-  const { callId, callerId = '', callerName = '', conversationId, isInitiator = true } = route?.params || {};
+export const ActiveVideoCallScreen: React.FC<ActiveVideoCallScreenProps> = ({
+  navigation,
+  route,
+}) => {
+  const {
+    callId,
+    callerId = '',
+    callerName = '',
+    conversationId,
+    isInitiator = true,
+  } = route?.params || {};
   const { width: screenWidth, height: screenHeight } = useWindowDimensions();
   const [callError, setCallError] = useState<string | null>(null);
   const pipWidth = Math.min(120, screenWidth * 0.3);
   const pipHeight = pipWidth * 1.33;
   const pipBottom = Math.max(120, screenHeight * 0.15);
   const {
-    formattedDuration, isMuted, connectionState, localStream, remoteStream,
-    startCall, endCall, toggleMute, toggleVideo, switchCamera,
+    formattedDuration,
+    isMuted,
+    connectionState,
+    localStream,
+    remoteStream,
+    startCall,
+    endCall,
+    toggleMute,
+    toggleVideo,
+    switchCamera,
   } = useWebRTC();
 
   useEffect(() => {
     if (isInitiator && callerId) {
       startCall(callerId, 'video').catch((err: any) => {
         setCallError(err.message || 'Failed to start call');
-        Alert.alert('Call Failed', err.message || 'Could not initialize video call. Please check your connection.', [
-          { text: 'OK', onPress: () => navigation.goBack() },
-        ]);
+        Alert.alert(
+          'Call Failed',
+          err.message || 'Could not initialize video call. Please check your connection.',
+          [{ text: 'OK', onPress: () => navigation.goBack() }],
+        );
       });
     }
   }, [callerId, isInitiator]);
@@ -54,14 +74,25 @@ export const ActiveVideoCallScreen: React.FC<ActiveVideoCallScreenProps> = ({ na
     if (conversationId) {
       const duration = formattedDuration || '0:00';
       const content = `Video call - ${duration}`;
-      apiClient.post(ENDPOINTS.CHAT.SEND(conversationId), { content, type: 'video_call' }).catch(() => {});
+      apiClient
+        .post(ENDPOINTS.CHAT.SEND(conversationId), { content, type: 'video_call' })
+        .catch((err) => {
+          logger.warn('Failed to log video call', {
+            message: err instanceof Error ? err.message : String(err),
+          });
+        });
     }
     navigation.goBack();
   }, [endCall, navigation, conversationId, formattedDuration]);
 
   const handleSwitchToAudio = useCallback(() => {
     toggleVideo();
-    navigation.replace('ActiveVoiceCall', { ...route?.params, callerId, callerName, conversationId });
+    navigation.replace('ActiveVoiceCall', {
+      ...route?.params,
+      callerId,
+      callerName,
+      conversationId,
+    });
   }, [toggleVideo, navigation, route?.params, callerId, callerName, conversationId]);
 
   return (
@@ -75,14 +106,21 @@ export const ActiveVideoCallScreen: React.FC<ActiveVideoCallScreenProps> = ({ na
           <RTCView streamURL={remoteStream.toURL()} style={styles.remoteVideo} objectFit="cover" />
         ) : (
           <View style={styles.remoteVideo}>
-            <Text style={styles.remoteVideoText}>{connectionState === 'connecting' ? 'Connecting...' : 'No video'}</Text>
+            <Text style={styles.remoteVideoText}>
+              {connectionState === 'connecting' ? 'Connecting...' : 'No video'}
+            </Text>
           </View>
         )}
       </View>
 
       <View style={[styles.localVideoContainer, { bottom: pipBottom }]}>
         {localStream ? (
-          <RTCView streamURL={localStream.toURL()} style={[styles.localVideo, { width: pipWidth, height: pipHeight }]} objectFit="cover" zOrder={1} />
+          <RTCView
+            streamURL={localStream.toURL()}
+            style={[styles.localVideo, { width: pipWidth, height: pipHeight }]}
+            objectFit="cover"
+            zOrder={1}
+          />
         ) : (
           <View style={[styles.localVideo, { width: pipWidth, height: pipHeight }]}>
             <Text style={styles.localVideoText}>You</Text>
@@ -104,13 +142,42 @@ export const ActiveVideoCallScreen: React.FC<ActiveVideoCallScreenProps> = ({ na
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.textPrimary },
-  timerContainer: { position: 'absolute', top: spacing.xxl, left: 0, right: 0, alignItems: 'center', zIndex: 10 },
-  timer: { ...typography.body, color: colors.white, fontVariant: ['tabular-nums'], backgroundColor: colors.overlayLight, paddingHorizontal: spacing.md, paddingVertical: spacing.xs, borderRadius: borderRadius.card, overflow: 'hidden' },
+  timerContainer: {
+    position: 'absolute',
+    top: spacing.xxl,
+    left: 0,
+    right: 0,
+    alignItems: 'center',
+    zIndex: 10,
+  },
+  timer: {
+    ...typography.body,
+    color: colors.white,
+    fontVariant: ['tabular-nums'],
+    backgroundColor: colors.overlayLight,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.xs,
+    borderRadius: borderRadius.card,
+    overflow: 'hidden',
+  },
   remoteVideoContainer: { flex: 1, padding: spacing.sm },
-  remoteVideo: { flex: 1, backgroundColor: colors.gray800, borderRadius: borderRadius.card, justifyContent: 'center', alignItems: 'center' },
+  remoteVideo: {
+    flex: 1,
+    backgroundColor: colors.gray800,
+    borderRadius: borderRadius.card,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
   remoteVideoText: { ...typography.body, color: colors.whiteOverlaySofter },
   localVideoContainer: { position: 'absolute', right: spacing.lg, zIndex: 10 },
-  localVideo: { backgroundColor: colors.gray700, borderRadius: borderRadius.button, justifyContent: 'center', alignItems: 'center', borderWidth: 2, borderColor: colors.whiteOverlayMedium },
+  localVideo: {
+    backgroundColor: colors.gray700,
+    borderRadius: borderRadius.button,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 2,
+    borderColor: colors.whiteOverlayMedium,
+  },
   localVideoText: { ...typography.small, color: colors.whiteOverlaySofter },
 });
 

@@ -24,7 +24,7 @@ async function runMigrations(db: SQLite.SQLiteDatabase): Promise<void> {
   `);
 
   const applied = await db.getAllAsync<{ version: number }>(
-    'SELECT version FROM _migrations ORDER BY version'
+    'SELECT version FROM _migrations ORDER BY version',
   );
   const appliedVersions = new Set(applied.map((r) => r.version));
 

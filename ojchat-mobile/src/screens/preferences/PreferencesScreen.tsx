@@ -4,6 +4,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { Button } from '../../components/common/Button';
 import { apiClient } from '../../services/api/apiClient';
+import { ENDPOINTS } from '../../constants/endpoints';
 import { colors } from '../../theme/colors';
 import { typography } from '../../theme/typography';
 import { spacing } from '../../theme/spacing';
@@ -12,7 +13,13 @@ import { usePlanInfo } from '../../hooks/useMatch';
 
 const GENDER_OPTIONS = ['everyone', 'men', 'women'];
 const RELATIONSHIP_GOALS = ['any', 'long_term', 'casual', 'friendship', 'new_friends'];
-const GOAL_LABELS: Record<string, string> = { any: 'Any', long_term: 'Long Term', casual: 'Casual', friendship: 'Friendship', new_friends: 'New Friends' };
+const GOAL_LABELS: Record<string, string> = {
+  any: 'Any',
+  long_term: 'Long Term',
+  casual: 'Casual',
+  friendship: 'Friendship',
+  new_friends: 'New Friends',
+};
 
 export default function PreferencesScreen({ navigation }: any) {
   const [showMe, setShowMe] = useState('everyone');
@@ -53,7 +60,7 @@ export default function PreferencesScreen({ navigation }: any) {
         prefs.showVerifiedOnly = showVerifiedOnly;
         prefs.showProfilesWithPhotosOnly = showPhotosOnly;
       }
-      await apiClient.put('/users/me/preferences', prefs);
+      await apiClient.put(ENDPOINTS.USERS.PREFERENCES, prefs);
       Alert.alert('Success', 'Preferences saved');
       navigation.goBack();
     } catch {
@@ -66,95 +73,127 @@ export default function PreferencesScreen({ navigation }: any) {
   return (
     <SafeAreaView style={styles.safeArea}>
       <ScrollView style={styles.container}>
-      <View style={styles.content}>
-        <Text style={styles.sectionTitle}>Show Me</Text>
-        <View style={styles.row}>
-          {GENDER_OPTIONS.map((opt) => (
+        <View style={styles.content}>
+          <Text style={styles.sectionTitle}>Show Me</Text>
+          <View style={styles.row}>
+            {GENDER_OPTIONS.map((opt) => (
+              <Button
+                key={opt}
+                title={opt.charAt(0).toUpperCase() + opt.slice(1)}
+                variant={showMe === opt ? 'primary' : 'outline'}
+                onPress={() => setShowMe(opt)}
+                style={styles.optionBtn}
+              />
+            ))}
+          </View>
+
+          <Text style={styles.sectionTitle}>
+            Age Range: {ageMin} - {ageMax}
+          </Text>
+          <View style={styles.row}>
             <Button
-              key={opt}
-              title={opt.charAt(0).toUpperCase() + opt.slice(1)}
-              variant={showMe === opt ? 'primary' : 'outline'}
-              onPress={() => setShowMe(opt)}
-              style={styles.optionBtn}
+              title="-"
+              variant="outline"
+              onPress={() => setAgeMin(Math.max(18, ageMin - 1))}
+              style={styles.smallBtn}
             />
-          ))}
-        </View>
-
-        <Text style={styles.sectionTitle}>Age Range: {ageMin} - {ageMax}</Text>
-        <View style={styles.row}>
-          <Button title="-" variant="outline" onPress={() => setAgeMin(Math.max(18, ageMin - 1))} style={styles.smallBtn} />
-          <Text style={styles.value}>{ageMin}</Text>
-          <Button title="+" variant="outline" onPress={() => setAgeMin(Math.min(ageMax - 1, ageMin + 1))} style={styles.smallBtn} />
-          <View style={{ width: 20 }} />
-          <Button title="-" variant="outline" onPress={() => setAgeMax(Math.max(ageMin + 1, ageMax - 1))} style={styles.smallBtn} />
-          <Text style={styles.value}>{ageMax}</Text>
-          <Button title="+" variant="outline" onPress={() => setAgeMax(Math.min(80, ageMax + 1))} style={styles.smallBtn} />
-        </View>
-
-        <Text style={styles.sectionTitle}>Max Distance: {maxDistance} km</Text>
-        <View style={styles.row}>
-          <Button title="-" variant="outline" onPress={() => setMaxDistance(Math.max(1, maxDistance - 5))} style={styles.smallBtn} />
-          <Text style={styles.value}>{maxDistance}</Text>
-          <Button title="+" variant="outline" onPress={() => setMaxDistance(Math.min(200, maxDistance + 5))} style={styles.smallBtn} />
-        </View>
-
-        <View style={styles.divider} />
-
-        <View style={styles.premiumHeader}>
-          <Text style={styles.sectionTitle}>Advanced Filters</Text>
-          {!isPremium && (
-            <View style={styles.proBadge}>
-              <Ionicons name="diamond" size={10} color={colors.white} />
-              <Text style={styles.proBadgeText}>PRO</Text>
-            </View>
-          )}
-        </View>
-
-        <Text style={styles.filterLabel}>Relationship Goal</Text>
-        <View style={styles.row}>
-          {RELATIONSHIP_GOALS.map((goal) => (
+            <Text style={styles.value}>{ageMin}</Text>
             <Button
-              key={goal}
-              title={GOAL_LABELS[goal]}
-              variant={relationshipGoal === goal ? 'primary' : 'outline'}
-              onPress={() => isPremium && setRelationshipGoal(goal)}
-              style={[styles.optionBtn, ...(isPremium ? [] : [styles.disabledFilter])]}
+              title="+"
+              variant="outline"
+              onPress={() => setAgeMin(Math.min(ageMax - 1, ageMin + 1))}
+              style={styles.smallBtn}
+            />
+            <View style={{ width: 20 }} />
+            <Button
+              title="-"
+              variant="outline"
+              onPress={() => setAgeMax(Math.max(ageMin + 1, ageMax - 1))}
+              style={styles.smallBtn}
+            />
+            <Text style={styles.value}>{ageMax}</Text>
+            <Button
+              title="+"
+              variant="outline"
+              onPress={() => setAgeMax(Math.min(80, ageMax + 1))}
+              style={styles.smallBtn}
+            />
+          </View>
+
+          <Text style={styles.sectionTitle}>Max Distance: {maxDistance} km</Text>
+          <View style={styles.row}>
+            <Button
+              title="-"
+              variant="outline"
+              onPress={() => setMaxDistance(Math.max(1, maxDistance - 5))}
+              style={styles.smallBtn}
+            />
+            <Text style={styles.value}>{maxDistance}</Text>
+            <Button
+              title="+"
+              variant="outline"
+              onPress={() => setMaxDistance(Math.min(200, maxDistance + 5))}
+              style={styles.smallBtn}
+            />
+          </View>
+
+          <View style={styles.divider} />
+
+          <View style={styles.premiumHeader}>
+            <Text style={styles.sectionTitle}>Advanced Filters</Text>
+            {!isPremium && (
+              <View style={styles.proBadge}>
+                <Ionicons name="diamond" size={10} color={colors.white} />
+                <Text style={styles.proBadgeText}>PRO</Text>
+              </View>
+            )}
+          </View>
+
+          <Text style={styles.filterLabel}>Relationship Goal</Text>
+          <View style={styles.row}>
+            {RELATIONSHIP_GOALS.map((goal) => (
+              <Button
+                key={goal}
+                title={GOAL_LABELS[goal]}
+                variant={relationshipGoal === goal ? 'primary' : 'outline'}
+                onPress={() => isPremium && setRelationshipGoal(goal)}
+                style={[styles.optionBtn, ...(isPremium ? [] : [styles.disabledFilter])]}
+                disabled={!isPremium}
+              />
+            ))}
+          </View>
+
+          <View style={styles.filterRow}>
+            <Text style={styles.filterLabel}>Verified Only</Text>
+            <Button
+              title={showVerifiedOnly ? 'On' : 'Off'}
+              variant={showVerifiedOnly ? 'primary' : 'outline'}
+              onPress={() => isPremium && setShowVerifiedOnly(!showVerifiedOnly)}
+              style={[styles.toggleBtn, ...(isPremium ? [] : [styles.disabledFilter])]}
               disabled={!isPremium}
             />
-          ))}
+          </View>
+
+          <View style={styles.filterRow}>
+            <Text style={styles.filterLabel}>Profiles with Photos Only</Text>
+            <Button
+              title={showPhotosOnly ? 'On' : 'Off'}
+              variant={showPhotosOnly ? 'primary' : 'outline'}
+              onPress={() => isPremium && setShowPhotosOnly(!showPhotosOnly)}
+              style={[styles.toggleBtn, ...(isPremium ? [] : [styles.disabledFilter])]}
+              disabled={!isPremium}
+            />
+          </View>
+
+          {!isPremium && (
+            <Text style={styles.premiumHint}>
+              Upgrade to Premium to unlock advanced filters and find your perfect match faster.
+            </Text>
+          )}
+
+          <Button title="Save" onPress={handleSave} loading={loading} style={styles.saveBtn} />
         </View>
-
-        <View style={styles.filterRow}>
-          <Text style={styles.filterLabel}>Verified Only</Text>
-          <Button
-            title={showVerifiedOnly ? 'On' : 'Off'}
-            variant={showVerifiedOnly ? 'primary' : 'outline'}
-            onPress={() => isPremium && setShowVerifiedOnly(!showVerifiedOnly)}
-            style={[styles.toggleBtn, ...(isPremium ? [] : [styles.disabledFilter])]}
-            disabled={!isPremium}
-          />
-        </View>
-
-        <View style={styles.filterRow}>
-          <Text style={styles.filterLabel}>Profiles with Photos Only</Text>
-          <Button
-            title={showPhotosOnly ? 'On' : 'Off'}
-            variant={showPhotosOnly ? 'primary' : 'outline'}
-            onPress={() => isPremium && setShowPhotosOnly(!showPhotosOnly)}
-            style={[styles.toggleBtn, ...(isPremium ? [] : [styles.disabledFilter])]}
-            disabled={!isPremium}
-          />
-        </View>
-
-        {!isPremium && (
-          <Text style={styles.premiumHint}>
-            Upgrade to Premium to unlock advanced filters and find your perfect match faster.
-          </Text>
-        )}
-
-        <Button title="Save" onPress={handleSave} loading={loading} style={styles.saveBtn} />
-      </View>
-        </ScrollView>
+      </ScrollView>
     </SafeAreaView>
   );
 }
@@ -182,8 +221,19 @@ const styles = StyleSheet.create({
   },
   proBadgeText: { color: colors.white, fontSize: 9, fontWeight: '800' },
   filterLabel: { ...typography.body, color: colors.textSecondary, marginBottom: spacing.sm },
-  filterRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: spacing.md },
+  filterRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: spacing.md,
+  },
   toggleBtn: { minWidth: 60 },
   disabledFilter: { opacity: 0.5 },
-  premiumHint: { ...typography.caption, color: colors.textSecondary, textAlign: 'center', marginTop: spacing.md, fontStyle: 'italic' },
+  premiumHint: {
+    ...typography.caption,
+    color: colors.textSecondary,
+    textAlign: 'center',
+    marginTop: spacing.md,
+    fontStyle: 'italic',
+  },
 });

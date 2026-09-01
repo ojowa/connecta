@@ -1,5 +1,14 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, Alert, TouchableOpacity, Image, Dimensions } from 'react-native';
+import {
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  Alert,
+  TouchableOpacity,
+  Image,
+  Dimensions,
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -7,6 +16,7 @@ import { Input } from '../../components/common/Input';
 import { Button } from '../../components/common/Button';
 import { profileApi } from '../../services/api/profileApi';
 import { useAppStore } from '../../store';
+import { logger } from '../../utils/logger';
 import { colors } from '../../theme/colors';
 import { typography } from '../../theme/typography';
 import { spacing } from '../../theme/spacing';
@@ -42,7 +52,11 @@ export const EditProfileScreen: React.FC = ({ navigation, route }: any) => {
         const photoData = await profileApi.getPhotos();
         const photoList = photoData?.data?.photos || photoData?.photos || [];
         setPhotos(photoList);
-      } catch {}
+      } catch (err) {
+        logger.warn('Failed to load profile data', {
+          message: err instanceof Error ? err.message : String(err),
+        });
+      }
     };
     loadProfile();
   }, []);
@@ -77,7 +91,11 @@ export const EditProfileScreen: React.FC = ({ navigation, route }: any) => {
         {/* Photo Strip */}
         <View style={styles.photoStripSection}>
           <Text style={styles.stripLabel}>Your Photos</Text>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.photoStrip}>
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.photoStrip}
+          >
             {photos.slice(0, 6).map((photo, index) => (
               <View key={photo.id || index} style={styles.photoThumbContainer}>
                 <Image source={{ uri: photo.url }} style={styles.photoThumb} />
@@ -106,11 +124,7 @@ export const EditProfileScreen: React.FC = ({ navigation, route }: any) => {
           </View>
           <View style={styles.fieldGroup}>
             <Text style={styles.fieldLabel}>Full Name</Text>
-            <Input
-              placeholder="Your name"
-              value={fullName}
-              onChangeText={setFullName}
-            />
+            <Input placeholder="Your name" value={fullName} onChangeText={setFullName} />
           </View>
           <View style={styles.fieldGroup}>
             <View style={styles.fieldLabelRow}>
@@ -137,35 +151,19 @@ export const EditProfileScreen: React.FC = ({ navigation, route }: any) => {
           </View>
           <View style={styles.fieldGroup}>
             <Text style={styles.fieldLabel}>Job Title</Text>
-            <Input
-              placeholder="Your job title"
-              value={jobTitle}
-              onChangeText={setJobTitle}
-            />
+            <Input placeholder="Your job title" value={jobTitle} onChangeText={setJobTitle} />
           </View>
           <View style={styles.fieldGroup}>
             <Text style={styles.fieldLabel}>Company</Text>
-            <Input
-              placeholder="Where you work"
-              value={company}
-              onChangeText={setCompany}
-            />
+            <Input placeholder="Where you work" value={company} onChangeText={setCompany} />
           </View>
           <View style={styles.fieldGroup}>
             <Text style={styles.fieldLabel}>School</Text>
-            <Input
-              placeholder="Where you studied"
-              value={school}
-              onChangeText={setSchool}
-            />
+            <Input placeholder="Where you studied" value={school} onChangeText={setSchool} />
           </View>
           <View style={styles.fieldGroup}>
             <Text style={styles.fieldLabel}>City</Text>
-            <Input
-              placeholder="Your city"
-              value={city}
-              onChangeText={setCity}
-            />
+            <Input placeholder="Your city" value={city} onChangeText={setCity} />
           </View>
         </View>
 

@@ -113,15 +113,12 @@ export class Outbox {
        LIMIT ?`,
       [MAX_RETRY_COUNT, limit],
     );
-    return [...await results];
+    return [...(await results)];
   }
 
   static async markSynced(id: number): Promise<void> {
     const db = await getDatabase();
-    await db.runAsync(
-      "UPDATE local_sync_outbox SET status = 'synced' WHERE id = ?",
-      [id],
-    );
+    await db.runAsync("UPDATE local_sync_outbox SET status = 'synced' WHERE id = ?", [id]);
   }
 
   static async markFailed(id: number, retryCount: number): Promise<void> {
@@ -141,10 +138,10 @@ export class Outbox {
 
   static async markMessageSynced(localId: string, serverId: string): Promise<void> {
     const db = await getDatabase();
-    await db.runAsync(
-      'UPDATE local_messages SET is_sent = 1, sent_at = ? WHERE id = ?',
-      [Date.now(), localId],
-    );
+    await db.runAsync('UPDATE local_messages SET is_sent = 1, sent_at = ? WHERE id = ?', [
+      Date.now(),
+      localId,
+    ]);
     await db.runAsync(
       `INSERT OR REPLACE INTO id_mappings (local_id, server_id, entity_type, synced_at)
        VALUES (?, ?, 'message', datetime('now'))`,

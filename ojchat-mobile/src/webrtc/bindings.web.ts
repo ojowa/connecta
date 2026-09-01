@@ -1,12 +1,20 @@
 class MockMediaStream {
   id = '';
   active = false;
-  getTracks() { return []; }
-  getAudioTracks() { return []; }
-  getVideoTracks() { return []; }
+  getTracks() {
+    return [];
+  }
+  getAudioTracks() {
+    return [];
+  }
+  getVideoTracks() {
+    return [];
+  }
   addTrack() {}
   removeTrack() {}
-  toURL() { return ''; }
+  toURL() {
+    return '';
+  }
 }
 
 class MockRTCPeerConnection {
@@ -16,16 +24,26 @@ class MockRTCPeerConnection {
   onicecandidate: ((event: any) => void) | null = null;
   ontrack: ((event: any) => void) | null = null;
   oniceconnectionstatechange: (() => void) | null = null;
-  async createOffer() { return {}; }
-  async createAnswer() { return {}; }
+  async createOffer() {
+    return {};
+  }
+  async createAnswer() {
+    return {};
+  }
   async setLocalDescription() {}
   async setRemoteDescription() {}
   async addIceCandidate() {}
-  addTrack() { return { track: null }; }
-  getSenders() { return []; }
+  addTrack() {
+    return { track: null };
+  }
+  getSenders() {
+    return [];
+  }
   close() {}
   restartIce() {}
-  async getStats() { return { forEach() {} }; }
+  async getStats() {
+    return { forEach() {} };
+  }
 }
 
 export const RTCPeerConnection = MockRTCPeerConnection as any;

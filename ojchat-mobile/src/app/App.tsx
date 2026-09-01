@@ -11,8 +11,9 @@ import { useNetworkStatus } from '../hooks/useNetworkStatus';
 import { useNotifications } from '../hooks/useNotifications';
 import { useSocket } from '../hooks/useSocket';
 import { SyncEngine } from '../sync/SyncEngine';
-import { useAppStore } from '../store';
+import { useAppStore, bindQueryClient } from '../store';
 import { initMMKV } from '../services/storage/mmkvStorage';
+import { logger } from '../utils/logger';
 
 if (!__DEV__) {
   Sentry.init({
@@ -26,9 +27,25 @@ initMMKV();
 
 const queryClient = new QueryClient({
   defaultOptions: {
-    queries: { staleTime: 5 * 60 * 1000, gcTime: 30 * 60 * 1000, retry: 3, refetchOnReconnect: true },
+    queries: {
+      staleTime: 5 * 60 * 1000,
+      gcTime: 30 * 60 * 1000,
+      retry: 3,
+      refetchOnReconnect: true,
+      throwOnError: (error) => !__DEV__ && Boolean(error),
+    },
+    mutations: {
+      onError: (error) => {
+        logger.error('Mutation error', {
+          message: error instanceof Error ? error.message : String(error),
+        });
+        Sentry.captureException(error);
+      },
+    },
   },
 });
+
+bindQueryClient(queryClient);
 
 const AppInner: React.FC = () => {
   useNetworkStatus();
@@ -37,7 +54,13 @@ const AppInner: React.FC = () => {
   const isAuthenticated = useAppStore((s) => s.isAuthenticated);
   React.useEffect(() => {
     if (isAuthenticated) {
-      SyncEngine.getInstance().initialize().catch(() => {});
+      SyncEngine.getInstance()
+        .initialize()
+        .catch((err) =>
+          logger.error('SyncEngine init failed', {
+            message: err instanceof Error ? err.message : String(err),
+          }),
+        );
     } else {
       SyncEngine.getInstance().destroy();
     }

@@ -63,19 +63,11 @@ const ReportScreen: React.FC<ReportScreenProps> = ({ route, navigation }) => {
         {REPORT_TYPES.map((type) => (
           <TouchableOpacity
             key={type}
-            style={[
-              styles.option,
-              selectedType === type && styles.optionSelected,
-            ]}
+            style={[styles.option, selectedType === type && styles.optionSelected]}
             onPress={() => setSelectedType(type)}
             activeOpacity={0.7}
           >
-            <View
-              style={[
-                styles.radio,
-                selectedType === type && styles.radioSelected,
-              ]}
-            >
+            <View style={[styles.radio, selectedType === type && styles.radioSelected]}>
               {selectedType === type && <View style={styles.radioInner} />}
             </View>
             <Text style={styles.optionText}>{type}</Text>

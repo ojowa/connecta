@@ -1,10 +1,22 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, Switch, Alert, ActivityIndicator, TextInput, Image, ScrollView, Clipboard } from 'react-native';
+import {
+  View,
+  Text,
+  StyleSheet,
+  Switch,
+  Alert,
+  ActivityIndicator,
+  TextInput,
+  Image,
+  ScrollView,
+  Clipboard,
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiClient } from '../../services/api/apiClient';
 import { Button } from '../../components/common/Button';
 import { authApi } from '../../services/api/authApi';
+import { ENDPOINTS } from '../../constants/endpoints';
 import { colors } from '../../theme/colors';
 import { typography } from '../../theme/typography';
 import { spacing } from '../../theme/spacing';
@@ -107,7 +119,9 @@ export default function TwoFactorAuthScreen() {
   if (isLoading) {
     return (
       <SafeAreaView style={styles.safeArea}>
-        <View style={styles.center}><ActivityIndicator size="large" color={colors.primary} /></View>
+        <View style={styles.center}>
+          <ActivityIndicator size="large" color={colors.primary} />
+        </View>
       </SafeAreaView>
     );
   }
@@ -118,15 +132,20 @@ export default function TwoFactorAuthScreen() {
         <View style={styles.row}>
           <View style={styles.rowInfo}>
             <Text style={styles.rowLabel}>SMS Authentication</Text>
-            <Text style={styles.rowDescription}>Receive a code via text message when signing in</Text>
+            <Text style={styles.rowDescription}>
+              Receive a code via text message when signing in
+            </Text>
           </View>
           <Switch
             value={settings?.enabled && settings?.method === 'sms' ? true : false}
             onValueChange={(v) => {
-              apiClient.post('/auth/2fa/toggle', { enabled: v, method: 'sms' }).then(() => {
-                queryClient.invalidateQueries({ queryKey: ['twoFactorSettings'] });
-                Alert.alert('Updated', 'SMS authentication settings saved.');
-              }).catch(() => Alert.alert('Error', 'Failed to update settings.'));
+              apiClient
+                .post(ENDPOINTS.AUTH.TWO_FA_TOGGLE, { enabled: v, method: 'sms' })
+                .then(() => {
+                  queryClient.invalidateQueries({ queryKey: ['twoFactorSettings'] });
+                  Alert.alert('Updated', 'SMS authentication settings saved.');
+                })
+                .catch(() => Alert.alert('Error', 'Failed to update settings.'));
             }}
             trackColor={{ false: colors.gray300, true: colors.primary }}
             thumbColor={colors.white}
@@ -153,11 +172,22 @@ export default function TwoFactorAuthScreen() {
             </Text>
             <Image source={{ uri: setupData.qrCodeUrl }} style={styles.qrCode} />
             <Text style={styles.secretLabel}>Secret Key (tap to copy):</Text>
-            <Text style={styles.secretKey} onPress={copySecret}>{setupData.secret}</Text>
+            <Text style={styles.secretKey} onPress={copySecret}>
+              {setupData.secret}
+            </Text>
             <Text style={styles.verifyLabel}>Enter the 6-digit code from your app:</Text>
             {renderCodeInput(verifyCode, setVerifyCode)}
-            <Button title="Verify & Enable" onPress={handleVerifySetup} loading={verifySetupMutation.isPending} />
-            <Button title="Cancel" variant="ghost" onPress={() => setSetupData(null)} style={styles.cancelButton} />
+            <Button
+              title="Verify & Enable"
+              onPress={handleVerifySetup}
+              loading={verifySetupMutation.isPending}
+            />
+            <Button
+              title="Cancel"
+              variant="ghost"
+              onPress={() => setSetupData(null)}
+              style={styles.cancelButton}
+            />
           </View>
         )}
 
@@ -169,7 +199,15 @@ export default function TwoFactorAuthScreen() {
             </Text>
             {renderCodeInput(disableCode, setDisableCode)}
             <Button title="Disable" onPress={handleDisable} loading={disableMutation.isPending} />
-            <Button title="Cancel" variant="ghost" onPress={() => { setShowDisable(false); setDisableCode(['', '', '', '', '', '']); }} style={styles.cancelButton} />
+            <Button
+              title="Cancel"
+              variant="ghost"
+              onPress={() => {
+                setShowDisable(false);
+                setDisableCode(['', '', '', '', '', '']);
+              }}
+              style={styles.cancelButton}
+            />
           </View>
         )}
       </ScrollView>
@@ -181,18 +219,67 @@ const styles = StyleSheet.create({
   safeArea: { flex: 1, backgroundColor: colors.white },
   center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
   content: { padding: spacing.lg },
-  row: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: spacing.md, borderBottomWidth: 1, borderBottomColor: colors.gray100 },
+  row: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: spacing.md,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.gray100,
+  },
   rowInfo: { flex: 1, marginRight: spacing.md },
   rowLabel: { ...typography.body, fontWeight: '600', color: colors.textPrimary },
   rowDescription: { ...typography.caption, color: colors.textSecondary, marginTop: spacing.xs },
-  setupContainer: { marginTop: spacing.xl, padding: spacing.lg, backgroundColor: colors.gray50, borderRadius: borderRadius.lg, borderWidth: 1, borderColor: colors.gray200 },
+  setupContainer: {
+    marginTop: spacing.xl,
+    padding: spacing.lg,
+    backgroundColor: colors.gray50,
+    borderRadius: borderRadius.lg,
+    borderWidth: 1,
+    borderColor: colors.gray200,
+  },
   setupTitle: { ...typography.h3, color: colors.textPrimary, marginBottom: spacing.sm },
-  setupDescription: { ...typography.caption, color: colors.textSecondary, marginBottom: spacing.lg },
-  qrCode: { width: 200, height: 200, alignSelf: 'center', marginBottom: spacing.lg, borderRadius: borderRadius.md },
+  setupDescription: {
+    ...typography.caption,
+    color: colors.textSecondary,
+    marginBottom: spacing.lg,
+  },
+  qrCode: {
+    width: 200,
+    height: 200,
+    alignSelf: 'center',
+    marginBottom: spacing.lg,
+    borderRadius: borderRadius.md,
+  },
   secretLabel: { ...typography.caption, color: colors.textSecondary, marginBottom: spacing.xs },
-  secretKey: { ...typography.body, fontFamily: 'monospace', color: colors.primary, textAlign: 'center', padding: spacing.md, backgroundColor: colors.white, borderRadius: borderRadius.md, borderWidth: 1, borderColor: colors.gray200, marginBottom: spacing.lg },
+  secretKey: {
+    ...typography.body,
+    fontFamily: 'monospace',
+    color: colors.primary,
+    textAlign: 'center',
+    padding: spacing.md,
+    backgroundColor: colors.white,
+    borderRadius: borderRadius.md,
+    borderWidth: 1,
+    borderColor: colors.gray200,
+    marginBottom: spacing.lg,
+  },
   verifyLabel: { ...typography.caption, color: colors.textSecondary, marginBottom: spacing.sm },
-  otpContainer: { flexDirection: 'row', justifyContent: 'center', gap: spacing.sm, marginBottom: spacing.lg },
-  otpInput: { flex: 1, maxWidth: 56, height: 56, borderWidth: 1, borderColor: colors.border, borderRadius: borderRadius.md, textAlign: 'center', ...typography.h2 },
+  otpContainer: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    gap: spacing.sm,
+    marginBottom: spacing.lg,
+  },
+  otpInput: {
+    flex: 1,
+    maxWidth: 56,
+    height: 56,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: borderRadius.md,
+    textAlign: 'center',
+    ...typography.h2,
+  },
   cancelButton: { marginTop: spacing.sm },
 });

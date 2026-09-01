@@ -12,11 +12,34 @@ interface DOBPickerProps {
 }
 
 const MONTHS = [
-  'January', 'February', 'March', 'April', 'May', 'June',
-  'July', 'August', 'September', 'October', 'November', 'December',
+  'January',
+  'February',
+  'March',
+  'April',
+  'May',
+  'June',
+  'July',
+  'August',
+  'September',
+  'October',
+  'November',
+  'December',
 ];
 
-const MONTH_SHORT = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+const MONTH_SHORT = [
+  'Jan',
+  'Feb',
+  'Mar',
+  'Apr',
+  'May',
+  'Jun',
+  'Jul',
+  'Aug',
+  'Sep',
+  'Oct',
+  'Nov',
+  'Dec',
+];
 
 function daysInMonth(month: number, year: number): number {
   return new Date(year, month + 1, 0).getDate();
@@ -28,7 +51,12 @@ function formatDate(day: number, month: number, year: number): string {
   return `${year}-${mm}-${dd}`;
 }
 
-function WheelPicker({ items, selected, onSelect, label }: {
+function WheelPicker({
+  items,
+  selected,
+  onSelect,
+  label,
+}: {
   items: (string | number)[];
   selected: string | number;
   onSelect: (v: string | number) => void;
@@ -39,12 +67,22 @@ function WheelPicker({ items, selected, onSelect, label }: {
 
   return (
     <>
-      <TouchableOpacity style={styles.wheelButton} onPress={() => setVisible(true)} activeOpacity={0.7}>
-        <Text style={[styles.wheelText, !selected && styles.wheelPlaceholder]}>{selectedLabel || label}</Text>
+      <TouchableOpacity
+        style={styles.wheelButton}
+        onPress={() => setVisible(true)}
+        activeOpacity={0.7}
+      >
+        <Text style={[styles.wheelText, !selected && styles.wheelPlaceholder]}>
+          {selectedLabel || label}
+        </Text>
         <Text style={styles.wheelChevron}>▾</Text>
       </TouchableOpacity>
       <Modal visible={visible} transparent animationType="slide">
-        <TouchableOpacity style={styles.overlay} activeOpacity={1} onPress={() => setVisible(false)}>
+        <TouchableOpacity
+          style={styles.overlay}
+          activeOpacity={1}
+          onPress={() => setVisible(false)}
+        >
           <View style={styles.pickerContainer}>
             <View style={styles.pickerHeader}>
               <Text style={styles.pickerTitle}>{label}</Text>
@@ -59,10 +97,23 @@ function WheelPicker({ items, selected, onSelect, label }: {
               showsVerticalScrollIndicator={false}
               renderItem={({ item }) => (
                 <TouchableOpacity
-                  style={[styles.pickerItem, String(selected) === item && styles.pickerItemSelected]}
-                  onPress={() => { onSelect(item); setVisible(false); }}
+                  style={[
+                    styles.pickerItem,
+                    String(selected) === item && styles.pickerItemSelected,
+                  ]}
+                  onPress={() => {
+                    onSelect(item);
+                    setVisible(false);
+                  }}
                 >
-                  <Text style={[styles.pickerItemText, String(selected) === item && styles.pickerItemTextSelected]}>{item}</Text>
+                  <Text
+                    style={[
+                      styles.pickerItemText,
+                      String(selected) === item && styles.pickerItemTextSelected,
+                    ]}
+                  >
+                    {item}
+                  </Text>
                 </TouchableOpacity>
               )}
             />
@@ -107,7 +158,9 @@ export function DOBPicker({ value, onChange, error }: DOBPickerProps) {
     const match = formatted.match(/^(\d{2})-(\d{2})-(\d{4})$/);
     if (match) {
       const [, d, m, y] = match;
-      const di = parseInt(d, 10), mi = parseInt(m, 10), yi = parseInt(y, 10);
+      const di = parseInt(d, 10),
+        mi = parseInt(m, 10),
+        yi = parseInt(y, 10);
       if (mi >= 1 && mi <= 12 && di >= 1 && di <= 31 && yi >= 1900) {
         const date = new Date(yi, mi - 1, di);
         if (date.getDate() === di && date.getMonth() === mi - 1 && date.getFullYear() === yi) {
@@ -146,19 +199,39 @@ export function DOBPicker({ value, onChange, error }: DOBPickerProps) {
     <View style={styles.container}>
       <View style={styles.labelRow}>
         <Text style={styles.label}>Date of Birth</Text>
-        <TouchableOpacity onPress={() => { setTyped(displayValue); setMode('type'); }}>
+        <TouchableOpacity
+          onPress={() => {
+            setTyped(displayValue);
+            setMode('type');
+          }}
+        >
           <Text style={styles.toggle}>Type instead</Text>
         </TouchableOpacity>
       </View>
       <View style={styles.row}>
         <View style={styles.col}>
-          <WheelPicker items={days} selected={day || 'DD'} onSelect={(v) => setDay(Number(v))} label="Day" />
+          <WheelPicker
+            items={days}
+            selected={day || 'DD'}
+            onSelect={(v) => setDay(Number(v))}
+            label="Day"
+          />
         </View>
         <View style={styles.colWide}>
-          <WheelPicker items={MONTHS} selected={month >= 0 ? MONTHS[month] : 'Month'} onSelect={(v) => setMonth(MONTHS.indexOf(String(v)))} label="Month" />
+          <WheelPicker
+            items={MONTHS}
+            selected={month >= 0 ? MONTHS[month] : 'Month'}
+            onSelect={(v) => setMonth(MONTHS.indexOf(String(v)))}
+            label="Month"
+          />
         </View>
         <View style={styles.col}>
-          <WheelPicker items={years} selected={year || 'YYYY'} onSelect={(v) => setYear(Number(v))} label="Year" />
+          <WheelPicker
+            items={years}
+            selected={year || 'YYYY'}
+            onSelect={(v) => setYear(Number(v))}
+            label="Year"
+          />
         </View>
       </View>
       {error ? <Text style={styles.error}>{error}</Text> : null}
@@ -168,30 +241,56 @@ export function DOBPicker({ value, onChange, error }: DOBPickerProps) {
 
 const styles = StyleSheet.create({
   container: { marginBottom: spacing.md },
-  labelRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: spacing.sm },
+  labelRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: spacing.sm,
+  },
   label: { ...typography.caption, color: colors.textSecondary, fontWeight: '600' },
   toggle: { ...typography.small, color: colors.primary, fontWeight: '600' },
   row: { flexDirection: 'row', gap: spacing.sm },
   col: { flex: 1 },
   colWide: { flex: 2 },
   wheelButton: {
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-    borderWidth: 1, borderColor: colors.border, borderRadius: borderRadius.input,
-    paddingHorizontal: spacing.md, paddingVertical: spacing.md,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: borderRadius.input,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.md,
     backgroundColor: colors.white,
   },
   wheelText: { ...typography.body, color: colors.textPrimary, flex: 1 },
   wheelPlaceholder: { color: colors.textTertiary },
   wheelChevron: { ...typography.body, color: colors.textTertiary },
   textInput: {
-    borderWidth: 1, borderColor: colors.border, borderRadius: borderRadius.input,
-    paddingHorizontal: spacing.md, paddingVertical: spacing.md,
-    ...typography.body, color: colors.textPrimary,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: borderRadius.input,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.md,
+    ...typography.body,
+    color: colors.textPrimary,
   },
   textInputError: { borderColor: colors.error },
   overlay: { flex: 1, justifyContent: 'flex-end', backgroundColor: 'rgba(0,0,0,0.4)' },
-  pickerContainer: { backgroundColor: colors.white, borderTopLeftRadius: 16, borderTopRightRadius: 16, maxHeight: '50%' },
-  pickerHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: spacing.lg, borderBottomWidth: 1, borderBottomColor: colors.border },
+  pickerContainer: {
+    backgroundColor: colors.white,
+    borderTopLeftRadius: 16,
+    borderTopRightRadius: 16,
+    maxHeight: '50%',
+  },
+  pickerHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: spacing.lg,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
+  },
   pickerTitle: { ...typography.body, fontWeight: '700' },
   pickerDone: { ...typography.body, color: colors.primary, fontWeight: '600' },
   pickerList: { maxHeight: 250 },

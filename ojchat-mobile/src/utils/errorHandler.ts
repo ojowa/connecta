@@ -12,7 +12,12 @@ export class AppError extends Error {
   code: string;
   context: Record<string, unknown>;
 
-  constructor(message: string, code: string, severity: ErrorSeverity = ErrorSeverity.MEDIUM, context: Record<string, unknown> = {}) {
+  constructor(
+    message: string,
+    code: string,
+    severity: ErrorSeverity = ErrorSeverity.MEDIUM,
+    context: Record<string, unknown> = {},
+  ) {
     super(message);
     this.name = 'AppError';
     this.code = code;

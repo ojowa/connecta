@@ -77,17 +77,17 @@ export class PreferencesRepository {
 
   static async markSynced(key: string): Promise<void> {
     const db = await getDatabase();
-    await db.runAsync(
-      'UPDATE local_preferences SET synced = 1 WHERE key = ?',
-      [key],
-    );
+    await db.runAsync('UPDATE local_preferences SET synced = 1 WHERE key = ?', [key]);
   }
 
   static async getUnsynced(): Promise<LocalPreference[]> {
     const db = await getDatabase();
-    const rows = await db.getAllAsync<{ key: string; value: string; updated_at: number; synced: number }>(
-      "SELECT * FROM local_preferences WHERE synced = 0 ORDER BY updated_at ASC",
-    );
+    const rows = await db.getAllAsync<{
+      key: string;
+      value: string;
+      updated_at: number;
+      synced: number;
+    }>('SELECT * FROM local_preferences WHERE synced = 0 ORDER BY updated_at ASC');
     return rows.map((row: { key: string; value: string; updated_at: number; synced: number }) => ({
       key: row.key,
       value: row.value,
@@ -103,9 +103,12 @@ export class PreferencesRepository {
 
   static async getAll(): Promise<LocalPreference[]> {
     const db = await getDatabase();
-    const rows = await db.getAllAsync<{ key: string; value: string; updated_at: number; synced: number }>(
-      'SELECT * FROM local_preferences ORDER BY updated_at DESC',
-    );
+    const rows = await db.getAllAsync<{
+      key: string;
+      value: string;
+      updated_at: number;
+      synced: number;
+    }>('SELECT * FROM local_preferences ORDER BY updated_at DESC');
     return rows.map((row: { key: string; value: string; updated_at: number; synced: number }) => ({
       key: row.key,
       value: row.value,

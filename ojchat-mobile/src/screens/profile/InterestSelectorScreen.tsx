@@ -4,6 +4,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { apiClient } from '../../services/api/apiClient';
+import { logger } from '../../utils/logger';
 import { ENDPOINTS } from '../../constants/endpoints';
 import { colors } from '../../theme/colors';
 import { typography } from '../../theme/typography';
@@ -17,7 +18,10 @@ interface Interest {
   category?: string;
 }
 
-export const InterestSelectorScreen: React.FC<{ navigation: any; route: any }> = ({ navigation, route }) => {
+export const InterestSelectorScreen: React.FC<{ navigation: any; route: any }> = ({
+  navigation,
+  route,
+}) => {
   const { selectedIds = [] } = route?.params || {};
   const [allInterests, setAllInterests] = useState<Interest[]>([]);
   const [selected, setSelected] = useState<Set<string>>(new Set(selectedIds));
@@ -25,17 +29,22 @@ export const InterestSelectorScreen: React.FC<{ navigation: any; route: any }> =
   const [activeCategory, setActiveCategory] = useState<string>('All');
 
   useEffect(() => {
-    apiClient.get(ENDPOINTS.USERS.AVAILABLE_PROMPTS)
+    apiClient
+      .get(ENDPOINTS.USERS.AVAILABLE_PROMPTS)
       .then((res: any) => {
         const data = res?.data || res;
         setAllInterests(Array.isArray(data) ? data : data?.interests || []);
       })
-      .catch(() => {})
+      .catch((err) => {
+        logger.warn('Failed to load interests', {
+          message: err instanceof Error ? err.message : String(err),
+        });
+      })
       .finally(() => setLoading(false));
   }, []);
 
   const toggleInterest = (id: string) => {
-    setSelected(prev => {
+    setSelected((prev) => {
       const next = new Set(prev);
       if (next.has(id)) next.delete(id);
       else if (next.size < 10) next.add(id);
@@ -44,13 +53,17 @@ export const InterestSelectorScreen: React.FC<{ navigation: any; route: any }> =
   };
 
   const handleSave = () => {
-    navigation.navigate({ name: 'EditProfile', params: { selectedInterests: Array.from(selected) } });
+    navigation.navigate({
+      name: 'EditProfile',
+      params: { selectedInterests: Array.from(selected) },
+    });
   };
 
-  const allCategories = ['All', ...new Set(allInterests.map(i => i.category || 'Other'))];
-  const filteredInterests = activeCategory === 'All'
-    ? allInterests
-    : allInterests.filter(i => (i.category || 'Other') === activeCategory);
+  const allCategories = ['All', ...new Set(allInterests.map((i) => i.category || 'Other'))];
+  const filteredInterests =
+    activeCategory === 'All'
+      ? allInterests
+      : allInterests.filter((i) => (i.category || 'Other') === activeCategory);
 
   return (
     <SafeAreaView style={styles.safeArea}>

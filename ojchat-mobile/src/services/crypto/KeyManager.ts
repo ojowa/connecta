@@ -3,28 +3,26 @@ import { AESEncryptionKey, AESSealedData, aesEncryptAsync, aesDecryptAsync } fro
 import { generateKeyPair, scalarMultBase, sharedKey } from '@stablelib/x25519';
 import { getDatabase } from '../../database/connection';
 import { secureStorage } from '../storage/secureStorage';
-import { KeyPair, IdentityKeyPair, SignedPreKey, OneTimePreKey } from '../../types/crypto';
+import {
+  KeyPair,
+  IdentityKeyPair,
+  SigningKeyPair,
+  SignedPreKey,
+  OneTimePreKey,
+} from '../../types/crypto';
+import {
+  bytesToHex,
+  hexToBytes,
+  stringToBytes,
+  ed25519GenerateKeyPair,
+  ed25519Sign,
+  ed25519Verify,
+} from './primitives';
 
 const KEY_SERVICE = 'com.ojchat.crypto';
 const DB_KEY_NAME = 'com.ojchat.crypto.db-key';
-
-function bytesToHex(bytes: Uint8Array): string {
-  return Array.from(bytes)
-    .map((b) => b.toString(16).padStart(2, '0'))
-    .join('');
-}
-
-function hexToBytes(hex: string): Uint8Array {
-  const bytes = new Uint8Array(hex.length / 2);
-  for (let i = 0; i < hex.length; i += 2) {
-    bytes[i / 2] = parseInt(hex.substring(i, i + 2), 16);
-  }
-  return bytes;
-}
-
-function stringToBytes(str: string): Uint8Array {
-  return new TextEncoder().encode(str);
-}
+const SIGNING_KEY_NAME = 'com.ojchat.crypto.signing-key';
+const SPK_SIGNATURE_CONTEXT = 'ojchat-spk';
 
 let dbEncryptionKey: string | null = null;
 
@@ -44,7 +42,7 @@ async function getDbEncryptionKey(): Promise<string> {
 
 async function encryptForDb(plaintext: string): Promise<string> {
   const key = await getDbEncryptionKey();
-  const aesKey = await AESEncryptionKey.fromHex(key);
+  const aesKey = await AESEncryptionKey.import(key, 'hex');
   const ivBytes = Crypto.getRandomValues(new Uint8Array(12));
   const plaintextBytes = new TextEncoder().encode(plaintext);
   const sealed = await aesEncryptAsync(plaintextBytes, aesKey, {
@@ -61,7 +59,7 @@ async function decryptFromDb(encrypted: string): Promise<string> {
   const parts = encrypted.split(':');
   if (parts.length !== 3) return encrypted;
   const [iv, ciphertext, tag] = parts;
-  const aesKey = await AESEncryptionKey.fromHex(key);
+  const aesKey = await AESEncryptionKey.import(key, 'hex');
   const ivBytes = hexToBytes(iv);
   const ciphertextBytes = hexToBytes(ciphertext);
   const tagBytes = hexToBytes(tag);
@@ -70,27 +68,8 @@ async function decryptFromDb(encrypted: string): Promise<string> {
   return new TextDecoder().decode(new Uint8Array(decrypted));
 }
 
-async function hmacSha256(keyHex: string, data: string): Promise<string> {
-  const keyBytes = hexToBytes(keyHex);
-  const ipad = new Uint8Array(64);
-  const opad = new Uint8Array(64);
-  for (let i = 0; i < 64; i++) {
-    ipad[i] = i < keyBytes.length ? keyBytes[i] ^ 0x36 : 0x36;
-    opad[i] = i < keyBytes.length ? keyBytes[i] ^ 0x5c : 0x5c;
-  }
-
-  const dataBytes = stringToBytes(data);
-  const innerData = new Uint8Array(ipad.length + dataBytes.length);
-  innerData.set(ipad);
-  innerData.set(dataBytes, ipad.length);
-  const innerHex = bytesToHex(innerData);
-  const innerHash = await Crypto.digestStringAsync(Crypto.CryptoDigestAlgorithm.SHA256, innerHex);
-
-  const outerData = new Uint8Array(opad.length + 32);
-  outerData.set(opad);
-  outerData.set(hexToBytes(innerHash), opad.length);
-  const outerHex = bytesToHex(outerData);
-  return Crypto.digestStringAsync(Crypto.CryptoDigestAlgorithm.SHA256, outerHex);
+function signedPreKeySignaturePayload(spkPublicKey: string, keyId: number): Uint8Array {
+  return stringToBytes(`${SPK_SIGNATURE_CONTEXT}:${spkPublicKey}:${keyId}`);
 }
 
 export class KeyManager {
@@ -145,19 +124,56 @@ export class KeyManager {
     return { ...keyPair, keyId };
   }
 
+  static generateSigningKeyPair(): SigningKeyPair {
+    const keyPair = ed25519GenerateKeyPair();
+    return {
+      privateKey: this.bytesToHex(keyPair.secretKey),
+      publicKey: this.bytesToHex(keyPair.publicKey),
+      keyId: Crypto.randomUUID(),
+    };
+  }
+
+  static async storeSigningKeyPair(signingKeyPair: SigningKeyPair): Promise<void> {
+    await secureStorage.set(SIGNING_KEY_NAME, JSON.stringify(signingKeyPair));
+  }
+
+  static async getSigningKeyPair(): Promise<SigningKeyPair | null> {
+    const data = await secureStorage.get(SIGNING_KEY_NAME);
+    if (!data) return null;
+    return JSON.parse(data);
+  }
+
+  static async getOrCreateSigningKeyPair(): Promise<SigningKeyPair> {
+    const existing = await this.getSigningKeyPair();
+    if (existing) return existing;
+    const keyPair = this.generateSigningKeyPair();
+    await this.storeSigningKeyPair(keyPair);
+    return keyPair;
+  }
+
   static async generateSignedPreKey(
-    identityPrivateKey: string,
+    signingPrivateKey: string,
     keyId: number,
   ): Promise<SignedPreKey> {
     const keyPair = await this.generateKeyPair();
-    const signaturePayload = `ojchat-spk:${keyPair.publicKey}:${keyId}`;
-    const signature = await hmacSha256(identityPrivateKey, signaturePayload);
+    const payload = signedPreKeySignaturePayload(keyPair.publicKey, keyId);
+    const signature = ed25519Sign(hexToBytes(signingPrivateKey), payload);
     return {
       ...keyPair,
       keyId,
-      signature,
+      signature: this.bytesToHex(signature),
       createdAt: Date.now(),
     };
+  }
+
+  static verifySignedPreKeySignature(
+    signingPublicKey: string,
+    spkPublicKey: string,
+    keyId: number,
+    signatureHex: string,
+  ): boolean {
+    const payload = signedPreKeySignaturePayload(spkPublicKey, keyId);
+    return ed25519Verify(hexToBytes(signingPublicKey), payload, hexToBytes(signatureHex));
   }
 
   static async generateOneTimePreKeys(startId: number, count: number): Promise<OneTimePreKey[]> {
@@ -276,10 +292,10 @@ export class KeyManager {
       const keyData = JSON.parse(decrypted);
       keyData.used = true;
       const encrypted = await encryptForDb(JSON.stringify(keyData));
-      await db.runAsync(
-        'UPDATE local_encryption_keys SET key_data = ? WHERE id = ?',
-        [encrypted, String(keyId)],
-      );
+      await db.runAsync('UPDATE local_encryption_keys SET key_data = ? WHERE id = ?', [
+        encrypted,
+        String(keyId),
+      ]);
     }
   }
 

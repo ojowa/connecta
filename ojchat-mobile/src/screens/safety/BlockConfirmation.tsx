@@ -12,10 +12,7 @@ interface BlockConfirmationProps {
   navigation?: any;
 }
 
-const BlockConfirmation: React.FC<BlockConfirmationProps> = ({
-  route,
-  navigation,
-}) => {
+const BlockConfirmation: React.FC<BlockConfirmationProps> = ({ route, navigation }) => {
   const { userId = '', userName = '' } = route?.params || {};
   const [loading, setLoading] = useState(false);
 
@@ -35,9 +32,7 @@ const BlockConfirmation: React.FC<BlockConfirmationProps> = ({
     <SafeAreaView style={styles.container}>
       <View style={styles.content}>
         <Text style={styles.heading}>Block {userName}?</Text>
-        <Text style={styles.body}>
-          They won't be able to see your profile or message you.
-        </Text>
+        <Text style={styles.body}>They won't be able to see your profile or message you.</Text>
 
         <View style={styles.actions}>
           <Button

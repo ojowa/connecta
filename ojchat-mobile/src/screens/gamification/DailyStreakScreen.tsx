@@ -1,5 +1,13 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, Animated } from 'react-native';
+import {
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  TouchableOpacity,
+  Alert,
+  Animated,
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -55,7 +63,15 @@ export const DailyStreakScreen: React.FC<{ navigation: any }> = ({ navigation })
     queryFn: () => apiClient.get(ENDPOINTS.USERS.STREAK).then((r) => r.data),
   });
 
-  const weekCheckIns = streakData?.weekCheckIns || [false, false, false, false, false, false, false];
+  const weekCheckIns = streakData?.weekCheckIns || [
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+  ];
   const claimedRewards = streakData?.claimedRewards || [];
   const currentStreak = streakData?.currentStreak || 0;
   const longestStreak = streakData?.longestStreak || 0;
@@ -67,9 +83,13 @@ export const DailyStreakScreen: React.FC<{ navigation: any }> = ({ navigation })
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['streak'] });
       if (data.newReward) {
-        const reward = STREAK_REWARDS.find(r => {
+        const reward = STREAK_REWARDS.find((r) => {
           const rewardMap: Record<string, number> = {
-            super_like: 3, credits_10: 5, boost: 7, super_like_3: 14, premium_day: 30,
+            super_like: 3,
+            credits_10: 5,
+            boost: 7,
+            super_like_3: 14,
+            premium_day: 30,
           };
           return rewardMap[data.newReward!] === (data.currentStreak || 0);
         });
@@ -91,7 +111,7 @@ export const DailyStreakScreen: React.FC<{ navigation: any }> = ({ navigation })
         Animated.sequence([
           Animated.timing(flameScale, { toValue: 1.08, duration: 1200, useNativeDriver: true }),
           Animated.timing(flameScale, { toValue: 1, duration: 1200, useNativeDriver: true }),
-        ])
+        ]),
       ).start();
     }
   }, [streakData?.currentStreak]);
@@ -99,10 +119,8 @@ export const DailyStreakScreen: React.FC<{ navigation: any }> = ({ navigation })
   if (isLoading) return <LoadingSpinner message="Loading streak..." />;
   if (!streakData) return null;
 
-  const nextMilestone = STREAK_REWARDS.find(r => r.day > currentStreak);
-  const progressToNext = nextMilestone
-    ? (currentStreak / nextMilestone.day) * 100
-    : 100;
+  const nextMilestone = STREAK_REWARDS.find((r) => r.day > currentStreak);
+  const progressToNext = nextMilestone ? (currentStreak / nextMilestone.day) * 100 : 100;
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -118,23 +136,15 @@ export const DailyStreakScreen: React.FC<{ navigation: any }> = ({ navigation })
 
         {/* Streak Hero */}
         <View style={styles.heroSection}>
-          <LinearGradient
-            colors={['#FFF7ED', '#FEF3C7', '#FDE68A']}
-            style={styles.heroGradient}
-          >
+          <LinearGradient colors={['#FFF7ED', '#FEF3C7', '#FDE68A']} style={styles.heroGradient}>
             <Animated.View style={[styles.flameContainer, { transform: [{ scale: flameScale }] }]}>
-              <LinearGradient
-                colors={['#F97316', '#EF4444']}
-                style={styles.flameGradient}
-              >
+              <LinearGradient colors={['#F97316', '#EF4444']} style={styles.flameGradient}>
                 <Ionicons name="flame" size={48} color={colors.white} />
               </LinearGradient>
             </Animated.View>
             <Text style={styles.streakCount}>{currentStreak}</Text>
             <Text style={styles.streakLabel}>Day Streak</Text>
-            {longestStreak > 0 && (
-              <Text style={styles.bestStreak}>Best: {longestStreak} days</Text>
-            )}
+            {longestStreak > 0 && <Text style={styles.bestStreak}>Best: {longestStreak} days</Text>}
           </LinearGradient>
         </View>
 
@@ -148,11 +158,13 @@ export const DailyStreakScreen: React.FC<{ navigation: any }> = ({ navigation })
               return (
                 <View key={day} style={styles.dayColumn}>
                   <Text style={[styles.dayLabel, isToday && styles.dayLabelToday]}>{day}</Text>
-                  <View style={[
-                    styles.dayCircle,
-                    isChecked && styles.dayCircleChecked,
-                    isToday && !isChecked && styles.dayCircleToday,
-                  ]}>
+                  <View
+                    style={[
+                      styles.dayCircle,
+                      isChecked && styles.dayCircleChecked,
+                      isToday && !isChecked && styles.dayCircleToday,
+                    ]}
+                  >
                     {isChecked ? (
                       <Ionicons name="checkmark" size={16} color={colors.white} />
                     ) : (
@@ -193,52 +205,64 @@ export const DailyStreakScreen: React.FC<{ navigation: any }> = ({ navigation })
           </TouchableOpacity>
         )}
 
-            {todayCheckedIn && (
-              <View style={styles.checkedInBanner}>
-                <Ionicons name="checkmark-circle" size={18} color={colors.success} />
-                <Text style={styles.checkedInText}>You've checked in today!</Text>
-              </View>
-            )}
+        {todayCheckedIn && (
+          <View style={styles.checkedInBanner}>
+            <Ionicons name="checkmark-circle" size={18} color={colors.success} />
+            <Text style={styles.checkedInText}>You've checked in today!</Text>
+          </View>
+        )}
 
-            {/* Next Milestone Progress */}
-            {nextMilestone && (
-              <View style={styles.progressCard}>
-                <View style={styles.progressHeader}>
-                  <Ionicons name="flag-outline" size={18} color={colors.primary} />
-                  <Text style={styles.progressTitle}>Next Reward</Text>
-                </View>
-                <View style={styles.progressInfo}>
-                  <Text style={styles.progressReward}>{nextMilestone.reward}</Text>
-                  <Text style={styles.progressDays}>
-                    {nextMilestone.day - currentStreak} day{nextMilestone.day - currentStreak !== 1 ? 's' : ''} to go
-                  </Text>
-                </View>
-                <View style={styles.progressBar}>
-                  <LinearGradient
-                    colors={[colors.gradientStart, colors.gradientEnd]}
-                    style={[styles.progressFill, { width: `${Math.max(progressToNext, 5)}%` }]}
-                    start={{ x: 0, y: 0 }}
-                    end={{ x: 1, y: 0 }}
-                  />
-                </View>
-                <Text style={styles.progressCount}>
-                  Day {currentStreak} of {nextMilestone.day}
-                </Text>
-              </View>
-            )}
+        {/* Next Milestone Progress */}
+        {nextMilestone && (
+          <View style={styles.progressCard}>
+            <View style={styles.progressHeader}>
+              <Ionicons name="flag-outline" size={18} color={colors.primary} />
+              <Text style={styles.progressTitle}>Next Reward</Text>
+            </View>
+            <View style={styles.progressInfo}>
+              <Text style={styles.progressReward}>{nextMilestone.reward}</Text>
+              <Text style={styles.progressDays}>
+                {nextMilestone.day - currentStreak} day
+                {nextMilestone.day - currentStreak !== 1 ? 's' : ''} to go
+              </Text>
+            </View>
+            <View style={styles.progressBar}>
+              <LinearGradient
+                colors={[colors.gradientStart, colors.gradientEnd]}
+                style={[styles.progressFill, { width: `${Math.max(progressToNext, 5)}%` }]}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 0 }}
+              />
+            </View>
+            <Text style={styles.progressCount}>
+              Day {currentStreak} of {nextMilestone.day}
+            </Text>
+          </View>
+        )}
 
-            {/* Rewards Timeline */}
-            <View style={styles.rewardsSection}>
-              <Text style={styles.rewardsTitle}>Streak Rewards</Text>
-              {STREAK_REWARDS.map((reward) => {
-                const isClaimed = claimedRewards.some(r => {
-              const map: Record<string, number> = { super_like: 3, credits_10: 5, boost: 7, super_like_3: 14, premium_day: 30 };
+        {/* Rewards Timeline */}
+        <View style={styles.rewardsSection}>
+          <Text style={styles.rewardsTitle}>Streak Rewards</Text>
+          {STREAK_REWARDS.map((reward) => {
+            const isClaimed = claimedRewards.some((r) => {
+              const map: Record<string, number> = {
+                super_like: 3,
+                credits_10: 5,
+                boost: 7,
+                super_like_3: 14,
+                premium_day: 30,
+              };
               return map[r] === reward.day;
             });
-                const isAchieved = currentStreak >= reward.day;
+            const isAchieved = currentStreak >= reward.day;
             return (
-              <View key={reward.day} style={[styles.rewardItem, isAchieved && styles.rewardItemAchieved]}>
-                <View style={[styles.rewardIconContainer, { backgroundColor: reward.color + '15' }]}>
+              <View
+                key={reward.day}
+                style={[styles.rewardItem, isAchieved && styles.rewardItemAchieved]}
+              >
+                <View
+                  style={[styles.rewardIconContainer, { backgroundColor: reward.color + '15' }]}
+                >
                   <Ionicons name={reward.icon} size={20} color={reward.color} />
                 </View>
                 <View style={styles.rewardInfo}>

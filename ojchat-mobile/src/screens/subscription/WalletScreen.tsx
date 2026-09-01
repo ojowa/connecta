@@ -1,17 +1,30 @@
-import React from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  ScrollView,
-  SafeAreaView,
-} from 'react-native';
+import React, { useCallback } from 'react';
+import { View, Text, StyleSheet, ScrollView, SafeAreaView, RefreshControl } from 'react-native';
 import { useQuery } from '@tanstack/react-query';
 import { apiClient } from '../../services/api/apiClient';
+import { ErrorState } from '../../components/common/ErrorState';
+import { LoadingSpinner } from '../../components/common/LoadingSpinner';
+import { ENDPOINTS } from '../../constants/endpoints';
+import { formatCurrency } from '../../utils/formatters';
 import { colors } from '../../theme/colors';
 import { typography } from '../../theme/typography';
 import { spacing } from '../../theme/spacing';
 import { borderRadius } from '../../theme/borderRadius';
+
+interface Transaction {
+  id: string;
+  type: string;
+  amount: number;
+  currency: string;
+  status: string;
+  createdAt: string;
+}
+
+interface WalletData {
+  balance: number;
+  currency: string;
+  subscription?: { active: boolean };
+}
 
 const SuperLikeIcon: React.FC = () => (
   <View style={styles.iconContainer}>
@@ -25,7 +38,10 @@ const BoostIcon: React.FC = () => (
   </View>
 );
 
-const TransactionItem: React.FC<{ transaction: any }> = ({ transaction }) => {
+const TransactionItem: React.FC<{ transaction: Transaction; currency: string }> = ({
+  transaction,
+  currency,
+}) => {
   const typeColor =
     transaction.status === 'completed'
       ? colors.success
@@ -37,30 +53,51 @@ const TransactionItem: React.FC<{ transaction: any }> = ({ transaction }) => {
     <View style={styles.transactionRow}>
       <View style={styles.transactionInfo}>
         <Text style={styles.transactionDescription}>{transaction.type}</Text>
-        <Text style={styles.transactionDate}>{new Date(transaction.createdAt).toLocaleDateString()}</Text>
+        <Text style={styles.transactionDate}>
+          {new Date(transaction.createdAt).toLocaleDateString()}
+        </Text>
       </View>
       <Text style={[styles.transactionAmount, { color: typeColor }]}>
-        {transaction.amount} {transaction.currency}
+        {formatCurrency(transaction.amount, transaction.currency || currency)}
       </Text>
     </View>
   );
 };
 
 const WalletScreen: React.FC = () => {
-  const { data: walletData } = useQuery({
+  const {
+    data: walletData,
+    isLoading: isLoadingWallet,
+    isError: isErrorWallet,
+    refetch: refetchWallet,
+  } = useQuery<WalletData>({
     queryKey: ['wallet'],
-    queryFn: () => apiClient.get('/payments/wallet').then((r) => r.data),
+    queryFn: () => apiClient.get(ENDPOINTS.PAYMENTS.WALLET).then((r) => r.data),
   });
 
-  const { data: txnResponse } = useQuery({
+  const {
+    data: txnResponse,
+    isLoading: isLoadingTxns,
+    isError: isErrorTxns,
+    refetch: refetchTxns,
+  } = useQuery<{ transactions: Transaction[] }>({
     queryKey: ['transactions'],
-    queryFn: () => apiClient.get('/payments/transactions').then((r) => r.data),
+    queryFn: () => apiClient.get(ENDPOINTS.PAYMENTS.TRANSACTIONS).then((r) => r.data),
   });
 
-  const transactions = txnResponse?.transactions || [];
+  const [refreshing, setRefreshing] = React.useState(false);
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true);
+    await Promise.all([refetchWallet(), refetchTxns()]);
+    setRefreshing(false);
+  }, [refetchWallet, refetchTxns]);
 
+  if (isLoadingWallet || isLoadingTxns) return <LoadingSpinner />;
+
+  const currency = walletData?.currency || 'NGN';
   const credits = walletData?.balance ?? 0;
-  const hasActiveSubscription = !!walletData?.subscription;
+  const hasActiveSubscription = !!walletData?.subscription?.active;
+  const transactions = txnResponse?.transactions || [];
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -68,36 +105,59 @@ const WalletScreen: React.FC = () => {
         style={styles.container}
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.contentContainer}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            tintColor={colors.primary}
+          />
+        }
       >
         <View style={styles.header}>
           <Text style={styles.headerTitle}>Wallet</Text>
         </View>
 
-        <View style={styles.balanceCard}>
-          <Text style={styles.balanceLabel}>Current Balance</Text>
-          <Text style={styles.balanceAmount}>${(credits / 100).toFixed(2)}</Text>
-          <Text style={styles.balanceUnit}>credits</Text>
-        </View>
+        {isErrorWallet ? (
+          <ErrorState message="Couldn't load your wallet." onRetry={() => refetchWallet()} />
+        ) : (
+          <>
+            <View style={styles.balanceCard}>
+              <Text style={styles.balanceLabel}>Current Balance</Text>
+              <Text style={styles.balanceAmount}>{formatCurrency(credits, currency)}</Text>
+              <Text style={styles.balanceUnit}>credits</Text>
+            </View>
 
-        <View style={styles.powerUpsRow}>
-          <View style={styles.powerUpCard}>
-            <SuperLikeIcon />
-            <Text style={styles.powerUpLabel}>{hasActiveSubscription ? 'Active' : 'Free'}</Text>
-            <Text style={styles.powerUpSublabel}>Subscription</Text>
-          </View>
-          <View style={styles.powerUpCard}>
-            <BoostIcon />
-            <Text style={styles.powerUpLabel}>{walletData?.currency || 'NGN'}</Text>
-            <Text style={styles.powerUpSublabel}>Currency</Text>
-          </View>
-        </View>
+            <View style={styles.powerUpsRow}>
+              <View style={styles.powerUpCard}>
+                <SuperLikeIcon />
+                <Text style={styles.powerUpLabel}>{hasActiveSubscription ? 'Active' : 'Free'}</Text>
+                <Text style={styles.powerUpSublabel}>Subscription</Text>
+              </View>
+              <View style={styles.powerUpCard}>
+                <BoostIcon />
+                <Text style={styles.powerUpLabel}>{currency}</Text>
+                <Text style={styles.powerUpSublabel}>Currency</Text>
+              </View>
+            </View>
+          </>
+        )}
 
         <Text style={styles.sectionTitle}>Transaction History</Text>
-        <View style={styles.transactionSection}>
-          {transactions.map((transaction: any) => (
-            <TransactionItem key={transaction.id} transaction={transaction} />
-          ))}
-        </View>
+        {isErrorTxns ? (
+          <ErrorState
+            message="Couldn't load your transactions."
+            onRetry={() => refetchTxns()}
+            compact
+          />
+        ) : transactions.length === 0 ? (
+          <Text style={styles.emptyHistory}>No transactions yet.</Text>
+        ) : (
+          <View style={styles.transactionSection}>
+            {transactions.map((transaction) => (
+              <TransactionItem key={transaction.id} transaction={transaction} currency={currency} />
+            ))}
+          </View>
+        )}
 
         <View style={styles.bottomSpacer} />
       </ScrollView>
@@ -237,5 +297,11 @@ const styles = StyleSheet.create({
   },
   bottomSpacer: {
     height: spacing.xxl,
+  },
+  emptyHistory: {
+    ...typography.body,
+    color: colors.textSecondary,
+    textAlign: 'center',
+    padding: spacing.lg,
   },
 });

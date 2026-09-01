@@ -4,6 +4,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Input } from '../../components/common/Input';
 import { Button } from '../../components/common/Button';
 import { apiClient } from '../../services/api/apiClient';
+import { ENDPOINTS } from '../../constants/endpoints';
 import { colors } from '../../theme/colors';
 import { spacing } from '../../theme/spacing';
 
@@ -25,7 +26,10 @@ export default function ChangePasswordScreen({ navigation }: any) {
     }
     setLoading(true);
     try {
-      await apiClient.post('/auth/password/change', { currentPassword: current, newPassword: newPass });
+      await apiClient.post(ENDPOINTS.AUTH.PASSWORD_CHANGE, {
+        currentPassword: current,
+        newPassword: newPass,
+      });
       Alert.alert('Success', 'Password changed');
       navigation.goBack();
     } catch {
@@ -38,13 +42,35 @@ export default function ChangePasswordScreen({ navigation }: any) {
   return (
     <SafeAreaView style={styles.safeArea}>
       <View style={styles.container}>
-        <Input label="Current Password" placeholder="Enter current password" value={current} onChangeText={setCurrent} secureTextEntry />
-        <Input label="New Password" placeholder="Enter new password" value={newPass} onChangeText={setNewPass} secureTextEntry />
-        <Input label="Confirm New Password" placeholder="Confirm new password" value={confirmPass} onChangeText={setConfirmPass} secureTextEntry />
+        <Input
+          label="Current Password"
+          placeholder="Enter current password"
+          value={current}
+          onChangeText={setCurrent}
+          secureTextEntry
+        />
+        <Input
+          label="New Password"
+          placeholder="Enter new password"
+          value={newPass}
+          onChangeText={setNewPass}
+          secureTextEntry
+        />
+        <Input
+          label="Confirm New Password"
+          placeholder="Confirm new password"
+          value={confirmPass}
+          onChangeText={setConfirmPass}
+          secureTextEntry
+        />
         <Button title="Change Password" onPress={handleSave} loading={loading} style={styles.btn} />
       </View>
     </SafeAreaView>
   );
 }
 
-const styles = StyleSheet.create({ safeArea: { flex: 1, backgroundColor: colors.white }, container: { flex: 1, padding: spacing.xl, backgroundColor: colors.white }, btn: { marginTop: spacing.lg } });
+const styles = StyleSheet.create({
+  safeArea: { flex: 1, backgroundColor: colors.white },
+  container: { flex: 1, padding: spacing.xl, backgroundColor: colors.white },
+  btn: { marginTop: spacing.lg },
+});

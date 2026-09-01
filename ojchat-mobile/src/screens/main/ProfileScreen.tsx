@@ -80,7 +80,12 @@ export const ProfileScreen: React.FC = ({ navigation }: any) => {
             onPress={() => navigation.navigate(item.route)}
             activeOpacity={0.6}
           >
-            <View style={[styles.menuIconContainer, item.color && { backgroundColor: item.color + '15' }]}>
+            <View
+              style={[
+                styles.menuIconContainer,
+                item.color && { backgroundColor: item.color + '15' },
+              ]}
+            >
               <Ionicons name={item.icon} size={20} color={item.color || colors.primary} />
             </View>
             <Text style={styles.menuLabel}>{item.label}</Text>
@@ -98,7 +103,11 @@ export const ProfileScreen: React.FC = ({ navigation }: any) => {
         <View style={styles.heroContainer}>
           {primaryPhoto?.url || user?.avatarUrl ? (
             <>
-              <Avatar uri={primaryPhoto?.url || user?.avatarUrl} size={120} style={styles.heroAvatar} />
+              <Avatar
+                uri={primaryPhoto?.url || user?.avatarUrl}
+                size={120}
+                style={styles.heroAvatar}
+              />
               <LinearGradient
                 colors={['transparent', 'rgba(0,0,0,0.7)']}
                 style={styles.heroGradient}
@@ -126,7 +135,9 @@ export const ProfileScreen: React.FC = ({ navigation }: any) => {
               )}
             </View>
             {profile?.bio && (
-              <Text style={styles.heroBio} numberOfLines={2}>{profile.bio}</Text>
+              <Text style={styles.heroBio} numberOfLines={2}>
+                {profile.bio}
+              </Text>
             )}
           </View>
         </View>

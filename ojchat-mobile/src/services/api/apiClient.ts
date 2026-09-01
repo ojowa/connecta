@@ -2,6 +2,8 @@ import axios, { AxiosError, InternalAxiosRequestConfig } from 'axios';
 import { useAppStore } from '../../store';
 import { API_CONFIG } from '../../constants/api';
 import { resolveApiUrl } from '../../lib/network';
+import { ENDPOINTS } from '../../constants/endpoints';
+import { logger } from '../../utils/logger';
 
 let resolvedBaseURL: string | null = null;
 
@@ -28,12 +30,41 @@ apiClient.interceptors.request.use(
     }
     return config;
   },
-  (error) => Promise.reject(error)
+  (error) => Promise.reject(error),
 );
+
+let inflightRefresh: Promise<string> | null = null;
+
+async function performRefresh(): Promise<string> {
+  if (inflightRefresh) return inflightRefresh;
+
+  inflightRefresh = (async () => {
+    try {
+      const { refreshToken } = useAppStore.getState();
+      if (!refreshToken) throw new Error('No refresh token');
+
+      const baseURL = await getBaseURL();
+      const response = await axios.post(`${baseURL}${ENDPOINTS.AUTH.REFRESH}`, {
+        refreshToken,
+      });
+      const body = response.data;
+      const tokens = body?.data || body;
+      const accessToken = tokens?.accessToken;
+      const newRefresh = tokens?.refreshToken;
+      if (!accessToken) throw new Error('Refresh response missing accessToken');
+
+      useAppStore.getState().setTokens(accessToken, newRefresh ?? null);
+      return accessToken;
+    } finally {
+      inflightRefresh = null;
+    }
+  })();
+
+  return inflightRefresh;
+}
 
 apiClient.interceptors.response.use(
   (response) => {
-    // Auto-unwrap gateway response wrapper: { success, data, timestamp, requestId }
     const body = response.data;
     if (body && typeof body === 'object' && 'success' in body && 'data' in body) {
       response.data = body.data;
@@ -41,29 +72,25 @@ apiClient.interceptors.response.use(
     return response;
   },
   async (error: AxiosError) => {
-    const originalRequest = error.config as InternalAxiosRequestConfig & { _retry?: boolean };
+    const originalRequest = error.config as
+      (InternalAxiosRequestConfig & { _retry?: boolean }) | undefined;
+    const status = error.response?.status;
 
-    if (error.response?.status === 401 && !originalRequest._retry) {
+    if (status === 401 && originalRequest && !originalRequest._retry) {
       originalRequest._retry = true;
       try {
-        const { refreshToken } = useAppStore.getState();
-        if (!refreshToken) throw new Error('No refresh token');
-        const baseURL = await getBaseURL();
-        const response = await axios.post(
-          `${baseURL}/auth/refresh`,
-          { refreshToken }
-        );
-        const refreshBody = response.data;
-        const tokens = refreshBody?.data || refreshBody;
-        const { accessToken, refreshToken: newRefresh } = tokens;
-        useAppStore.getState().setTokens(accessToken, newRefresh);
-        originalRequest.headers.Authorization = `Bearer ${accessToken}`;
-        return apiClient(originalRequest);
+        const accessToken = await performRefresh();
+        originalRequest.headers = originalRequest.headers ?? ({} as any);
+        (originalRequest.headers as any).Authorization = `Bearer ${accessToken}`;
+        return apiClient.request(originalRequest);
       } catch (refreshError) {
+        logger.warn('Token refresh failed, logging out', {
+          message: refreshError instanceof Error ? refreshError.message : String(refreshError),
+        });
         useAppStore.getState().logout();
         return Promise.reject(refreshError);
       }
     }
     return Promise.reject(error);
-  }
+  },
 );

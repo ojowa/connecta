@@ -19,7 +19,9 @@ export const MatchCard: React.FC<MatchCardProps> = ({ match, onPress }) => {
   return (
     <TouchableOpacity style={styles.card} onPress={onPress} activeOpacity={0.7}>
       <Avatar uri={photo} name={match.otherUser?.fullName} size={64} />
-      <Text style={styles.name} numberOfLines={1}>{match.otherUser?.fullName}</Text>
+      <Text style={styles.name} numberOfLines={1}>
+        {match.otherUser?.fullName}
+      </Text>
       {typeof compatibilityScore === 'number' && (
         <Text style={styles.score}>{compatibilityScore}%</Text>
       )}

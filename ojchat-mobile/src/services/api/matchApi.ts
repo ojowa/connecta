@@ -84,7 +84,11 @@ export const matchApi = {
   },
 
   async updatePassport(latitude: number, longitude: number, enabled: boolean) {
-    const response = await apiClient.post(ENDPOINTS.MATCHING.PASSPORT, { latitude, longitude, enabled });
+    const response = await apiClient.post(ENDPOINTS.MATCHING.PASSPORT, {
+      latitude,
+      longitude,
+      enabled,
+    });
     return response.data;
   },
 

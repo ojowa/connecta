@@ -1,10 +1,21 @@
 import React, { useState, useCallback } from 'react';
-import { View, Text, StyleSheet, FlatList, RefreshControl, TouchableOpacity, Image, Alert, Animated } from 'react-native';
+import {
+  View,
+  Text,
+  StyleSheet,
+  FlatList,
+  RefreshControl,
+  TouchableOpacity,
+  Image,
+  Alert,
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { useMatches } from '../../hooks/useMatch';
 import { LoadingSpinner } from '../../components/common/LoadingSpinner';
+import { ErrorState } from '../../components/common/ErrorState';
+import type { MainTabScreenProps } from '../../navigation/types';
 import { colors } from '../../theme/colors';
 import { typography } from '../../theme/typography';
 import { spacing } from '../../theme/spacing';
@@ -12,11 +23,10 @@ import { borderRadius } from '../../theme/borderRadius';
 import { Match } from '../../types/match';
 import { matchApi } from '../../services/api/matchApi';
 
-export const MatchesScreen: React.FC = () => {
+export const MatchesScreen: React.FC<MainTabScreenProps<'Matches'>> = () => {
   const navigation = useNavigation();
-  const { data, isLoading, refetch } = useMatches();
+  const { data, isLoading, isError, refetch } = useMatches();
   const [refreshing, setRefreshing] = useState(false);
-  const [swipeAnim] = useState(new Animated.Value(0));
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
@@ -24,124 +34,157 @@ export const MatchesScreen: React.FC = () => {
     setRefreshing(false);
   }, [refetch]);
 
-  const handleUnmatch = useCallback(async (matchId: string, otherName: string) => {
-    Alert.alert(
-      'Unmatch',
-      `Are you sure you want to unmatch ${otherName}? This cannot be undone.`,
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Unmatch',
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              await matchApi.unmatch(matchId);
-              refetch();
-            } catch (err) {
-              Alert.alert('Error', 'Failed to unmatch. Please try again.');
-            }
+  const handleUnmatch = useCallback(
+    async (matchId: string, otherName: string) => {
+      Alert.alert(
+        'Unmatch',
+        `Are you sure you want to unmatch ${otherName}? This cannot be undone.`,
+        [
+          { text: 'Cancel', style: 'cancel' },
+          {
+            text: 'Unmatch',
+            style: 'destructive',
+            onPress: async () => {
+              try {
+                await matchApi.unmatch(matchId);
+                await refetch();
+              } catch (err) {
+                Alert.alert('Error', 'Failed to unmatch. Please try again.');
+              }
+            },
           },
-        },
-      ]
-    );
-  }, [refetch]);
+        ],
+      );
+    },
+    [refetch],
+  );
 
   if (isLoading) return <LoadingSpinner />;
   const matches = data?.matches || [];
 
+  if (isError) {
+    return (
+      <SafeAreaView style={styles.safeArea}>
+        <ErrorState message="Couldn't load your matches." onRetry={onRefresh} />
+      </SafeAreaView>
+    );
+  }
+
   return (
     <SafeAreaView style={styles.safeArea}>
       <View style={styles.container}>
-      <Text style={styles.title}>Matches</Text>
+        <Text style={styles.title}>Matches</Text>
 
-      <View style={styles.actionButtons}>
-        <TouchableOpacity style={styles.likesButton} onPress={() => (navigation as any).navigate('LikesYou')}>
-          <Ionicons name="heart" size={16} color={colors.white} />
-          <Text style={styles.likesButtonText}>Likes You</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.myLikesButton} onPress={() => (navigation as any).navigate('MyLikes')}>
-          <Ionicons name="arrow-forward" size={16} color={colors.primary} />
-          <Text style={styles.myLikesButtonText}>Your Likes</Text>
-        </TouchableOpacity>
-      </View>
-      {matches.length === 0 ? (
-        <View style={styles.empty}>
-          <View style={styles.emptyCircle}>
-            <Ionicons name="people-outline" size={56} color={colors.primary} />
-          </View>
-          <Text style={styles.emptyText}>No matches yet</Text>
-          <Text style={styles.emptySubtext}>Keep swiping to find your match!</Text>
+        <View style={styles.actionButtons}>
+          <TouchableOpacity
+            style={styles.likesButton}
+            onPress={() => (navigation as any).navigate('LikesYou')}
+          >
+            <Ionicons name="heart" size={16} color={colors.white} />
+            <Text style={styles.likesButtonText}>Likes You</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.myLikesButton}
+            onPress={() => (navigation as any).navigate('MyLikes')}
+          >
+            <Ionicons name="arrow-forward" size={16} color={colors.primary} />
+            <Text style={styles.myLikesButtonText}>Your Likes</Text>
+          </TouchableOpacity>
         </View>
-      ) : (
-        <FlatList
-          data={matches}
-          keyExtractor={(item: Match) => item.id}
-          contentContainerStyle={styles.list}
-          renderItem={({ item }) => {
-            const otherId = item.otherUser?.id;
-            const conversationId = (item as any).conversationId;
-            const otherName = item.otherUser?.fullName || 'Unknown';
-            return (
-              <Animated.View
-                style={[
-                  styles.matchRow,
-                  { transform: [{ translateX: swipeAnim }] }
-                ]}
-              >
-                <View style={styles.matchRowContent}>
-                  <TouchableOpacity
-                    style={styles.matchInfo}
-                    onPress={() => otherId && (navigation as any).navigate('UserProfile', { userId: otherId, isMatched: true })}
-                    activeOpacity={0.7}
-                  >
-                    {item.otherUser?.avatarUrl ? (
-                      <Image source={{ uri: item.otherUser.avatarUrl }} style={styles.avatar} />
-                    ) : (
-                      <View style={[styles.avatar, styles.avatarPlaceholder]}>
-                        <Text style={styles.avatarText}>{item.otherUser?.fullName?.charAt(0) || '?'}</Text>
-                      </View>
-                    )}
-                    <View style={styles.matchDetails}>
-                      <Text style={styles.matchName} numberOfLines={1}>{item.otherUser?.fullName}</Text>
-                      <Text style={styles.matchTime}>
-                        {item.matchedAt ? new Date(item.matchedAt).toLocaleDateString() : 'New match'}
-                      </Text>
-                    </View>
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    style={styles.messageButton}
-                    onPress={() => {
-                      if (!otherId) return;
-                      if (conversationId) {
-                        (navigation as any).navigate('Conversation', {
-                          conversationId,
-                          otherUserId: otherId,
-                          otherName: item.otherUser?.fullName || 'Unknown',
-                          otherAvatar: item.otherUser?.avatarUrl,
-                        });
-                      } else {
-                        (navigation as any).navigate('UserProfile', { userId: otherId, isMatched: true });
+        {matches.length === 0 ? (
+          <View style={styles.empty}>
+            <View style={styles.emptyCircle}>
+              <Ionicons name="people-outline" size={56} color={colors.primary} />
+            </View>
+            <Text style={styles.emptyText}>No matches yet</Text>
+            <Text style={styles.emptySubtext}>Keep swiping to find your match!</Text>
+          </View>
+        ) : (
+          <FlatList
+            data={matches}
+            keyExtractor={(item: Match) => item.id}
+            contentContainerStyle={styles.list}
+            renderItem={({ item }) => {
+              const otherId = item.otherUser?.id;
+              const conversationId = (item as any).conversationId;
+              const otherName = item.otherUser?.fullName || 'Unknown';
+              return (
+                <View style={styles.matchRow}>
+                  <View style={styles.matchRowContent}>
+                    <TouchableOpacity
+                      style={styles.matchInfo}
+                      onPress={() =>
+                        otherId &&
+                        (navigation as any).navigate('UserProfile', {
+                          userId: otherId,
+                          isMatched: true,
+                        })
                       }
-                    }}
+                      activeOpacity={0.7}
+                    >
+                      {item.otherUser?.avatarUrl ? (
+                        <Image source={{ uri: item.otherUser.avatarUrl }} style={styles.avatar} />
+                      ) : (
+                        <View style={[styles.avatar, styles.avatarPlaceholder]}>
+                          <Text style={styles.avatarText}>
+                            {item.otherUser?.fullName?.charAt(0) || '?'}
+                          </Text>
+                        </View>
+                      )}
+                      <View style={styles.matchDetails}>
+                        <Text style={styles.matchName} numberOfLines={1}>
+                          {item.otherUser?.fullName}
+                        </Text>
+                        <Text style={styles.matchTime}>
+                          {item.matchedAt
+                            ? new Date(item.matchedAt).toLocaleDateString()
+                            : 'New match'}
+                        </Text>
+                      </View>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      style={styles.messageButton}
+                      onPress={() => {
+                        if (!otherId) return;
+                        if (conversationId) {
+                          (navigation as any).navigate('Conversation', {
+                            conversationId,
+                            otherUserId: otherId,
+                            otherName: item.otherUser?.fullName || 'Unknown',
+                            otherAvatar: item.otherUser?.avatarUrl,
+                          });
+                        } else {
+                          (navigation as any).navigate('UserProfile', {
+                            userId: otherId,
+                            isMatched: true,
+                          });
+                        }
+                      }}
+                      activeOpacity={0.7}
+                    >
+                      <Ionicons name="chatbubble" size={18} color={colors.white} />
+                      <Text style={styles.messageButtonText}>Message</Text>
+                    </TouchableOpacity>
+                  </View>
+                  <TouchableOpacity
+                    style={styles.unmatchButton}
+                    onPress={() => handleUnmatch(item.id, otherName)}
                     activeOpacity={0.7}
                   >
-                    <Ionicons name="chatbubble" size={18} color={colors.white} />
-                    <Text style={styles.messageButtonText}>Message</Text>
+                    <Ionicons name="person-remove-outline" size={20} color={colors.white} />
                   </TouchableOpacity>
                 </View>
-                <TouchableOpacity
-                  style={styles.unmatchButton}
-                  onPress={() => handleUnmatch(item.id, otherName)}
-                  activeOpacity={0.7}
-                >
-                  <Ionicons name="person-remove-outline" size={20} color={colors.white} />
-                </TouchableOpacity>
-              </Animated.View>
-            );
-          }}
-          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />}
-        />
-      )}
+              );
+            }}
+            refreshControl={
+              <RefreshControl
+                refreshing={refreshing}
+                onRefresh={onRefresh}
+                tintColor={colors.primary}
+              />
+            }
+          />
+        )}
       </View>
     </SafeAreaView>
   );
@@ -151,7 +194,12 @@ const styles = StyleSheet.create({
   safeArea: { flex: 1, backgroundColor: colors.white },
   container: { flex: 1, backgroundColor: colors.white },
   title: { ...typography.h2, padding: spacing.md },
-  actionButtons: { flexDirection: 'row', paddingHorizontal: spacing.md, marginBottom: spacing.md, gap: spacing.sm },
+  actionButtons: {
+    flexDirection: 'row',
+    paddingHorizontal: spacing.md,
+    marginBottom: spacing.md,
+    gap: spacing.sm,
+  },
   likesButton: {
     flex: 1,
     flexDirection: 'row',

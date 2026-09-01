@@ -20,8 +20,14 @@ export function useLike() {
       if (data?.matched && data?.matchId) {
         addNewMatch({
           id: data.matchId,
+          user1Id: data.likerId || '',
+          user2Id: data.likedId || '',
           conversationId: data.conversationId,
-          otherUser: { id: data.likerId || data.likedId },
+          otherUser: {
+            id: data.likerId || data.likedId || '',
+            fullName: data.otherUser?.fullName || 'Someone',
+            avatarUrl: data.otherUser?.avatarUrl,
+          },
           matchedAt: new Date().toISOString(),
         });
       }
@@ -47,8 +53,14 @@ export function useSuperLike() {
       if (data?.matched && data?.matchId) {
         addNewMatch({
           id: data.matchId,
+          user1Id: data.likerId || '',
+          user2Id: data.likedId || '',
           conversationId: data.conversationId,
-          otherUser: { id: data.likerId || data.likedId },
+          otherUser: {
+            id: data.likerId || data.likedId || '',
+            fullName: data.otherUser?.fullName || 'Someone',
+            avatarUrl: data.otherUser?.avatarUrl,
+          },
           matchedAt: new Date().toISOString(),
         });
       }

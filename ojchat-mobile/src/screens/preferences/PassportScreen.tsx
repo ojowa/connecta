@@ -1,8 +1,18 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { View, Text, TextInput, StyleSheet, TouchableOpacity, Alert, ScrollView, AppState } from 'react-native';
+import {
+  View,
+  Text,
+  TextInput,
+  StyleSheet,
+  TouchableOpacity,
+  Alert,
+  ScrollView,
+  AppState,
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { apiClient } from '../../services/api/apiClient';
+import { ENDPOINTS } from '../../constants/endpoints';
 import { usePlanInfo } from '../../hooks/useMatch';
 import { useAppStore } from '../../store';
 import { colors } from '../../theme/colors';
@@ -45,7 +55,7 @@ export default function PassportScreen({ navigation }: any) {
 
   const fetchPassportStatus = async () => {
     try {
-      const res = await apiClient.get('/matching/passport');
+      const res = await apiClient.get(ENDPOINTS.MATCHING.PASSPORT);
       const data = res.data as any;
       if (data) {
         setEnabled(data.enabled ?? false);
@@ -75,7 +85,7 @@ export default function PassportScreen({ navigation }: any) {
     }
     setLoading(true);
     try {
-      await apiClient.post('/matching/passport', {
+      await apiClient.post(ENDPOINTS.MATCHING.PASSPORT, {
         latitude,
         longitude,
         enabled,
@@ -103,7 +113,17 @@ export default function PassportScreen({ navigation }: any) {
         <View style={styles.center}>
           <Text style={{ fontSize: 56, marginBottom: spacing.md }}>🌍</Text>
           <Text style={typography.h2}>Premium Feature</Text>
-          <Text style={[typography.body, { color: colors.textSecondary, textAlign: 'center', marginTop: spacing.sm, marginBottom: spacing.xl }]}>
+          <Text
+            style={[
+              typography.body,
+              {
+                color: colors.textSecondary,
+                textAlign: 'center',
+                marginTop: spacing.sm,
+                marginBottom: spacing.xl,
+              },
+            ]}
+          >
             Upgrade to Premium to use Passport and swipe in cities around the world.
           </Text>
           <TouchableOpacity
@@ -122,56 +142,56 @@ export default function PassportScreen({ navigation }: any) {
   return (
     <SafeAreaView style={styles.safeArea}>
       <ScrollView style={styles.container}>
-      <View style={styles.content}>
-        <View style={styles.premiumBadge}>
-          <Text style={styles.premiumText}>PREMIUM</Text>
-        </View>
-
-        <Text style={styles.title}>Passport</Text>
-        <Text style={styles.subtitle}>
-          Change your location to swipe in other cities around the world.
-        </Text>
-
-        <View style={styles.currentLocationCard}>
-          <Text style={styles.label}>Current Location</Text>
-          <Text style={styles.currentCity}>{currentCity || user?.fullName || 'Unknown'}</Text>
-        </View>
-
-        <View style={styles.mapPlaceholder}>
-          <Text style={styles.mapIcon}>🌍</Text>
-          <Text style={styles.mapText}>{city || 'No destination set'}</Text>
-        </View>
-
-        <Text style={styles.label}>Search a City</Text>
-        <TextInput
-          style={styles.input}
-          placeholder="Enter city name..."
-          placeholderTextColor={colors.gray400}
-          value={city}
-          onChangeText={setCity}
-        />
-
-        <TouchableOpacity
-          style={styles.toggleRow}
-          onPress={() => setEnabled(!enabled)}
-          activeOpacity={0.7}
-        >
-          <Text style={styles.toggleLabel}>Enable Passport</Text>
-          <View style={[styles.toggle, enabled && styles.toggleActive]}>
-            <View style={[styles.toggleKnob, enabled && styles.toggleKnobActive]} />
+        <View style={styles.content}>
+          <View style={styles.premiumBadge}>
+            <Text style={styles.premiumText}>PREMIUM</Text>
           </View>
-        </TouchableOpacity>
 
-        <TouchableOpacity
-          style={[styles.saveButton, loading && styles.saveButtonDisabled]}
-          onPress={handleSave}
-          disabled={loading}
-          activeOpacity={0.8}
-        >
-          <Text style={styles.saveButtonText}>{loading ? 'Saving...' : 'Save Passport'}</Text>
-        </TouchableOpacity>
-      </View>
-        </ScrollView>
+          <Text style={styles.title}>Passport</Text>
+          <Text style={styles.subtitle}>
+            Change your location to swipe in other cities around the world.
+          </Text>
+
+          <View style={styles.currentLocationCard}>
+            <Text style={styles.label}>Current Location</Text>
+            <Text style={styles.currentCity}>{currentCity || user?.fullName || 'Unknown'}</Text>
+          </View>
+
+          <View style={styles.mapPlaceholder}>
+            <Text style={styles.mapIcon}>🌍</Text>
+            <Text style={styles.mapText}>{city || 'No destination set'}</Text>
+          </View>
+
+          <Text style={styles.label}>Search a City</Text>
+          <TextInput
+            style={styles.input}
+            placeholder="Enter city name..."
+            placeholderTextColor={colors.gray400}
+            value={city}
+            onChangeText={setCity}
+          />
+
+          <TouchableOpacity
+            style={styles.toggleRow}
+            onPress={() => setEnabled(!enabled)}
+            activeOpacity={0.7}
+          >
+            <Text style={styles.toggleLabel}>Enable Passport</Text>
+            <View style={[styles.toggle, enabled && styles.toggleActive]}>
+              <View style={[styles.toggleKnob, enabled && styles.toggleKnobActive]} />
+            </View>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[styles.saveButton, loading && styles.saveButtonDisabled]}
+            onPress={handleSave}
+            disabled={loading}
+            activeOpacity={0.8}
+          >
+            <Text style={styles.saveButtonText}>{loading ? 'Saving...' : 'Save Passport'}</Text>
+          </TouchableOpacity>
+        </View>
+      </ScrollView>
     </SafeAreaView>
   );
 }

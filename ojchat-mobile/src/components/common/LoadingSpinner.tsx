@@ -10,7 +10,11 @@ interface LoadingSpinnerProps {
   message?: string;
 }
 
-export const LoadingSpinner: React.FC<LoadingSpinnerProps> = ({ size = 'large', color = colors.primary, message }) => (
+export const LoadingSpinner: React.FC<LoadingSpinnerProps> = ({
+  size = 'large',
+  color = colors.primary,
+  message,
+}) => (
   <View style={styles.container}>
     <ActivityIndicator size={size} color={color} />
     {message && <Text style={styles.message}>{message}</Text>}

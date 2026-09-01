@@ -8,6 +8,7 @@
     "userInterfaceStyle": "light",
     "ios": {
       "supportsTablet": true,
+      "bundleIdentifier": "com.ojchat.app",
       "infoPlist": {
         "NSCameraUsageDescription": "OJChat needs camera access for video calls",
         "NSMicrophoneUsageDescription": "OJChat needs microphone access for voice and video calls"
@@ -21,7 +22,7 @@
         "monochromeImage": "./assets/android-icon-monochrome.png"
       },
       "predictiveBackGestureEnabled": false,
-      "package": "com.anonymous.ojchatmobile",
+      "package": "com.ojchat.app",
       "permissions": [
         "android.permission.INTERNET",
         "android.permission.ACCESS_NETWORK_STATE",

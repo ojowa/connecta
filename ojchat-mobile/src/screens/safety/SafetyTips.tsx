@@ -11,10 +11,30 @@ import { spacing } from '../../theme/spacing';
 import { borderRadius } from '../../theme/borderRadius';
 
 const FALLBACK_TIPS = [
-  { id: '1', icon: '\uD83D\uDCCD', title: 'Meet in public places', description: 'Always meet in a public place for your first few dates' },
-  { id: '2', icon: '\uD83D\uDE0A', title: 'Tell a friend', description: "Let a friend know where you're going and who you're meeting" },
-  { id: '3', icon: '\uD83D\uDCB3', title: "Don't share financial info", description: "Never send money or share financial details with someone you haven't met" },
-  { id: '4', icon: '\uD83D\uDCA1', title: 'Trust your instincts', description: 'If something feels off, it probably is. Trust your gut' },
+  {
+    id: '1',
+    icon: '\uD83D\uDCCD',
+    title: 'Meet in public places',
+    description: 'Always meet in a public place for your first few dates',
+  },
+  {
+    id: '2',
+    icon: '\uD83D\uDE0A',
+    title: 'Tell a friend',
+    description: "Let a friend know where you're going and who you're meeting",
+  },
+  {
+    id: '3',
+    icon: '\uD83D\uDCB3',
+    title: "Don't share financial info",
+    description: "Never send money or share financial details with someone you haven't met",
+  },
+  {
+    id: '4',
+    icon: '\uD83D\uDCA1',
+    title: 'Trust your instincts',
+    description: 'If something feels off, it probably is. Trust your gut',
+  },
 ];
 
 interface SafetyTipsProps {
@@ -24,7 +44,10 @@ interface SafetyTipsProps {
 const SafetyTips: React.FC<SafetyTipsProps> = ({ navigation }) => {
   const { data: tips = FALLBACK_TIPS, isLoading } = useQuery({
     queryKey: ['safetyTips'],
-    queryFn: () => apiClient.get(ENDPOINTS.CONTENT.SAFETY_TIPS).then((r) => r.data?.tips || r.data || FALLBACK_TIPS),
+    queryFn: () =>
+      apiClient
+        .get(ENDPOINTS.CONTENT.SAFETY_TIPS)
+        .then((r) => r.data?.tips || r.data || FALLBACK_TIPS),
     staleTime: 30 * 60 * 1000,
   });
 
@@ -55,11 +78,7 @@ const SafetyTips: React.FC<SafetyTipsProps> = ({ navigation }) => {
           </View>
         ))}
 
-        <Button
-          title="Got it"
-          onPress={() => navigation.goBack()}
-          style={styles.button}
-        />
+        <Button title="Got it" onPress={() => navigation.goBack()} style={styles.button} />
       </ScrollView>
     </SafeAreaView>
   );

@@ -4,6 +4,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiClient } from '../../services/api/apiClient';
 import { Button } from '../../components/common/Button';
+import { ENDPOINTS } from '../../constants/endpoints';
 import { colors } from '../../theme/colors';
 import { typography } from '../../theme/typography';
 import { spacing } from '../../theme/spacing';
@@ -35,14 +36,20 @@ export default function DevicesScreen() {
   const handleRemove = (device: Device) => {
     Alert.alert('Remove Device', `Remove "${device.deviceName || device.deviceType}"?`, [
       { text: 'Cancel', style: 'cancel' },
-      { text: 'Remove', style: 'destructive', onPress: () => removeMutation.mutate(device.deviceId) },
+      {
+        text: 'Remove',
+        style: 'destructive',
+        onPress: () => removeMutation.mutate(device.deviceId),
+      },
     ]);
   };
 
   if (isLoading) {
     return (
       <SafeAreaView style={styles.safeArea}>
-        <View style={styles.center}><ActivityIndicator size="large" color={colors.primary} /></View>
+        <View style={styles.center}>
+          <ActivityIndicator size="large" color={colors.primary} />
+        </View>
       </SafeAreaView>
     );
   }
@@ -55,10 +62,19 @@ export default function DevicesScreen() {
         renderItem={({ item }) => (
           <View style={styles.deviceRow}>
             <View style={styles.deviceInfo}>
-              <Text style={styles.deviceName}>{item.deviceName || item.deviceType || 'Unknown device'}</Text>
-              <Text style={styles.deviceMeta}>Last active: {new Date(item.lastActiveAt || item.createdAt).toLocaleDateString()}</Text>
+              <Text style={styles.deviceName}>
+                {item.deviceName || item.deviceType || 'Unknown device'}
+              </Text>
+              <Text style={styles.deviceMeta}>
+                Last active: {new Date(item.lastActiveAt || item.createdAt).toLocaleDateString()}
+              </Text>
             </View>
-            <Button title="Remove" variant="ghost" onPress={() => handleRemove(item)} style={styles.removeButton} />
+            <Button
+              title="Remove"
+              variant="ghost"
+              onPress={() => handleRemove(item)}
+              style={styles.removeButton}
+            />
           </View>
         )}
         contentContainerStyle={styles.list}
@@ -76,7 +92,13 @@ const styles = StyleSheet.create({
   safeArea: { flex: 1, backgroundColor: colors.white },
   center: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: spacing.xl },
   list: { padding: spacing.md },
-  deviceRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: spacing.md, borderBottomWidth: 1, borderBottomColor: colors.gray100 },
+  deviceRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: spacing.md,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.gray100,
+  },
   deviceInfo: { flex: 1 },
   deviceName: { ...typography.body, fontWeight: '600', color: colors.textPrimary },
   deviceMeta: { ...typography.caption, color: colors.textSecondary, marginTop: spacing.xs },

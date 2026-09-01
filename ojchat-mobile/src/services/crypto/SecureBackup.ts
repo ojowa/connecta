@@ -3,132 +3,50 @@ import { KeyManager } from './KeyManager';
 import { MediaEncryptor } from './MediaEncryptor';
 import { secureStorage } from '../storage/secureStorage';
 import { BackupData } from '../../types/crypto';
+import {
+  bytesToHex,
+  hexToBytes,
+  stringToBytes,
+  hmacSha256,
+  pbkdf2HmacSha256,
+  constantTimeEqual,
+} from './primitives';
 
 const BACKUP_SERVICE = 'com.ojchat.backup';
-
-function bytesToHex(bytes: Uint8Array): string {
-  return Array.from(bytes)
-    .map((b) => b.toString(16).padStart(2, '0'))
-    .join('');
-}
-
-function hexToBytes(hex: string): Uint8Array {
-  const bytes = new Uint8Array(hex.length / 2);
-  for (let i = 0; i < hex.length; i += 2) {
-    bytes[i / 2] = parseInt(hex.substring(i, i + 2), 16);
-  }
-  return bytes;
-}
-
-function stringToBytes(str: string): Uint8Array {
-  return new TextEncoder().encode(str);
-}
-
-function xorBytes(a: Uint8Array, b: Uint8Array): Uint8Array {
-  const result = new Uint8Array(a.length);
-  for (let i = 0; i < a.length; i++) {
-    result[i] = a[i] ^ b[i];
-  }
-  return result;
-}
-
-function hexStringToBytes(hex: string): Uint8Array {
-  return hexToBytes(hex);
-}
-
-async function hmacSha256(key: string, data: string): Promise<Uint8Array> {
-  const keyBytes = typeof key === 'string' && key.match(/^[0-9a-f]+$/i)
-    ? hexToBytes(key)
-    : stringToBytes(key);
-  const ipad = new Uint8Array(64);
-  const opad = new Uint8Array(64);
-  for (let i = 0; i < 64; i++) {
-    ipad[i] = i < keyBytes.length ? keyBytes[i] ^ 0x36 : 0x36;
-    opad[i] = i < keyBytes.length ? keyBytes[i] ^ 0x5c : 0x5c;
-  }
-
-  const dataBytes = stringToBytes(data);
-  const innerData = new Uint8Array(ipad.length + dataBytes.length);
-  innerData.set(ipad);
-  innerData.set(dataBytes, ipad.length);
-  const innerHex = bytesToHex(innerData);
-  const innerHash = await Crypto.digestStringAsync(Crypto.CryptoDigestAlgorithm.SHA256, innerHex);
-
-  const outerData = new Uint8Array(opad.length + 32);
-  outerData.set(opad);
-  outerData.set(hexToBytes(innerHash), opad.length);
-  const outerHex = bytesToHex(outerData);
-  const outerHash = await Crypto.digestStringAsync(Crypto.CryptoDigestAlgorithm.SHA256, outerHex);
-  return hexToBytes(outerHash);
-}
-
-async function pbkdf2HmacSha256(
-  password: string,
-  salt: Uint8Array,
-  iterations: number,
-  keyLength: number = 32,
-): Promise<string> {
-  const hLen = 32;
-  const l = Math.ceil(keyLength / hLen);
-  const dk = new Uint8Array(keyLength);
-
-  for (let i = 1; i <= l; i++) {
-    const I = new Uint8Array(salt.length + 4);
-    I.set(salt);
-    I[salt.length] = (i >> 24) & 0xff;
-    I[salt.length + 1] = (i >> 16) & 0xff;
-    I[salt.length + 2] = (i >> 8) & 0xff;
-    I[salt.length + 3] = i & 0xff;
-
-    let U = await hmacSha256(password, bytesToHex(I));
-    let T = new Uint8Array(U);
-    for (let j = 1; j < iterations; j++) {
-      U = await hmacSha256(password, bytesToHex(U));
-      const xored = xorBytes(T, U);
-      T = xored;
-    }
-
-    const offset = (i - 1) * hLen;
-    const toCopy = Math.min(hLen, keyLength - offset);
-    dk.set(T.slice(0, toCopy), offset);
-  }
-
-  return bytesToHex(dk);
-}
+const BACKUP_ITERATIONS = 600000;
 
 export class SecureBackup {
   async backupKeys(masterPassword: string): Promise<BackupData> {
     const saltBytes = Crypto.getRandomValues(new Uint8Array(32));
     const salt = bytesToHex(saltBytes);
-    const backupKey = await this.deriveBackupKey(masterPassword, saltBytes);
+    const backupKey = await this.deriveBackupKey(masterPassword, saltBytes, BACKUP_ITERATIONS);
 
     const identityKeyPair = await KeyManager.getIdentityKeyPair();
     const latestSPK = await KeyManager.getLatestSignedPreKey();
 
-    const keysToBackup: Record<string, any> = {
+    const keysToBackup: Record<string, unknown> = {
       identityKeyPair: identityKeyPair || null,
       signedPreKey: latestSPK || null,
       deviceId: await this.getDeviceId(),
     };
 
-    const iv = await KeyManager.generateRandomBytes(16);
+    const ivBytes = Crypto.getRandomValues(new Uint8Array(12));
+    const iv = bytesToHex(ivBytes);
     const encryptedBundle = await MediaEncryptor.aesEncrypt(
       JSON.stringify(keysToBackup),
       backupKey,
       iv,
     );
 
-    const verificationMac = await Crypto.digestStringAsync(
-      Crypto.CryptoDigestAlgorithm.SHA256,
-      'ojchat-backup-verify:' + backupKey + ':' + encryptedBundle,
-    );
+    const verificationMac = this.computeVerificationMac(backupKey, encryptedBundle);
 
     const backupData: BackupData = {
       encryptedBundle,
       verificationMac,
       salt,
-      iterations: 600000,
-      deviceId: keysToBackup.deviceId,
+      iv,
+      iterations: BACKUP_ITERATIONS,
+      deviceId: (keysToBackup.deviceId as string) ?? '',
       timestamp: Date.now(),
     };
 
@@ -139,13 +57,17 @@ export class SecureBackup {
 
   async restoreKeys(backupData: BackupData, masterPassword: string): Promise<void> {
     const saltBytes = hexToBytes(backupData.salt);
-    const backupKey = await this.deriveBackupKey(masterPassword, saltBytes);
+    const backupKey = await this.deriveBackupKey(masterPassword, saltBytes, backupData.iterations);
 
-    const iv = await KeyManager.generateRandomBytes(16);
+    const expectedMac = this.computeVerificationMac(backupKey, backupData.encryptedBundle);
+    if (!constantTimeEqual(hexToBytes(expectedMac), hexToBytes(backupData.verificationMac))) {
+      throw new Error('Invalid backup password');
+    }
+
     const decrypted = await MediaEncryptor.aesDecrypt(
       backupData.encryptedBundle,
       backupKey,
-      iv,
+      backupData.iv,
     );
 
     const keys = JSON.parse(decrypted);
@@ -165,26 +87,11 @@ export class SecureBackup {
 
     const backupData: BackupData = JSON.parse(lastBackup);
     const saltBytes = hexToBytes(backupData.salt);
-    const backupKey = await this.deriveBackupKey(masterPassword, saltBytes);
+    const backupKey = await this.deriveBackupKey(masterPassword, saltBytes, backupData.iterations);
 
-    const expectedMac = await Crypto.digestStringAsync(
-      Crypto.CryptoDigestAlgorithm.SHA256,
-      'ojchat-backup-verify:' + backupKey + ':' + backupData.encryptedBundle,
-    );
+    const expectedMac = this.computeVerificationMac(backupKey, backupData.encryptedBundle);
 
-    return this.constantTimeCompare(
-      KeyManager.hexToBytes(backupData.verificationMac),
-      KeyManager.hexToBytes(expectedMac),
-    );
-  }
-
-  private constantTimeCompare(a: Uint8Array, b: Uint8Array): boolean {
-    if (a.length !== b.length) return false;
-    let result = 0;
-    for (let i = 0; i < a.length; i++) {
-      result |= a[i] ^ b[i];
-    }
-    return result === 0;
+    return constantTimeEqual(hexToBytes(backupData.verificationMac), hexToBytes(expectedMac));
   }
 
   async hasBackup(): Promise<boolean> {
@@ -203,11 +110,18 @@ export class SecureBackup {
     await secureStorage.remove(`${BACKUP_SERVICE}.last`);
   }
 
+  private computeVerificationMac(backupKeyHex: string, encryptedBundle: string): string {
+    const mac = hmacSha256(hexToBytes(backupKeyHex), stringToBytes(encryptedBundle));
+    return bytesToHex(mac);
+  }
+
   private async deriveBackupKey(
     password: string,
     salt: Uint8Array,
+    iterations: number,
   ): Promise<string> {
-    return pbkdf2HmacSha256(password, salt, 600000, 32);
+    const derived = pbkdf2HmacSha256(stringToBytes(password), salt, iterations, 32);
+    return bytesToHex(derived);
   }
 
   private async getDeviceId(): Promise<string> {

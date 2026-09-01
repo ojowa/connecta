@@ -46,8 +46,12 @@ export class NotificationManager {
       this.expoPushToken = await this.registerForPushNotificationsAsync();
       if (this.expoPushToken) await this.registerTokenWithBackend(this.expoPushToken);
       if (Platform.OS === 'android') await this.setupAndroidChannels();
-      this.notificationSubscription = Notifications.addNotificationReceivedListener(this.handleNotificationReceived);
-      this.responseSubscription = Notifications.addNotificationResponseReceivedListener(this.handleNotificationResponse);
+      this.notificationSubscription = Notifications.addNotificationReceivedListener(
+        this.handleNotificationReceived,
+      );
+      this.responseSubscription = Notifications.addNotificationResponseReceivedListener(
+        this.handleNotificationResponse,
+      );
     } catch (error: any) {
       // Silent failure — push notifications are non-critical
     }
@@ -74,15 +78,19 @@ export class NotificationManager {
 
   private async setupAndroidChannels(): Promise<void> {
     await Notifications.setNotificationChannelAsync('messages', {
-      name: 'Messages', importance: Notifications.AndroidImportance.HIGH,
-      vibrationPattern: [0, 250, 250, 250], lightColor: '#FF6B6B',
+      name: 'Messages',
+      importance: Notifications.AndroidImportance.HIGH,
+      vibrationPattern: [0, 250, 250, 250],
+      lightColor: '#FF6B6B',
     });
     await Notifications.setNotificationChannelAsync('calls', {
-      name: 'Calls', importance: Notifications.AndroidImportance.MAX,
+      name: 'Calls',
+      importance: Notifications.AndroidImportance.MAX,
       vibrationPattern: [0, 1000],
     });
     await Notifications.setNotificationChannelAsync('matches', {
-      name: 'Matches', importance: Notifications.AndroidImportance.DEFAULT,
+      name: 'Matches',
+      importance: Notifications.AndroidImportance.DEFAULT,
     });
   }
 

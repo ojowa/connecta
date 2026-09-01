@@ -7,7 +7,7 @@ export class ConversationRepository {
       `SELECT c.*, cp.user_id as participant_id
        FROM conversations c
        LEFT JOIN conversation_participants cp ON c.id = cp.conversation_id
-       ORDER BY c.last_message_at DESC`
+       ORDER BY c.last_message_at DESC`,
     );
   }
 
@@ -16,7 +16,11 @@ export class ConversationRepository {
     return db.getFirstAsync('SELECT * FROM conversations WHERE id = ?', [id]);
   }
 
-  static async upsert(data: { id: string; lastMessageId?: string; lastMessageAt?: string }): Promise<void> {
+  static async upsert(data: {
+    id: string;
+    lastMessageId?: string;
+    lastMessageAt?: string;
+  }): Promise<void> {
     const db = await getDatabase();
     await db.runAsync(
       `INSERT INTO conversations (id, last_message_id, last_message_at)
@@ -24,7 +28,7 @@ export class ConversationRepository {
        ON CONFLICT(id) DO UPDATE SET
          last_message_id = excluded.last_message_id,
          last_message_at = excluded.last_message_at`,
-      [data.id, data.lastMessageId || null, data.lastMessageAt || null]
+      [data.id, data.lastMessageId || null, data.lastMessageAt || null],
     );
   }
 

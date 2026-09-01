@@ -20,13 +20,33 @@ const WelcomeScreen: React.FC = () => {
       <View style={styles.content}>
         <View style={styles.heroArea}>
           <View style={styles.logoContainer}>
-            <View style={[styles.logoCircle, { width: logoSize, height: logoSize, borderRadius: logoSize / 2 }]}>
+            <View
+              style={[
+                styles.logoCircle,
+                { width: logoSize, height: logoSize, borderRadius: logoSize / 2 },
+              ]}
+            >
               <View style={styles.heart}>
-                <View style={[styles.heartHalf, { width: heartSize, height: heartSize, borderRadius: heartSize / 2 }, styles.heartLeft]} />
-                <View style={[styles.heartHalf, { width: heartSize, height: heartSize, borderRadius: heartSize / 2 }, styles.heartRight]} />
+                <View
+                  style={[
+                    styles.heartHalf,
+                    { width: heartSize, height: heartSize, borderRadius: heartSize / 2 },
+                    styles.heartLeft,
+                  ]}
+                />
+                <View
+                  style={[
+                    styles.heartHalf,
+                    { width: heartSize, height: heartSize, borderRadius: heartSize / 2 },
+                    styles.heartRight,
+                  ]}
+                />
               </View>
             </View>
-            <Text variant="h1" style={[styles.logoText, { fontSize: Math.min(36, screenWidth * 0.09) }]}>
+            <Text
+              variant="h1"
+              style={[styles.logoText, { fontSize: Math.min(36, screenWidth * 0.09) }]}
+            >
               OJChat
             </Text>
           </View>

@@ -8,7 +8,19 @@
       "Shell(cd C:\\Dev\\OJChat\\ojchat-mobile && npx tsc --noEmit > tsc-baseline.log 2>&1; echo EXIT=%ERRORLEVEL%)",
       "Shell(npx tsc --version)",
       "Shell(cd C:\\Dev\\OJChat\\ojchat-mobile && npx tsc -p tsconfig.json --noEmit > tsc-baseline.log 2>&1; echo EXIT=%ERRORLEVEL%)",
-      "Shell(npx tsc --noEmit)"
+      "Shell(npx tsc --noEmit)",
+      "Shell(node -e console.log(require('@stablelib/hmac/package.json').main, require('@stablelib/sha256/package.json').main))",
+      "Shell(node \"C:\\Users\\OJOWA\\AppData\\Local\\Temp\\commandcode\\C--Dev-OJChat\\3d165245-e94f-42f2-9119-9597d215f673\\scratchpad\\verify-crypto.cjs\")",
+      "Shell(del \"C:\\Users\\OJOWA\\AppData\\Local\\Temp\\commandcode\\C--Dev-OJChat\\3d165245-e94f-42f2-9119-9597d215f673\\scratchpad\\verify-crypto.cjs\" && del \"C:\\Dev\\OJChat\\ojchat-mobile\\tsc-baseline.log\" 2>nul & echo done)",
+      "Shell(node -e const cfg = require('./babel.config.js')({cache:()=>{}}); const all = [].concat(cfg.plugins); console.log('plugins:', all);)",
+      "Shell(node -e \"JSON.parse(require('fs').readFileSync('C:/Dev/OJChat/ojchat-mobile/app.json','utf8')); console.log('valid JSON');\")",
+      "Shell(cd C:\\Dev\\OJChat\\ojchat-mobile && npx tsc --noEmit 2>&1 | findstr \"ConversationScreen\" 2>nul || echo \"no ConversationScreen errors\")",
+      "Shell(cd C:\\Dev\\OJChat\\ojchat-mobile && npx tsc --noEmit 2>&1 | findstr \"error\" 2>nul)",
+      "Shell(cd C:\\Dev\\OJChat\\ojchat-mobile && npx tsc --noEmit 2>&1 | findstr /n \"ChatList\" 2>nul)",
+      "Shell(cd C:\\Dev\\OJChat\\ojchat-mobile && npx tsc --noEmit 2>&1 | findstr /c:\"ChatList\" /c:\"Type '\" 2>nul)",
+      "Shell(cd C:\\Dev\\OJChat\\ojchat-mobile && npx tsc --noEmit > tsc-full.log 2>&1; type tsc-full.log | findstr /n \"ChatList.tsx\" 2>nul)",
+      "Shell(cd C:\\Dev\\OJChat\\ojchat-mobile && del tsc-full.log 2>nul & npx tsc --noEmit 2>&1 | findstr /c:\"error\" 2>nul)",
+      "Shell(cd C:\\Dev\\OJChat\\ojchat-mobile && npx tsc --noEmit 2>&1 | findstr /c:\"error\" 2>nul)"
     ],
     "deny": [],
     "defaultMode": "default"

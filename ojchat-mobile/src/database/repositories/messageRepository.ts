@@ -11,16 +11,22 @@ export class MessageRepository {
        WHERE m.conversation_id = ?
        ORDER BY m.created_at DESC
        LIMIT ? OFFSET ?`,
-      [conversationId, limit, offset]
+      [conversationId, limit, offset],
     );
   }
 
-  static async insert(message: { id: string; conversationId: string; senderId: string; content: string; type: string }): Promise<void> {
+  static async insert(message: {
+    id: string;
+    conversationId: string;
+    senderId: string;
+    content: string;
+    type: string;
+  }): Promise<void> {
     const db = await getDatabase();
     await db.runAsync(
       `INSERT INTO messages (id, conversation_id, sender_id, content, type, status)
        VALUES (?, ?, ?, ?, ?, 'pending')`,
-      [message.id, message.conversationId, message.senderId, message.content, message.type]
+      [message.id, message.conversationId, message.senderId, message.content, message.type],
     );
   }
 
@@ -31,14 +37,16 @@ export class MessageRepository {
 
   static async getPending(): Promise<any[]> {
     const db = await getDatabase();
-    return db.getAllAsync("SELECT * FROM messages WHERE status = 'pending' ORDER BY created_at ASC");
+    return db.getAllAsync(
+      "SELECT * FROM messages WHERE status = 'pending' ORDER BY created_at ASC",
+    );
   }
 
   static async markAsRead(conversationId: string, readAt: string): Promise<void> {
     const db = await getDatabase();
     await db.runAsync(
       "UPDATE messages SET status = 'read' WHERE conversation_id = ? AND status != 'read'",
-      [conversationId]
+      [conversationId],
     );
   }
 

@@ -31,7 +31,7 @@ const steps: OnboardingStep[] = [
   {
     id: 2,
     title: 'Match & Connect',
-    subtitle: 'When you both like each other, it\'s a match!',
+    subtitle: "When you both like each other, it's a match!",
     color: colors.secondary,
   },
   {
@@ -80,11 +80,51 @@ const OnboardingFlow: React.FC = () => {
           {steps.map((step) => (
             <View key={step.id} style={[styles.page, { width: screenWidth }]}>
               <View style={styles.iconContainer}>
-                <View style={[styles.circle, { backgroundColor: step.color, width: Math.min(160, screenWidth * 0.4), height: Math.min(160, screenWidth * 0.4), borderRadius: Math.min(80, screenWidth * 0.2) }]}>
+                <View
+                  style={[
+                    styles.circle,
+                    {
+                      backgroundColor: step.color,
+                      width: Math.min(160, screenWidth * 0.4),
+                      height: Math.min(160, screenWidth * 0.4),
+                      borderRadius: Math.min(80, screenWidth * 0.2),
+                    },
+                  ]}
+                >
                   <View style={styles.circleInner}>
-                    <View style={[styles.dot, { backgroundColor: colors.white, width: Math.min(12, screenWidth * 0.03), height: Math.min(12, screenWidth * 0.03), borderRadius: Math.min(6, screenWidth * 0.015) }]} />
-                    <View style={[styles.dot, { backgroundColor: colors.white, width: Math.min(12, screenWidth * 0.03), height: Math.min(12, screenWidth * 0.03), borderRadius: Math.min(6, screenWidth * 0.015) }]} />
-                    <View style={[styles.dot, { backgroundColor: colors.white, width: Math.min(12, screenWidth * 0.03), height: Math.min(12, screenWidth * 0.03), borderRadius: Math.min(6, screenWidth * 0.015) }]} />
+                    <View
+                      style={[
+                        styles.dot,
+                        {
+                          backgroundColor: colors.white,
+                          width: Math.min(12, screenWidth * 0.03),
+                          height: Math.min(12, screenWidth * 0.03),
+                          borderRadius: Math.min(6, screenWidth * 0.015),
+                        },
+                      ]}
+                    />
+                    <View
+                      style={[
+                        styles.dot,
+                        {
+                          backgroundColor: colors.white,
+                          width: Math.min(12, screenWidth * 0.03),
+                          height: Math.min(12, screenWidth * 0.03),
+                          borderRadius: Math.min(6, screenWidth * 0.015),
+                        },
+                      ]}
+                    />
+                    <View
+                      style={[
+                        styles.dot,
+                        {
+                          backgroundColor: colors.white,
+                          width: Math.min(12, screenWidth * 0.03),
+                          height: Math.min(12, screenWidth * 0.03),
+                          borderRadius: Math.min(6, screenWidth * 0.015),
+                        },
+                      ]}
+                    />
                   </View>
                 </View>
               </View>

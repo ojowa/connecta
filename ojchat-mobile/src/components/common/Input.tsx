@@ -24,8 +24,21 @@ interface InputProps {
 }
 
 export const Input: React.FC<InputProps> = ({
-  label, placeholder, value, onChangeText, secureTextEntry, multiline, error, style,
-  keyboardType, autoCapitalize, maxLength, returnKeyType, onSubmitEditing, disabled, showClear,
+  label,
+  placeholder,
+  value,
+  onChangeText,
+  secureTextEntry,
+  multiline,
+  error,
+  style,
+  keyboardType,
+  autoCapitalize,
+  maxLength,
+  returnKeyType,
+  onSubmitEditing,
+  disabled,
+  showClear,
 }) => {
   const [focused, setFocused] = useState(false);
   const [secureVisible, setSecureVisible] = useState(false);
@@ -60,7 +73,10 @@ export const Input: React.FC<InputProps> = ({
         />
         <View style={styles.actions}>
           {secureTextEntry && (
-            <TouchableOpacity onPress={() => setSecureVisible(!secureVisible)} style={styles.actionButton}>
+            <TouchableOpacity
+              onPress={() => setSecureVisible(!secureVisible)}
+              style={styles.actionButton}
+            >
               <Text style={styles.actionText}>{secureVisible ? '🙈' : '👁'}</Text>
             </TouchableOpacity>
           )}
@@ -72,7 +88,9 @@ export const Input: React.FC<InputProps> = ({
         </View>
       </View>
       {maxLength && !multiline && (
-        <Text style={styles.charCount}>{value.length}/{maxLength}</Text>
+        <Text style={styles.charCount}>
+          {value.length}/{maxLength}
+        </Text>
       )}
       {error && <Text style={styles.errorText}>{error}</Text>}
     </View>
@@ -84,7 +102,17 @@ const styles = StyleSheet.create({
   label: { ...typography.caption, color: colors.textSecondary, marginBottom: spacing.xs },
   labelDisabled: { opacity: 0.5 },
   inputWrapper: { flexDirection: 'row', alignItems: 'center' },
-  input: { ...typography.body, flex: 1, borderWidth: 1, borderColor: colors.border, borderRadius: borderRadius.md, paddingHorizontal: spacing.md, paddingVertical: spacing.sm, color: colors.textPrimary, backgroundColor: colors.white },
+  input: {
+    ...typography.body,
+    flex: 1,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: borderRadius.md,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    color: colors.textPrimary,
+    backgroundColor: colors.white,
+  },
   focused: { borderColor: colors.primary },
   errorBorder: { borderColor: colors.error },
   inputDisabled: { backgroundColor: colors.gray50, color: colors.gray400 },

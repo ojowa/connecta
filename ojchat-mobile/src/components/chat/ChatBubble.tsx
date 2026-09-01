@@ -22,7 +22,13 @@ const STATUS_ICONS: Record<string, string> = {
   read: '✓✓',
 };
 
-export const ChatBubble: React.FC<ChatBubbleProps> = ({ message, isOwn, onReply, onDelete, onReact }) => {
+export const ChatBubble: React.FC<ChatBubbleProps> = ({
+  message,
+  isOwn,
+  onReply,
+  onDelete,
+  onReact,
+}) => {
   const [showActions, setShowActions] = useState(false);
 
   const handleLongPress = () => {
@@ -33,7 +39,11 @@ export const ChatBubble: React.FC<ChatBubbleProps> = ({ message, isOwn, onReply,
       { text: 'Cancel', style: 'cancel' },
     ];
     if (isOwn) {
-      actions.splice(2, 0, { text: 'Delete', style: 'destructive', onPress: () => onDelete?.(message.id) });
+      actions.splice(2, 0, {
+        text: 'Delete',
+        style: 'destructive',
+        onPress: () => onDelete?.(message.id),
+      });
     }
     Alert.alert('Message', '', actions);
   };
@@ -47,13 +57,7 @@ export const ChatBubble: React.FC<ChatBubbleProps> = ({ message, isOwn, onReply,
     }
     if (message.type === 'voice') {
       const audioUrl = message.mediaUrl || message.content;
-      return (
-        <VoiceMessage
-          url={audioUrl}
-          duration={message.duration}
-          isOwn={isOwn}
-        />
-      );
+      return <VoiceMessage url={audioUrl} duration={message.duration} isOwn={isOwn} />;
     }
     if (message.type === 'video' && message.content.startsWith('http')) {
       return (
@@ -63,7 +67,11 @@ export const ChatBubble: React.FC<ChatBubbleProps> = ({ message, isOwn, onReply,
         </View>
       );
     }
-    return <Text style={[styles.text, isOwn ? styles.ownText : styles.otherText]}>{message.content}</Text>;
+    return (
+      <Text style={[styles.text, isOwn ? styles.ownText : styles.otherText]}>
+        {message.content}
+      </Text>
+    );
   };
 
   const replyContent = typeof message.replyTo === 'object' ? message.replyTo?.content : undefined;
@@ -82,13 +90,24 @@ export const ChatBubble: React.FC<ChatBubbleProps> = ({ message, isOwn, onReply,
         {message.reactions && message.reactions.length > 0 && (
           <View style={styles.reactions}>
             {message.reactions.map((r, i) => (
-              <Text key={i} style={styles.reaction}>{r.emoji}</Text>
+              <Text key={i} style={styles.reaction}>
+                {r.emoji}
+              </Text>
             ))}
           </View>
         )}
         <View style={styles.footer}>
-          <Text style={styles.time}>{new Date(message.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</Text>
-          {isOwn && <Text style={[styles.status, message.status === 'read' && styles.statusRead]}>{STATUS_ICONS[message.status] || '✓'}</Text>}
+          <Text style={styles.time}>
+            {new Date(message.createdAt).toLocaleTimeString([], {
+              hour: '2-digit',
+              minute: '2-digit',
+            })}
+          </Text>
+          {isOwn && (
+            <Text style={[styles.status, message.status === 'read' && styles.statusRead]}>
+              {STATUS_ICONS[message.status] || '✓'}
+            </Text>
+          )}
         </View>
       </View>
     </TouchableOpacity>
@@ -96,20 +115,31 @@ export const ChatBubble: React.FC<ChatBubbleProps> = ({ message, isOwn, onReply,
 };
 
 const styles = StyleSheet.create({
-  container: { maxWidth: '80%', marginVertical: 4, padding: spacing.sm, borderRadius: borderRadius.card },
+  container: {
+    maxWidth: '80%',
+    marginVertical: 4,
+    padding: spacing.sm,
+    borderRadius: borderRadius.card,
+  },
   own: { alignSelf: 'flex-end', backgroundColor: colors.primary, borderBottomRightRadius: 4 },
   other: { alignSelf: 'flex-start', backgroundColor: colors.gray100, borderBottomLeftRadius: 4 },
   text: { ...typography.body },
   ownText: { color: colors.white },
   otherText: { color: colors.textPrimary },
-  image: { width: '100%', height: undefined, aspectRatio: 4/3, borderRadius: borderRadius.sm },
+  image: { width: '100%', height: undefined, aspectRatio: 4 / 3, borderRadius: borderRadius.sm },
   voiceContainer: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
   voiceIcon: { fontSize: 20 },
   videoContainer: { position: 'relative' },
   playIcon: { position: 'absolute', alignSelf: 'center', top: '40%', fontSize: 32 },
   reactions: { flexDirection: 'row', gap: 2, marginTop: spacing.xs },
   reaction: { fontSize: 16 },
-  footer: { flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-end', gap: spacing.xs, marginTop: 4 },
+  footer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'flex-end',
+    gap: spacing.xs,
+    marginTop: 4,
+  },
   time: { ...typography.small, color: colors.gray400 },
   replyContainer: {
     backgroundColor: 'rgba(0,0,0,0.05)',

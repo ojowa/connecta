@@ -11,6 +11,7 @@ import {
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiClient } from '../../services/api/apiClient';
 import { useNavigation } from '@react-navigation/native';
+import { ENDPOINTS } from '../../constants/endpoints';
 import { colors } from '../../theme/colors';
 import { typography } from '../../theme/typography';
 import { spacing } from '../../theme/spacing';
@@ -40,7 +41,7 @@ const PlanCard: React.FC<{
   onSelect: () => void;
 }> = ({ plan, isYearly, isSelected, onSelect }) => {
   const isFree = plan.isFree || plan.planId === 'free';
-  const price = isFree ? 0 : (plan.price || 0);
+  const price = isFree ? 0 : plan.price || 0;
 
   const formatPrice = (amount: number, currency: string) => {
     if (currency === 'NGN') return `₦${amount.toLocaleString()}`;
@@ -50,10 +51,7 @@ const PlanCard: React.FC<{
 
   return (
     <TouchableOpacity
-      style={[
-        styles.planCard,
-        isSelected && styles.planCardSelected,
-      ]}
+      style={[styles.planCard, isSelected && styles.planCardSelected]}
       onPress={onSelect}
       activeOpacity={0.7}
     >
@@ -84,7 +82,9 @@ const PlanCard: React.FC<{
         {(plan.features || []).map((feature: any, index: number) => (
           <View key={index} style={styles.featureRow}>
             <Ionicons name="checkmark-circle" size={16} color={colors.success} />
-            <Text style={styles.featureLabel}>{typeof feature === 'string' ? feature : feature.label}</Text>
+            <Text style={styles.featureLabel}>
+              {typeof feature === 'string' ? feature : feature.label}
+            </Text>
           </View>
         ))}
       </View>
@@ -116,21 +116,32 @@ const SubscriptionScreen: React.FC = () => {
   const navigation = useNavigation();
   const queryClient = useQueryClient();
 
-  const { data: plansData, isLoading } = useQuery({
+  const {
+    data: plansData,
+    isLoading,
+    isError,
+    refetch,
+  } = useQuery({
     queryKey: ['plans'],
-    queryFn: () => apiClient.get('/payments/plans').then((r) => r.data?.data?.plans || r.data?.plans || []),
+    queryFn: () =>
+      apiClient
+        .get(ENDPOINTS.SUBSCRIPTIONS.PLANS)
+        .then((r) => r.data?.data?.plans || r.data?.plans || []),
   });
 
   const subscribeMutation = useMutation({
-    mutationFn: (planId: string) => apiClient.post('/payments/subscribe', {
-      planId,
-      billingPeriod: isYearly ? 'yearly' : 'monthly',
-    }),
+    mutationFn: (planId: string) =>
+      apiClient.post(ENDPOINTS.SUBSCRIPTIONS.SUBSCRIBE, {
+        planId,
+        billingPeriod: isYearly ? 'yearly' : 'monthly',
+      }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['plans'] });
       queryClient.invalidateQueries({ queryKey: ['wallet'] });
       queryClient.invalidateQueries({ queryKey: ['planInfo'] });
-      Alert.alert('Success', 'You are now subscribed!', [{ text: 'OK', onPress: () => navigation.goBack() }]);
+      Alert.alert('Success', 'You are now subscribed!', [
+        { text: 'OK', onPress: () => navigation.goBack() },
+      ]);
     },
     onError: () => {
       Alert.alert('Error', 'Failed to subscribe. Please try again.');
@@ -145,83 +156,105 @@ const SubscriptionScreen: React.FC = () => {
   });
 
   const handleSubscribe = () => {
-    if (!selectedPlan) { Alert.alert('Select a plan', 'Please choose a plan first.'); return; }
+    if (!selectedPlan) {
+      Alert.alert('Select a plan', 'Please choose a plan first.');
+      return;
+    }
     subscribeMutation.mutate(selectedPlan);
   };
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      <ScrollView
-        style={styles.container}
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={styles.contentContainer}
-      >
-        <View style={styles.header}>
-          <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
-            <Ionicons name="arrow-back" size={24} color={colors.textPrimary} />
+      {isError ? (
+        <View style={{ flex: 1, justifyContent: 'center' }}>
+          <Text
+            style={{
+              ...typography.body,
+              color: colors.textSecondary,
+              textAlign: 'center',
+              padding: spacing.lg,
+            }}
+          >
+            Couldn't load plans. Pull to retry.
+          </Text>
+          <TouchableOpacity
+            onPress={() => refetch()}
+            style={{ alignSelf: 'center', padding: spacing.md }}
+          >
+            <Text style={{ ...typography.body, color: colors.primary, fontWeight: '600' }}>
+              Retry
+            </Text>
           </TouchableOpacity>
-          <View style={styles.headerCenter}>
-            <Text style={styles.headerTitle}>Choose Your Plan</Text>
+        </View>
+      ) : (
+        <ScrollView
+          style={styles.container}
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={styles.contentContainer}
+        >
+          <View style={styles.header}>
+            <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
+              <Ionicons name="arrow-back" size={24} color={colors.textPrimary} />
+            </TouchableOpacity>
+            <View style={styles.headerCenter}>
+              <Text style={styles.headerTitle}>Choose Your Plan</Text>
+            </View>
+            <View style={{ width: 40 }} />
           </View>
-          <View style={{ width: 40 }} />
-        </View>
 
-        <Text style={styles.headerSubtitle}>
-          Unlock premium features to find your perfect match
-        </Text>
+          <Text style={styles.headerSubtitle}>
+            Unlock premium features to find your perfect match
+          </Text>
 
-        <View style={styles.toggleContainer}>
-          <TouchableOpacity
-            style={[styles.toggleOption, !isYearly && styles.toggleOptionActive]}
-            onPress={() => setIsYearly(false)}
-            activeOpacity={0.7}
-          >
-            <Text style={[styles.toggleText, !isYearly && styles.toggleTextActive]}>
-              Monthly
-            </Text>
-          </TouchableOpacity>
+          <View style={styles.toggleContainer}>
+            <TouchableOpacity
+              style={[styles.toggleOption, !isYearly && styles.toggleOptionActive]}
+              onPress={() => setIsYearly(false)}
+              activeOpacity={0.7}
+            >
+              <Text style={[styles.toggleText, !isYearly && styles.toggleTextActive]}>Monthly</Text>
+            </TouchableOpacity>
 
-          <TouchableOpacity
-            style={[styles.toggleOption, isYearly && styles.toggleOptionActive]}
-            onPress={() => setIsYearly(true)}
-            activeOpacity={0.7}
-          >
-            <Text style={[styles.toggleText, isYearly && styles.toggleTextActive]}>
-              Yearly
-            </Text>
-            {isYearly && (
-              <View style={styles.discountBadge}>
-                <Text style={styles.discountBadgeText}>Save 20%</Text>
-              </View>
-            )}
-          </TouchableOpacity>
-        </View>
+            <TouchableOpacity
+              style={[styles.toggleOption, isYearly && styles.toggleOptionActive]}
+              onPress={() => setIsYearly(true)}
+              activeOpacity={0.7}
+            >
+              <Text style={[styles.toggleText, isYearly && styles.toggleTextActive]}>Yearly</Text>
+              {isYearly && (
+                <View style={styles.discountBadge}>
+                  <Text style={styles.discountBadgeText}>Save 20%</Text>
+                </View>
+              )}
+            </TouchableOpacity>
+          </View>
 
-        {sortedPlans.map((plan) => (
-          <PlanCard
-            key={plan.planId || plan.name}
-            plan={plan}
-            isYearly={isYearly}
-            isSelected={selectedPlan === plan.planId}
-            onSelect={() => setSelectedPlan(plan.planId)}
-          />
-        ))}
+          {sortedPlans.map((plan) => (
+            <PlanCard
+              key={plan.planId || plan.name}
+              plan={plan}
+              isYearly={isYearly}
+              isSelected={selectedPlan === plan.planId}
+              onSelect={() => setSelectedPlan(plan.planId)}
+            />
+          ))}
 
-        {selectedPlan && sortedPlans.find(p => p.planId === selectedPlan && !p.isFree) && (
-          <TouchableOpacity
-            style={[styles.subscribeNowButton]}
-            onPress={handleSubscribe}
-            disabled={subscribeMutation.isPending}
-            activeOpacity={0.7}
-          >
-            <Text style={styles.subscribeNowButtonText}>
-              {subscribeMutation.isPending ? 'Subscribing...' : 'Subscribe Now'}
-            </Text>
-          </TouchableOpacity>
-        )}
+          {selectedPlan && sortedPlans.find((p) => p.planId === selectedPlan && !p.isFree) && (
+            <TouchableOpacity
+              style={[styles.subscribeNowButton]}
+              onPress={handleSubscribe}
+              disabled={subscribeMutation.isPending}
+              activeOpacity={0.7}
+            >
+              <Text style={styles.subscribeNowButtonText}>
+                {subscribeMutation.isPending ? 'Subscribing...' : 'Subscribe Now'}
+              </Text>
+            </TouchableOpacity>
+          )}
 
-        <View style={styles.bottomSpacer} />
-      </ScrollView>
+          <View style={styles.bottomSpacer} />
+        </ScrollView>
+      )}
     </SafeAreaView>
   );
 };

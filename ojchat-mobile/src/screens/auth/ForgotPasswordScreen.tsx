@@ -8,7 +8,9 @@ import { colors } from '../../theme/colors';
 import { typography } from '../../theme/typography';
 import { spacing } from '../../theme/spacing';
 
-interface ForgotPasswordProps { navigation: any; }
+interface ForgotPasswordProps {
+  navigation: any;
+}
 
 export const ForgotPasswordScreen: React.FC<ForgotPasswordProps> = ({ navigation }) => {
   const [email, setEmail] = useState('');
@@ -22,7 +24,10 @@ export const ForgotPasswordScreen: React.FC<ForgotPasswordProps> = ({ navigation
       await authApi.forgotPassword(email);
       setSent(true);
     } catch (error: any) {
-      Alert.alert('Error', error.response?.data?.message || 'Failed to send reset link. Please try again.');
+      Alert.alert(
+        'Error',
+        error.response?.data?.message || 'Failed to send reset link. Please try again.',
+      );
     } finally {
       setLoading(false);
     }
@@ -45,7 +50,14 @@ export const ForgotPasswordScreen: React.FC<ForgotPasswordProps> = ({ navigation
       <View style={styles.container}>
         <Text style={styles.title}>Forgot Password</Text>
         <Text style={styles.subtitle}>Enter your email to receive a reset link</Text>
-        <Input label="Email" placeholder="Enter your email" value={email} onChangeText={setEmail} keyboardType="email-address" autoCapitalize="none" />
+        <Input
+          label="Email"
+          placeholder="Enter your email"
+          value={email}
+          onChangeText={setEmail}
+          keyboardType="email-address"
+          autoCapitalize="none"
+        />
         <Button title="Send Reset Link" onPress={handleSubmit} loading={loading} />
         <Button title="Back to Login" variant="ghost" onPress={() => navigation.goBack()} />
       </View>
@@ -55,7 +67,12 @@ export const ForgotPasswordScreen: React.FC<ForgotPasswordProps> = ({ navigation
 
 const styles = StyleSheet.create({
   safeArea: { flex: 1, backgroundColor: colors.white },
-  container: { flex: 1, backgroundColor: colors.white, padding: spacing.xl, justifyContent: 'center' },
+  container: {
+    flex: 1,
+    backgroundColor: colors.white,
+    padding: spacing.xl,
+    justifyContent: 'center',
+  },
   title: { ...typography.h1, marginBottom: spacing.xs },
   subtitle: { ...typography.body, color: colors.textSecondary, marginBottom: spacing.xl },
 });

@@ -13,7 +13,14 @@ interface AvatarProps {
 
 export const Avatar: React.FC<AvatarProps> = ({ uri, size = 48, name, online, style }) => {
   const [imgError, setImgError] = useState(false);
-  const initials = name ? name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2) : '';
+  const initials = name
+    ? name
+        .split(' ')
+        .map((n) => n[0])
+        .join('')
+        .toUpperCase()
+        .slice(0, 2)
+    : '';
 
   return (
     <View

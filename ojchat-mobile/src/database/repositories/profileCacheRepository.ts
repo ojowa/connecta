@@ -63,15 +63,20 @@ export class ProfileCacheRepository {
 
   static async getAll(): Promise<ProfileCacheData[]> {
     const db = await getDatabase();
-    const rows = await db.getAllAsync<{ user_id: string; data: string; version: number; cached_at: number }>(
-      'SELECT user_id, data, version, cached_at FROM local_profile_cache ORDER BY cached_at DESC',
+    const rows = await db.getAllAsync<{
+      user_id: string;
+      data: string;
+      version: number;
+      cached_at: number;
+    }>('SELECT user_id, data, version, cached_at FROM local_profile_cache ORDER BY cached_at DESC');
+    return rows.map(
+      (row: { user_id: string; data: string; version: number; cached_at: number }) => ({
+        ...JSON.parse(row.data),
+        userId: row.user_id,
+        _version: row.version,
+        _cachedAt: row.cached_at,
+      }),
     );
-    return rows.map((row: { user_id: string; data: string; version: number; cached_at: number }) => ({
-      ...JSON.parse(row.data),
-      userId: row.user_id,
-      _version: row.version,
-      _cachedAt: row.cached_at,
-    }));
   }
 
   static async delete(userId: string): Promise<void> {

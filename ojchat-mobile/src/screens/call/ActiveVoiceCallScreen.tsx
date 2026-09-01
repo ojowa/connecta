@@ -8,6 +8,7 @@ import { typography } from '../../theme/typography';
 import { spacing } from '../../theme/spacing';
 import { apiClient } from '../../services/api/apiClient';
 import { ENDPOINTS } from '../../constants/endpoints';
+import { logger } from '../../utils/logger';
 
 interface ActiveVoiceCallScreenProps {
   navigation?: any;
@@ -24,21 +25,38 @@ interface ActiveVoiceCallScreenProps {
   };
 }
 
-export const ActiveVoiceCallScreen: React.FC<ActiveVoiceCallScreenProps> = ({ navigation, route }) => {
-  const { callId, callerId = '', callerName = '', conversationId, isInitiator = true } = route?.params || {};
+export const ActiveVoiceCallScreen: React.FC<ActiveVoiceCallScreenProps> = ({
+  navigation,
+  route,
+}) => {
+  const {
+    callId,
+    callerId = '',
+    callerName = '',
+    conversationId,
+    isInitiator = true,
+  } = route?.params || {};
   const [callError, setCallError] = useState<string | null>(null);
   const {
-    formattedDuration, isMuted, isSpeakerEnabled, connectionState,
-    startCall, endCall, toggleMute, toggleSpeaker,
+    formattedDuration,
+    isMuted,
+    isSpeakerEnabled,
+    connectionState,
+    startCall,
+    endCall,
+    toggleMute,
+    toggleSpeaker,
   } = useWebRTC();
 
   useEffect(() => {
     if (isInitiator && callerId) {
       startCall(callerId, 'audio').catch((err: any) => {
         setCallError(err.message || 'Failed to start call');
-        Alert.alert('Call Failed', err.message || 'Could not initialize call. Please check your connection.', [
-          { text: 'OK', onPress: () => navigation.goBack() },
-        ]);
+        Alert.alert(
+          'Call Failed',
+          err.message || 'Could not initialize call. Please check your connection.',
+          [{ text: 'OK', onPress: () => navigation.goBack() }],
+        );
       });
     }
   }, [callerId, isInitiator]);
@@ -48,13 +66,24 @@ export const ActiveVoiceCallScreen: React.FC<ActiveVoiceCallScreenProps> = ({ na
     if (conversationId) {
       const duration = formattedDuration || '0:00';
       const content = `Voice call - ${duration}`;
-      apiClient.post(ENDPOINTS.CHAT.SEND(conversationId), { content, type: 'voice_call' }).catch(() => {});
+      apiClient
+        .post(ENDPOINTS.CHAT.SEND(conversationId), { content, type: 'voice_call' })
+        .catch((err) => {
+          logger.warn('Failed to log voice call', {
+            message: err instanceof Error ? err.message : String(err),
+          });
+        });
     }
     navigation.goBack();
   }, [endCall, navigation, conversationId, formattedDuration]);
 
   const handleSwitchToVideo = useCallback(() => {
-    navigation.replace('ActiveVideoCall', { ...route?.params, callerId, callerName, conversationId });
+    navigation.replace('ActiveVideoCall', {
+      ...route?.params,
+      callerId,
+      callerName,
+      conversationId,
+    });
   }, [navigation, route?.params, callerId, callerName, conversationId]);
 
   return (
@@ -69,20 +98,34 @@ export const ActiveVoiceCallScreen: React.FC<ActiveVoiceCallScreenProps> = ({ na
             <Text style={styles.avatarInitial}>{callerName.charAt(0).toUpperCase()}</Text>
           </View>
           <Text style={styles.callerName}>{callerName}</Text>
-          <Text style={styles.callStatus}>{connectionState === 'connected' ? 'On Call' : 'Connecting...'}</Text>
+          <Text style={styles.callStatus}>
+            {connectionState === 'connected' ? 'On Call' : 'Connecting...'}
+          </Text>
         </View>
 
         <CallControls
           variant="voice"
           buttons={[
-            { icon: isMuted ? '🔇' : '🎤', label: isMuted ? 'Unmute' : 'Mute', isActive: isMuted, onPress: toggleMute },
-            { icon: isSpeakerEnabled ? '🔊' : '🔈', label: 'Speaker', isActive: isSpeakerEnabled, onPress: toggleSpeaker },
+            {
+              icon: isMuted ? '🔇' : '🎤',
+              label: isMuted ? 'Unmute' : 'Mute',
+              isActive: isMuted,
+              onPress: toggleMute,
+            },
+            {
+              icon: isSpeakerEnabled ? '🔊' : '🔈',
+              label: 'Speaker',
+              isActive: isSpeakerEnabled,
+              onPress: toggleSpeaker,
+            },
           ]}
           endCallButton={{ onPress: handleEndCall }}
         />
 
         <View style={styles.switchContainer}>
-          <Text style={styles.switchText} onPress={handleSwitchToVideo}>Switch to Video</Text>
+          <Text style={styles.switchText} onPress={handleSwitchToVideo}>
+            Switch to Video
+          </Text>
         </View>
       </View>
     </SafeAreaView>
@@ -91,13 +134,31 @@ export const ActiveVoiceCallScreen: React.FC<ActiveVoiceCallScreenProps> = ({ na
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.textPrimary },
-  content: { flex: 1, justifyContent: 'space-between', paddingHorizontal: spacing.xl, paddingVertical: spacing.xl },
+  content: {
+    flex: 1,
+    justifyContent: 'space-between',
+    paddingHorizontal: spacing.xl,
+    paddingVertical: spacing.xl,
+  },
   timerContainer: { alignItems: 'center', paddingTop: spacing.lg },
   timer: { ...typography.body, color: colors.whiteOverlaySoft, fontVariant: ['tabular-nums'] },
   avatarSection: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  avatar: { width: 120, height: 120, borderRadius: 60, backgroundColor: colors.gray600, justifyContent: 'center', alignItems: 'center', marginBottom: spacing.lg },
+  avatar: {
+    width: 120,
+    height: 120,
+    borderRadius: 60,
+    backgroundColor: colors.gray600,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: spacing.lg,
+  },
   avatarInitial: { ...typography.h1, color: colors.white },
-  callerName: { ...typography.h2, color: colors.white, marginBottom: spacing.xs, textAlign: 'center' },
+  callerName: {
+    ...typography.h2,
+    color: colors.white,
+    marginBottom: spacing.xs,
+    textAlign: 'center',
+  },
   callStatus: { ...typography.caption, color: colors.success },
   switchContainer: { alignItems: 'center', paddingBottom: spacing.xxl },
   switchText: { ...typography.small, color: colors.secondary },

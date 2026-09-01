@@ -5,6 +5,7 @@ import { Outbox, SyncOperation } from './Outbox';
 import { ConflictResolver, STRATEGY_MATRIX } from './strategies/conflictResolution';
 import { NetworkManager } from './NetworkManager';
 import { apiClient } from '../services/api/apiClient';
+import { ENDPOINTS } from '../constants/endpoints';
 import { FeedCacheRepository } from '../database/repositories/feedCacheRepository';
 import { VectorClock } from './VectorClock';
 
@@ -148,7 +149,10 @@ export class SyncEngine {
       } catch (error: any) {
         const retryCount = (item.retry_count || 0) + 1;
         if (retryCount >= this.config.maxRetries) {
-          console.error(`Sync item ${item.id} failed permanently after ${retryCount} attempts:`, error.message);
+          console.error(
+            `Sync item ${item.id} failed permanently after ${retryCount} attempts:`,
+            error.message,
+          );
         }
         await Outbox.markFailed(item.id, retryCount);
       }
@@ -163,7 +167,7 @@ export class SyncEngine {
       case 'CREATE:message': {
         const conversationId = data.conversationId;
         if (!conversationId) break;
-        const msgResult = await apiClient.post(`/chat/conversations/${conversationId}/messages`, data);
+        const msgResult = await apiClient.post(ENDPOINTS.CHAT.SEND(conversationId), data);
         if (msgResult.data?.data?.id) {
           await Outbox.markMessageSynced(entity_id, msgResult.data.data.id);
         }
@@ -173,33 +177,33 @@ export class SyncEngine {
         await apiClient.patch('/users/me', data);
         break;
       case 'UPDATE:preference':
-        await apiClient.put('/users/me/preferences', data);
+        await apiClient.put(ENDPOINTS.USERS.PREFERENCES, data);
         break;
       case 'CREATE:like':
-        await apiClient.post(`/matching/like/${entity_id}`);
+        await apiClient.post(ENDPOINTS.MATCHING.LIKE(entity_id));
         break;
       case 'CREATE:pass':
-        await apiClient.post(`/matching/pass/${entity_id}`);
+        await apiClient.post(ENDPOINTS.MATCHING.PASS(entity_id));
         break;
       case 'CREATE:super_like':
-        await apiClient.post(`/matching/superlike/${entity_id}`);
+        await apiClient.post(ENDPOINTS.MATCHING.SUPER_LIKE(entity_id));
         break;
       case 'CREATE:message_reaction': {
         const convId = data.conversationId;
         if (!convId) break;
-        await apiClient.post(`/chat/conversations/${convId}/messages/${entity_id}/reactions`, { emoji: data.emoji });
+        await apiClient.post(ENDPOINTS.CHAT.REACT(convId, entity_id), { emoji: data.emoji });
         break;
       }
       case 'DELETE:message': {
         const convId = data.conversationId;
         if (!convId) break;
-        await apiClient.delete(`/chat/conversations/${convId}/messages/${entity_id}`);
+        await apiClient.delete(ENDPOINTS.CHAT.DELETE(convId, entity_id));
         break;
       }
       case 'UPDATE:message_read': {
         const convId = data.conversationId;
         if (!convId) break;
-        await apiClient.put(`/chat/conversations/${convId}/read`);
+        await apiClient.put(ENDPOINTS.CHAT.READ(convId));
         break;
       }
       default:
@@ -213,9 +217,15 @@ export class SyncEngine {
 
     try {
       const [messagesRes, matchesRes, profileRes] = await Promise.all([
-        apiClient.get(`/chat/sync?since=${lastSync}`).catch(() => ({ data: { data: [] } })),
-        apiClient.get(`/matching/sync?since=${lastSync}`).catch(() => ({ data: { data: [] } })),
-        apiClient.get(`/users/sync?since=${lastSync}`).catch(() => ({ data: { data: null } })),
+        apiClient
+          .get(`${ENDPOINTS.CHAT.SYNC}?since=${lastSync}`)
+          .catch(() => ({ data: { data: [] } })),
+        apiClient
+          .get(`${ENDPOINTS.MATCHING.SYNC}?since=${lastSync}`)
+          .catch(() => ({ data: { data: [] } })),
+        apiClient
+          .get(`${ENDPOINTS.USERS.SYNC}?since=${lastSync}`)
+          .catch(() => ({ data: { data: null } })),
       ]);
 
       const msgData = messagesRes.data?.data ?? messagesRes.data;
@@ -359,19 +369,15 @@ export class SyncEngine {
 
   private async cleanupCompletedItems(): Promise<void> {
     const db = await getDatabase();
-    await db.runAsync(
-      "DELETE FROM local_sync_outbox WHERE status = 'synced' AND created_at < ?",
-      [Date.now() - 86400000],
-    );
+    await db.runAsync("DELETE FROM local_sync_outbox WHERE status = 'synced' AND created_at < ?", [
+      Date.now() - 86400000,
+    ]);
   }
 
   private async cleanupOldMessages(): Promise<void> {
     const db = await getDatabase();
     const cutoff = Date.now() - this.config.messageRetentionDays * 86400000;
-    await db.runAsync(
-      'DELETE FROM local_messages WHERE created_at < ? AND is_sent = 1',
-      [cutoff],
-    );
+    await db.runAsync('DELETE FROM local_messages WHERE created_at < ? AND is_sent = 1', [cutoff]);
   }
 
   private async loadVectorClock(): Promise<VectorClock> {

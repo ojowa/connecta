@@ -15,6 +15,7 @@ import { spacing } from '../../theme/spacing';
 import { borderRadius } from '../../theme/borderRadius';
 import { apiClient } from '../../services/api/apiClient';
 import { ENDPOINTS } from '../../constants/endpoints';
+import { logger } from '../../utils/logger';
 import { CompatibilityScore } from '../../components/dating/CompatibilityScore';
 
 interface MatchScreenProps {
@@ -56,13 +57,18 @@ const MatchScreen: React.FC<MatchScreenProps> = ({ navigation, route }) => {
     ]).start();
 
     if (matchedUser?.userId) {
-      apiClient.get(ENDPOINTS.MATCHING.COMPATIBILITY(matchedUser.userId))
+      apiClient
+        .get(ENDPOINTS.MATCHING.COMPATIBILITY(matchedUser.userId))
         .then((res: any) => {
           const data = res?.data || res;
           setCompatibility(data);
           setIcebreakers(data?.icebreakers || []);
         })
-        .catch(() => {});
+        .catch((err) => {
+          logger.warn('Failed to fetch compatibility', {
+            message: err instanceof Error ? err.message : String(err),
+          });
+        });
     }
   }, [matchedUser?.userId]);
 
@@ -82,22 +88,27 @@ const MatchScreen: React.FC<MatchScreenProps> = ({ navigation, route }) => {
   return (
     <SafeAreaView style={styles.safeArea}>
       <ScrollView contentContainerStyle={styles.container}>
-        <Animated.Text
-          style={[
-            styles.matchTitle,
-            { transform: [{ scale: scaleAnim }] },
-          ]}
-        >
+        <Animated.Text style={[styles.matchTitle, { transform: [{ scale: scaleAnim }] }]}>
           It's a Match!
         </Animated.Text>
 
         <View style={styles.avatarsContainer}>
-          <View style={[styles.avatar, { width: avatarSize, height: avatarSize, borderRadius: avatarSize / 2 }, styles.avatarLeft]}>
-            <Text style={styles.avatarPlaceholder}>
-              {matchedUser?.fullName?.charAt(0) || '?'}
-            </Text>
+          <View
+            style={[
+              styles.avatar,
+              { width: avatarSize, height: avatarSize, borderRadius: avatarSize / 2 },
+              styles.avatarLeft,
+            ]}
+          >
+            <Text style={styles.avatarPlaceholder}>{matchedUser?.fullName?.charAt(0) || '?'}</Text>
           </View>
-          <View style={[styles.avatar, { width: avatarSize, height: avatarSize, borderRadius: avatarSize / 2 }, styles.avatarRight]}>
+          <View
+            style={[
+              styles.avatar,
+              { width: avatarSize, height: avatarSize, borderRadius: avatarSize / 2 },
+              styles.avatarRight,
+            ]}
+          >
             <Text style={styles.avatarPlaceholder}>You</Text>
           </View>
         </View>
@@ -113,7 +124,9 @@ const MatchScreen: React.FC<MatchScreenProps> = ({ navigation, route }) => {
             <CompatibilityScore score={compatibility.compatibility || 0} size="large" />
             <Text style={styles.compatibilityLabel}>Compatibility</Text>
             {compatibility.insights?.slice(0, 2).map((insight: string, i: number) => (
-              <Text key={i} style={styles.insight}>{insight}</Text>
+              <Text key={i} style={styles.insight}>
+                {insight}
+              </Text>
             ))}
           </Animated.View>
         )}

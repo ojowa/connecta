@@ -4,7 +4,15 @@ import { useState } from 'react';
 import { Alert } from 'react-native';
 
 export function useAuth() {
-  const { user, token, isAuthenticated, setUser, setTokens, setAuthenticated, logout: storeLogout } = useAppStore();
+  const {
+    user,
+    token,
+    isAuthenticated,
+    setUser,
+    setTokens,
+    setAuthenticated,
+    logout: storeLogout,
+  } = useAppStore();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [pending2FA, setPending2FA] = useState<{ tempToken: string; method: string } | null>(null);
@@ -30,7 +38,12 @@ export function useAuth() {
         return result;
       }
     } catch (err: any) {
-      setError(err.response?.data?.error?.message || err.response?.data?.message || err.message || 'Login failed');
+      setError(
+        err.response?.data?.error?.message ||
+          err.response?.data?.message ||
+          err.message ||
+          'Login failed',
+      );
       throw err;
     } finally {
       setLoading(false);
@@ -53,14 +66,25 @@ export function useAuth() {
         return result;
       }
     } catch (err: any) {
-      setError(err.response?.data?.error?.message || err.response?.data?.message || err.message || 'Verification failed');
+      setError(
+        err.response?.data?.error?.message ||
+          err.response?.data?.message ||
+          err.message ||
+          'Verification failed',
+      );
       throw err;
     } finally {
       setLoading(false);
     }
   };
 
-  const register = async (data: { email: string; password: string; fullName: string; dateOfBirth: string; gender: string }) => {
+  const register = async (data: {
+    email: string;
+    password: string;
+    fullName: string;
+    dateOfBirth: string;
+    gender: string;
+  }) => {
     setLoading(true);
     setError(null);
     try {
@@ -79,7 +103,12 @@ export function useAuth() {
         return d.data;
       }
     } catch (err: any) {
-      setError(err.response?.data?.error?.message || err.response?.data?.message || err.message || 'Registration failed');
+      setError(
+        err.response?.data?.error?.message ||
+          err.response?.data?.message ||
+          err.message ||
+          'Registration failed',
+      );
       throw err;
     } finally {
       setLoading(false);
@@ -88,11 +117,26 @@ export function useAuth() {
 
   const logout = async () => {
     if (user) {
-      try { await authApi.logout(user.id); } catch { /* local logout still proceeds */ }
+      try {
+        await authApi.logout(user.id);
+      } catch {
+        /* local logout still proceeds */
+      }
     }
     setPending2FA(null);
     storeLogout();
   };
 
-  return { user, token, isAuthenticated, loading, error, login, verify2faLogin, pending2FA, register, logout };
+  return {
+    user,
+    token,
+    isAuthenticated,
+    loading,
+    error,
+    login,
+    verify2faLogin,
+    pending2FA,
+    register,
+    logout,
+  };
 }

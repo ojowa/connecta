@@ -31,11 +31,10 @@ export class ImageProcessor {
   }
 
   static async processImage(uri: string): Promise<ProcessedImage> {
-    const resized = await ImageManipulator.manipulateAsync(
-      uri,
-      [{ resize: { width: 1080 } }],
-      { compress: 0.82, format: ImageManipulator.SaveFormat.JPEG }
-    );
+    const resized = await ImageManipulator.manipulateAsync(uri, [{ resize: { width: 1080 } }], {
+      compress: 0.82,
+      format: ImageManipulator.SaveFormat.JPEG,
+    });
     const file = new File(resized.uri);
     const fileSize = file.exists ? file.size : 0;
     return {
@@ -47,7 +46,10 @@ export class ImageProcessor {
     };
   }
 
-  static async uploadImage(processedImage: ProcessedImage, onProgress?: (p: number) => void): Promise<string> {
+  static async uploadImage(
+    processedImage: ProcessedImage,
+    onProgress?: (p: number) => void,
+  ): Promise<string> {
     const formData = new FormData();
     formData.append('photo', {
       uri: processedImage.uri,

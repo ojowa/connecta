@@ -1,6 +1,7 @@
 import { VectorClock } from '../VectorClock';
 
-export type ResolutionStrategy = 'server-authoritative' | 'last-write-wins' | 'vector-clock' | 'merge';
+export type ResolutionStrategy =
+  'server-authoritative' | 'last-write-wins' | 'vector-clock' | 'merge';
 
 export interface SyncRecord {
   id: string;
@@ -24,11 +25,7 @@ export const STRATEGY_MATRIX: Record<string, ResolutionStrategy> = {
 };
 
 export class ConflictResolver {
-  resolve(
-    local: SyncRecord,
-    remote: SyncRecord,
-    strategy: ResolutionStrategy,
-  ): SyncRecord {
+  resolve(local: SyncRecord, remote: SyncRecord, strategy: ResolutionStrategy): SyncRecord {
     switch (strategy) {
       case 'server-authoritative':
         return remote;
@@ -115,7 +112,10 @@ export class ConflictResolver {
     return Array.from(map.values());
   }
 
-  private mergeObjects(local: Record<string, any>, remote: Record<string, any>): Record<string, any> {
+  private mergeObjects(
+    local: Record<string, any>,
+    remote: Record<string, any>,
+  ): Record<string, any> {
     const merged: Record<string, any> = { ...remote };
     for (const [key, value] of Object.entries(local)) {
       if (value === null || value === undefined) continue;
