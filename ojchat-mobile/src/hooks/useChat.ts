@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { SOCKET_EVENTS } from '../constants/socketEvents';
 import { chatApi } from '../services/api/chatApi';
 import SocketManager from '../socket/SocketManager';
 
@@ -106,11 +107,11 @@ export function useTypingIndicator(conversationId: string | undefined) {
 
     const socket = (socketManager as any).chatSocket;
     if (socket) {
-      socket.on('user.typing', handleTypingStart);
-      socket.on('user.typing.stop', handleTypingStop);
+      socket.on(SOCKET_EVENTS.USER_TYPING, handleTypingStart);
+      socket.on(SOCKET_EVENTS.USER_TYPING_STOP, handleTypingStop);
       return () => {
-        socket.off('user.typing', handleTypingStart);
-        socket.off('user.typing.stop', handleTypingStop);
+        socket.off(SOCKET_EVENTS.USER_TYPING, handleTypingStart);
+        socket.off(SOCKET_EVENTS.USER_TYPING_STOP, handleTypingStop);
       };
     }
   }, [conversationId]);

@@ -10,6 +10,7 @@ export type RootStackParamList = {
     otherUserId: string;
     otherName?: string;
     otherAvatar?: string;
+    initialMessage?: string;
   };
   EditProfile: undefined;
   InterestSelector: undefined;

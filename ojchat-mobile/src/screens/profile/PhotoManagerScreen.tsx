@@ -264,12 +264,12 @@ const styles = StyleSheet.create({
   // Tip Card
   tipCard: {
     flexDirection: 'row',
-    backgroundColor: '#FFFBEB',
+    backgroundColor: colors.amberSoft,
     borderRadius: borderRadius.card,
     padding: spacing.md,
     marginBottom: spacing.xl,
     borderWidth: 1,
-    borderColor: '#FDE68A',
+    borderColor: colors.amberMedium,
   },
   tipIconContainer: {
     width: 28,

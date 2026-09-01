@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, TextInput, ScrollView, Alert } from 'react-nati
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Button } from '../../components/common/Button';
 import { apiClient } from '../../services/api/apiClient';
+import { ENDPOINTS } from '../../constants/endpoints';
 import { colors } from '../../theme/colors';
 import { typography } from '../../theme/typography';
 import { spacing } from '../../theme/spacing';
@@ -34,7 +35,7 @@ export default function AppealScreen({ navigation }: AppealScreenProps) {
 
   const checkExistingAppeal = async () => {
     try {
-      const response = await apiClient.get('/users/me/appeals');
+      const response = await apiClient.get(ENDPOINTS.USERS.MY_APPEALS);
       const appeals = response.data?.appeals || [];
       const pending = appeals.find((a: any) => a.status === 'pending');
       setExistingAppeal(pending || null);
@@ -51,7 +52,7 @@ export default function AppealScreen({ navigation }: AppealScreenProps) {
     }
     setLoading(true);
     try {
-      await apiClient.post('/users/me/appeal', { reason, description });
+      await apiClient.post(ENDPOINTS.USERS.SUBMIT_APPEAL, { reason, description });
       Alert.alert('Submitted', 'Your appeal has been submitted. Our team will review it shortly.', [
         { text: 'OK', onPress: () => navigation.goBack() },
       ]);
@@ -182,8 +183,8 @@ const styles = StyleSheet.create({
     borderColor: colors.gray200,
     marginBottom: spacing.lg,
   },
-  approvedCard: { borderColor: colors.success, backgroundColor: '#f0fdf4' },
-  rejectedCard: { borderColor: colors.error, backgroundColor: '#fef2f2' },
+  approvedCard: { borderColor: colors.success, backgroundColor: colors.greenLight },
+  rejectedCard: { borderColor: colors.error, backgroundColor: colors.redLight },
   statusLabel: { ...typography.caption, color: colors.textSecondary, marginBottom: spacing.xs },
   statusValue: {
     ...typography.h3,

@@ -4,7 +4,8 @@ import { useAppStore } from '../store';
 
 export function useSocket() {
   const socketManager = useRef(SocketManager.getInstance());
-  const { isAuthenticated, token } = useAppStore();
+  const isAuthenticated = useAppStore((s) => s.isAuthenticated);
+  const token = useAppStore((s) => s.token);
 
   useEffect(() => {
     if (isAuthenticated && token) {

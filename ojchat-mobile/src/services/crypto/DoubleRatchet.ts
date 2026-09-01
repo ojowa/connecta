@@ -3,6 +3,7 @@ import { AESEncryptionKey, AESSealedData, aesEncryptAsync, aesDecryptAsync } fro
 import { RatchetState } from '../../types/crypto';
 import { KeyManager } from './KeyManager';
 import { bytesToHex, hexToBytes, stringToBytes, hkdfSha256 } from './primitives';
+import { STORAGE_KEYS } from '../../constants/storageKeys';
 
 async function hkdfDerive(
   ikm: string,
@@ -29,7 +30,7 @@ export class DoubleRatchet {
       await KeyManager.computeDH(localEphemeralKeyPair.privateKey, remoteSignedPreKey),
     );
 
-    const receivingChainKey = await hkdfDerive(newRootKey, 'ojchat-rk', 'init-receiving-chain');
+    const receivingChainKey = await hkdfDerive(newRootKey, STORAGE_KEYS.RK_LABEL, 'init-receiving-chain');
 
     return {
       rootKey: newRootKey,
@@ -59,7 +60,7 @@ export class DoubleRatchet {
       await KeyManager.computeDH(localSignedPreKeyPair.privateKey, remoteEphemeralKey),
     );
 
-    const sendingChainKey = await hkdfDerive(newRootKey, 'ojchat-rk', 'init-sending-chain');
+    const sendingChainKey = await hkdfDerive(newRootKey, STORAGE_KEYS.RK_LABEL, 'init-sending-chain');
 
     return {
       rootKey: newRootKey,
@@ -206,14 +207,14 @@ export class DoubleRatchet {
     rootKey: string,
     dhOutput: string,
   ): Promise<{ rootKey: string; chainKey: string }> {
-    const newRootKey = await hkdfDerive(dhOutput, rootKey, 'ojchat-rk-root', 32);
-    const chainKey = await hkdfDerive(dhOutput, rootKey, 'ojchat-rk-chain', 32);
+    const newRootKey = await hkdfDerive(dhOutput, rootKey, STORAGE_KEYS.RK_ROOT, 32);
+    const chainKey = await hkdfDerive(dhOutput, rootKey, STORAGE_KEYS.RK_CHAIN, 32);
     return { rootKey: newRootKey, chainKey };
   }
 
   static async kdfCK(chainKey: string): Promise<{ messageKey: string; chainKey: string }> {
-    const messageKey = await hkdfDerive('01', chainKey, 'ojchat-ck-mk', 32);
-    const newChainKey = await hkdfDerive('02', chainKey, 'ojchat-ck-ck', 32);
+    const messageKey = await hkdfDerive('01', chainKey, STORAGE_KEYS.CK_MK, 32);
+    const newChainKey = await hkdfDerive('02', chainKey, STORAGE_KEYS.CK_CK, 32);
     return { messageKey, chainKey: newChainKey };
   }
 

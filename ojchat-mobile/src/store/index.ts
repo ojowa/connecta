@@ -4,6 +4,7 @@ import { devtools, persist, createJSONStorage } from 'zustand/middleware';
 
 import { mmkvStorage } from '../services/storage/mmkvStorage';
 import { secureStorage } from '../services/storage/secureStorage';
+import { STORAGE_KEYS } from '../constants/storageKeys';
 import { User } from '../types/auth';
 import { Message } from '../types/chat';
 import { Match } from '../types/match';
@@ -185,7 +186,7 @@ export const useAppStore = create<AppState>()(
         },
       }),
       {
-        name: 'ojchat-auth-storage',
+        name: STORAGE_KEYS.AUTH_PERSIST,
         storage: createJSONStorage(() => ({
           getItem: async (name: string) => {
             await mmkvStorage.waitForInit();
@@ -234,7 +235,7 @@ export const useAppStore = create<AppState>()(
         }),
       },
     ),
-    { name: 'OJChatStore' },
+    { name: STORAGE_KEYS.DEVTOOLS_NAME },
   ),
 );
 

@@ -174,7 +174,7 @@ export class SyncEngine {
         break;
       }
       case 'UPDATE:profile':
-        await apiClient.patch('/users/me', data);
+        await apiClient.patch(ENDPOINTS.USERS.ME, data);
         break;
       case 'UPDATE:preference':
         await apiClient.put(ENDPOINTS.USERS.PREFERENCES, data);
@@ -390,7 +390,7 @@ export class SyncEngine {
     }
 
     try {
-      const response = await apiClient.get('/sync/vector-clock');
+      const response = await apiClient.get(ENDPOINTS.SYNC.VECTOR_CLOCK);
       const vc = response.data?.data?.vectorClock || response.data?.vectorClock;
       if (vc) {
         const clock = new VectorClock(vc);

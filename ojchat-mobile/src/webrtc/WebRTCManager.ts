@@ -1,5 +1,6 @@
 import { RTCPeerConnection, mediaDevices, MediaStream } from './bindings';
 import * as Crypto from 'expo-crypto';
+import { SOCKET_EVENTS } from '../constants/socketEvents';
 import SocketManager from '../socket/SocketManager';
 import { WEBRTC_CONFIG, CALL_QUALITY, CALL_QUALITY_CHECK_INTERVAL_MS } from '../constants/webrtc';
 import { CallState, CallQualityStats } from '../types/webrtc';
@@ -50,13 +51,13 @@ class WebRTCManager {
 
       this.notifyStateChange();
 
-      SocketManager.getInstance().emit('call.initiated', {
+      SocketManager.getInstance().emit(SOCKET_EVENTS.CALL_INITIATED, {
         callId,
         calleeId: peerId,
         callType: type,
       });
 
-      SocketManager.getInstance().emit('sdp.offer', {
+      SocketManager.getInstance().emit(SOCKET_EVENTS.SDP_OFFER, {
         callId,
         sdp: offer,
         targetUserId: peerId,
@@ -103,13 +104,13 @@ class WebRTCManager {
     this.notifyStateChange();
     this.reconnectAttempts = 0;
 
-    SocketManager.getInstance().emit('sdp.answer', {
+    SocketManager.getInstance().emit(SOCKET_EVENTS.SDP_ANSWER, {
       callId,
       sdp: answer,
       targetUserId: this.state.peerId,
     });
 
-    SocketManager.getInstance().emit('call.answered', { callId });
+    SocketManager.getInstance().emit(SOCKET_EVENTS.CALL_ANSWERED, { callId });
     this.startQualityMonitoring();
   }
 
@@ -138,7 +139,7 @@ class WebRTCManager {
 
       (pc as any).onicecandidate = (event: any) => {
         if (event.candidate && this.state?.peerId) {
-          SocketManager.getInstance().emit('ice.candidate', {
+          SocketManager.getInstance().emit(SOCKET_EVENTS.ICE_CANDIDATE, {
             callId: this.state?.callId,
             candidate: event.candidate,
             targetUserId: this.state.peerId,
@@ -335,7 +336,7 @@ class WebRTCManager {
     this.state?.localStream?.getTracks().forEach((track: any) => track.stop());
 
     if (this.state?.callId) {
-      SocketManager.getInstance().emit('call.ended', { callId: this.state.callId });
+      SocketManager.getInstance().emit(SOCKET_EVENTS.CALL_ENDED, { callId: this.state.callId });
     }
 
     this.state = null;

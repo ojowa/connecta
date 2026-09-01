@@ -8,6 +8,9 @@ module.exports = {
     'src/services/api/**/*.{ts,tsx}',
   ],
   transformIgnorePatterns: [
-    'node_modules/(?!((jest-)?(react-native|expo|@react-native|@react-navigation)|expo-router|@expo))',
+    'node_modules/(?!((jest-)?(react-native|expo|@react-native|@react-navigation|@stablelib)|expo-router|@expo))',
   ],
+  moduleNameMapper: {
+    '^react-native/setup-env$': '<rootDir>/__mocks__/setup-env.js',
+  },
 };

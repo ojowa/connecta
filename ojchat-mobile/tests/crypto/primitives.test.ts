@@ -74,7 +74,16 @@ describe('HKDF-SHA256', () => {
     const info = new Uint8Array([1, 2, 3, 4, 5]);
     const mine = hkdfSha256(new Uint8Array(ikm), new Uint8Array(salt), info, 32);
     const ref = crypto.hkdfSync('sha256', Buffer.from(ikm), Buffer.from(salt), Buffer.from(info), 32);
-    expect(Buffer.from(bytesToHex(mine), 'hex')).toEqual(ref);
+    const refBytes = new Uint8Array(ref);
+    expect(mine).toEqual(refBytes);
+  });
+
+  test('produces correct length output', () => {
+    const ikm = new Uint8Array(32).fill(0x0b);
+    const salt = new Uint8Array(16).fill(0x0c);
+    const info = new Uint8Array([1, 2, 3]);
+    const out = hkdfSha256(ikm, salt, info, 42);
+    expect(out.length).toBe(42);
   });
 });
 

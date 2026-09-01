@@ -561,7 +561,7 @@ const styles = StyleSheet.create({
     width: 96,
     height: 96,
     borderRadius: 48,
-    backgroundColor: '#FEE2E2',
+    backgroundColor: colors.redSoft,
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: spacing.xl,

@@ -9,6 +9,7 @@ import { spacing } from '../../theme/spacing';
 import { apiClient } from '../../services/api/apiClient';
 import { ENDPOINTS } from '../../constants/endpoints';
 import { logger } from '../../utils/logger';
+import { Avatar } from '../../components/common/Avatar';
 
 interface ActiveVoiceCallScreenProps {
   navigation?: any;
@@ -94,9 +95,7 @@ export const ActiveVoiceCallScreen: React.FC<ActiveVoiceCallScreenProps> = ({
         </View>
 
         <View style={styles.avatarSection}>
-          <View style={styles.avatar}>
-            <Text style={styles.avatarInitial}>{callerName.charAt(0).toUpperCase()}</Text>
-          </View>
+          <Avatar uri={route?.params?.callerAvatar} size={120} name={callerName} />
           <Text style={styles.callerName}>{callerName}</Text>
           <Text style={styles.callStatus}>
             {connectionState === 'connected' ? 'On Call' : 'Connecting...'}

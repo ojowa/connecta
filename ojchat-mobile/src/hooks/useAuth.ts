@@ -4,15 +4,13 @@ import { useState } from 'react';
 import { Alert } from 'react-native';
 
 export function useAuth() {
-  const {
-    user,
-    token,
-    isAuthenticated,
-    setUser,
-    setTokens,
-    setAuthenticated,
-    logout: storeLogout,
-  } = useAppStore();
+  const user = useAppStore((s) => s.user);
+  const token = useAppStore((s) => s.token);
+  const isAuthenticated = useAppStore((s) => s.isAuthenticated);
+  const setUser = useAppStore((s) => s.setUser);
+  const setTokens = useAppStore((s) => s.setTokens);
+  const setAuthenticated = useAppStore((s) => s.setAuthenticated);
+  const storeLogout = useAppStore((s) => s.logout);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [pending2FA, setPending2FA] = useState<{ tempToken: string; method: string } | null>(null);

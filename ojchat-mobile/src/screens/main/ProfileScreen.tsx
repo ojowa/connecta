@@ -6,12 +6,14 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useQuery } from '@tanstack/react-query';
 import { useAuth } from '../../hooks/useAuth';
 import { apiClient } from '../../services/api/apiClient';
+import { ENDPOINTS } from '../../constants/endpoints';
 import { Avatar } from '../../components/common/Avatar';
 import { colors } from '../../theme/colors';
 import { typography } from '../../theme/typography';
 import { spacing } from '../../theme/spacing';
 import { borderRadius } from '../../theme/borderRadius';
 import { shadows } from '../../theme/shadows';
+import type { MainTabScreenProps } from '../../navigation/types';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
@@ -43,11 +45,11 @@ const SOCIAL_MENU: MenuItem[] = [
   { icon: 'settings-outline', label: 'Settings', route: 'Settings' },
 ];
 
-export const ProfileScreen: React.FC = ({ navigation }: any) => {
+export const ProfileScreen: React.FC<MainTabScreenProps<'Profile'>> = ({ navigation }) => {
   const { user, logout } = useAuth();
   const { data: profileData } = useQuery({
     queryKey: ['profile'],
-    queryFn: () => apiClient.get('/users/me/profile').then((r) => r.data),
+    queryFn: () => apiClient.get(ENDPOINTS.USERS.ME + '/profile').then((r) => r.data),
   });
 
   const profile = profileData?.profile;
@@ -77,7 +79,7 @@ export const ProfileScreen: React.FC = ({ navigation }: any) => {
           <TouchableOpacity
             key={item.route}
             style={[styles.menuItem, index < items.length - 1 && styles.menuItemBorder]}
-            onPress={() => navigation.navigate(item.route)}
+            onPress={() => navigation.navigate(item.route as never)}
             activeOpacity={0.6}
           >
             <View

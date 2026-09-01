@@ -22,11 +22,11 @@ export default function BlockListScreen() {
   const queryClient = useQueryClient();
   const { data: blockedUsers = [], isLoading } = useQuery({
     queryKey: ['blockList'],
-    queryFn: () => apiClient.get('/users/me/blocks').then((r) => r.data?.blockedUsers || []),
+    queryFn: () => apiClient.get(ENDPOINTS.USERS.BLOCK_LIST).then((r) => r.data?.blockedUsers || []),
   });
 
   const unblockMutation = useMutation({
-    mutationFn: (userId: string) => apiClient.delete(`/users/${userId}/block`),
+    mutationFn: (userId: string) => apiClient.delete(ENDPOINTS.USERS.UNBLOCK(userId)),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['blockList'] });
       Alert.alert('Unblocked', 'User has been unblocked.');

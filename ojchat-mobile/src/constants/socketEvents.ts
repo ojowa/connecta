@@ -11,6 +11,7 @@ export const SOCKET_EVENTS = {
   USER_ONLINE: 'user.online',
   USER_OFFLINE: 'user.offline',
   USER_TYPING: 'user.typing',
+  USER_TYPING_STOP: 'user.typing.stop',
   MATCH_CREATED: 'match.created',
   MATCH_MUTUAL: 'match.mutual',
   CALL_INITIATED: 'call.initiated',

@@ -10,6 +10,7 @@ import { typography } from '../../theme/typography';
 import { spacing } from '../../theme/spacing';
 import { borderRadius } from '../../theme/borderRadius';
 import type { RootStackScreenProps } from '../../navigation/types';
+import { formatRelativeTime } from '../../utils/dateUtils';
 
 interface LikedUser {
   user: {
@@ -71,7 +72,7 @@ export const MyLikesScreen: React.FC<RootStackScreenProps<'MyLikes'>> = ({ navig
         renderItem={({ item }: { item: LikedUser }) => {
           const primaryPhoto =
             item.user?.photos?.find((p) => p.isPrimary) || item.user?.photos?.[0];
-          const timeAgo = item.likedAt ? getTimeAgo(item.likedAt) : '';
+          const timeAgo = item.likedAt ? formatRelativeTime(item.likedAt) : '';
 
           return (
             <TouchableOpacity
@@ -97,17 +98,6 @@ export const MyLikesScreen: React.FC<RootStackScreenProps<'MyLikes'>> = ({ navig
     </SafeAreaView>
   );
 };
-
-function getTimeAgo(date: string): string {
-  const seconds = Math.floor((Date.now() - new Date(date).getTime()) / 1000);
-  if (seconds < 60) return 'just now';
-  const minutes = Math.floor(seconds / 60);
-  if (minutes < 60) return `${minutes}m ago`;
-  const hours = Math.floor(minutes / 60);
-  if (hours < 24) return `${hours}h ago`;
-  const days = Math.floor(hours / 24);
-  return `${days}d ago`;
-}
 
 const styles = StyleSheet.create({
   safeArea: { flex: 1, backgroundColor: colors.background },

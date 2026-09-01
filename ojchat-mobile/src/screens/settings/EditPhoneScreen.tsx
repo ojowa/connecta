@@ -4,6 +4,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Input } from '../../components/common/Input';
 import { Button } from '../../components/common/Button';
 import { apiClient } from '../../services/api/apiClient';
+import { ENDPOINTS } from '../../constants/endpoints';
 import { colors } from '../../theme/colors';
 import { typography } from '../../theme/typography';
 import { spacing } from '../../theme/spacing';
@@ -15,7 +16,7 @@ export default function EditPhoneScreen({ navigation }: any) {
     if (!phone) return;
     setLoading(true);
     try {
-      await apiClient.patch('/users/me', { phone });
+      await apiClient.patch(ENDPOINTS.USERS.ME, { phone });
       Alert.alert('Success', 'Phone updated');
       navigation.goBack();
     } catch {

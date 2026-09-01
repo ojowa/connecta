@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, Alert, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Button } from '../../components/common/Button';
 import { apiClient } from '../../services/api/apiClient';
+import { ENDPOINTS } from '../../constants/endpoints';
 import { colors } from '../../theme/colors';
 import { typography } from '../../theme/typography';
 import { spacing } from '../../theme/spacing';
@@ -19,7 +20,7 @@ const BlockConfirmation: React.FC<BlockConfirmationProps> = ({ route, navigation
   const handleBlock = async () => {
     setLoading(true);
     try {
-      await apiClient.post(`/users/${userId}/block`);
+      await apiClient.post(ENDPOINTS.USERS.BLOCK(userId));
       navigation.goBack();
     } catch {
       Alert.alert('Error', 'Failed to block user. Please try again.');

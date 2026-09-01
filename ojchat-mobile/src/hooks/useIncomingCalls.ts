@@ -6,6 +6,7 @@ import { CallData } from '../types/webrtc';
 import { useAppStore } from '../store';
 import { apiClient } from '../services/api/apiClient';
 import { logger } from '../utils/logger';
+import { ENDPOINTS } from '../constants/endpoints';
 
 export function useIncomingCalls() {
   const navigation = useNavigation<NativeStackNavigationProp<any>>();
@@ -28,7 +29,7 @@ export function useIncomingCalls() {
         let callerName = 'Unknown';
         let callerAvatar: string | undefined;
         try {
-          const res = await apiClient.get(`/users/${data.callerId}`);
+          const res = await apiClient.get(ENDPOINTS.USERS.PUBLIC(data.callerId));
           const caller = res.data as any;
           callerName = caller?.fullName || 'Unknown';
           callerAvatar = caller?.photos?.[0]?.url;

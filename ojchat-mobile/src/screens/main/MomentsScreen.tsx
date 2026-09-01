@@ -24,9 +24,11 @@ import { spacing } from '../../theme/spacing';
 import { borderRadius } from '../../theme/borderRadius';
 import { LoadingSpinner } from '../../components/common/LoadingSpinner';
 import { ErrorState } from '../../components/common/ErrorState';
+import { Avatar } from '../../components/common/Avatar';
 import { useAppStore } from '../../store';
 import * as ImagePicker from 'expo-image-picker';
 import { Moment, MomentWithUser, MyMoment } from '../../types/moments';
+import { formatRelativeTime } from '../../utils/dateUtils';
 
 const STORY_DURATION_MS = 24 * 60 * 60 * 1000;
 
@@ -76,17 +78,6 @@ const useMyMoments = () =>
     refetchInterval: 60000,
   });
 
-const timeAgo = (date: string) => {
-  const seconds = Math.floor((Date.now() - new Date(date).getTime()) / 1000);
-  if (seconds < 60) return 'just now';
-  const minutes = Math.floor(seconds / 60);
-  if (minutes < 60) return `${minutes}m`;
-  const hours = Math.floor(minutes / 60);
-  if (hours < 24) return `${hours}h`;
-  const days = Math.floor(hours / 24);
-  return `${days}d`;
-};
-
 const isExpired = (expiresAt: string) => Date.now() > new Date(expiresAt).getTime();
 
 const StoryCircle: React.FC<{
@@ -107,9 +98,7 @@ const StoryCircle: React.FC<{
       {user.avatar ? (
         <Image source={{ uri: user.avatar }} style={styles.storyAvatar} />
       ) : (
-        <View style={[styles.storyAvatar, styles.storyAvatarFallback]}>
-          <Text style={styles.storyAvatarText}>{user.name.charAt(0).toUpperCase()}</Text>
-        </View>
+        <Avatar uri={user.avatar} size={60} name={user.name} />
       )}
       {isOwn && (
         <View style={styles.addBadge}>
@@ -159,11 +148,7 @@ const MomentCard: React.FC<{
             {displayAvatar ? (
               <Image source={{ uri: displayAvatar }} style={styles.momentAvatarSmall} />
             ) : (
-              <View style={[styles.momentAvatarSmall, styles.momentAvatarSmallFallback]}>
-                <Text style={styles.momentAvatarSmallText}>
-                  {displayName.charAt(0).toUpperCase()}
-                </Text>
-              </View>
+              <Avatar uri={displayAvatar} size={28} name={displayName} />
             )}
             <Text style={styles.momentUserName}>{displayName}</Text>
           </View>
@@ -180,7 +165,7 @@ const MomentCard: React.FC<{
         </View>
         {moment.caption ? <Text style={styles.momentCaption}>{moment.caption}</Text> : null}
         <View style={styles.momentFooter}>
-          <Text style={styles.momentTime}>{timeAgo(moment.createdAt)}</Text>
+          <Text style={styles.momentTime}>{formatRelativeTime(moment.createdAt)}</Text>
           <Text style={styles.momentViews}>
             {moment.viewCount} {moment.viewCount === 1 ? 'view' : 'views'}
           </Text>
@@ -625,12 +610,6 @@ const styles = StyleSheet.create({
   storyRingActive: { borderColor: colors.primary },
   storyRingSelected: { borderColor: colors.secondary, borderWidth: 3 },
   storyAvatar: { width: 60, height: 60, borderRadius: 30 },
-  storyAvatarFallback: {
-    backgroundColor: colors.primaryOverlay,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  storyAvatarText: { ...typography.h2, color: colors.primary },
   addBadge: {
     position: 'absolute',
     bottom: 0,
@@ -698,12 +677,6 @@ const styles = StyleSheet.create({
   },
   momentUserInfo: { flexDirection: 'row', alignItems: 'center', flex: 1 },
   momentAvatarSmall: { width: 28, height: 28, borderRadius: 14, marginRight: spacing.sm },
-  momentAvatarSmallFallback: {
-    backgroundColor: colors.primaryOverlay,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  momentAvatarSmallText: { fontSize: 12, fontWeight: '600', color: colors.primary },
   momentUserName: { ...typography.caption, fontWeight: '600', color: colors.textPrimary },
   momentDeleteText: { ...typography.caption, color: colors.gray400 },
   momentDeleteConfirm: { color: colors.error },

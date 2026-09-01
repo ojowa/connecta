@@ -59,6 +59,7 @@ export const UserProfileScreen: React.FC<RootStackScreenProps<'UserProfile'>> = 
   const conversationId = conversation?.id;
   const { data: planInfo } = usePlanInfo();
   const canMessageAnyone = planInfo?.planId === 'platinum';
+  const { ensureConversation } = useEnsureConversation();
 
   const [activePhotoIndex, setActivePhotoIndex] = useState(0);
   const likeScale = useRef(new Animated.Value(1)).current;
@@ -80,7 +81,7 @@ export const UserProfileScreen: React.FC<RootStackScreenProps<'UserProfile'>> = 
   }, [userId]);
 
   const likeMutation = useMutation({
-    mutationFn: () => apiClient.post(`/matching/like/${userId}`),
+    mutationFn: () => apiClient.post(ENDPOINTS.MATCHING.LIKE(userId)),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['matchFeed'] });
       navigation.goBack();
@@ -112,12 +113,10 @@ export const UserProfileScreen: React.FC<RootStackScreenProps<'UserProfile'>> = 
       });
     } else {
       try {
-        const res = await apiClient.post(ENDPOINTS.CHAT.CONVERSATIONS, { otherUserId: userId });
-        const data = res.data as any;
-        const newConvId = data?.id || data;
+        const convId = await ensureConversation(userId);
         queryClient.invalidateQueries({ queryKey: ['conversations'] });
         navigation.navigate('Conversation', {
-          conversationId: newConvId,
+          conversationId: convId,
           otherUserId: userId,
           otherName: p.firstName,
           otherAvatar: photos[0]?.url,
@@ -176,19 +175,7 @@ export const UserProfileScreen: React.FC<RootStackScreenProps<'UserProfile'>> = 
             <TouchableOpacity
               style={styles.headerIcon}
               onPress={async () => {
-                const convId =
-                  conversationId ||
-                  (await (async () => {
-                    try {
-                      const res = await apiClient.post(ENDPOINTS.CHAT.CONVERSATIONS, {
-                        otherUserId: userId,
-                      });
-                      const data = res.data as any;
-                      return data?.id || data;
-                    } catch {
-                      return null;
-                    }
-                  })());
+                const convId = conversationId || await ensureConversation(userId);
                 if (convId)
                   navigation.navigate('ActiveVoiceCall', {
                     conversationId: convId,
@@ -203,19 +190,7 @@ export const UserProfileScreen: React.FC<RootStackScreenProps<'UserProfile'>> = 
             <TouchableOpacity
               style={styles.headerIcon}
               onPress={async () => {
-                const convId =
-                  conversationId ||
-                  (await (async () => {
-                    try {
-                      const res = await apiClient.post(ENDPOINTS.CHAT.CONVERSATIONS, {
-                        otherUserId: userId,
-                      });
-                      const data = res.data as any;
-                      return data?.id || data;
-                    } catch {
-                      return null;
-                    }
-                  })());
+                const convId = conversationId || await ensureConversation(userId);
                 if (convId)
                   navigation.navigate('ActiveVideoCall', {
                     conversationId: convId,

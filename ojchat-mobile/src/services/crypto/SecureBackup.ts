@@ -11,8 +11,9 @@ import {
   pbkdf2HmacSha256,
   constantTimeEqual,
 } from './primitives';
+import { STORAGE_KEYS } from '../../constants/storageKeys';
 
-const BACKUP_SERVICE = 'com.ojchat.backup';
+const BACKUP_SERVICE = STORAGE_KEYS.BACKUP_SERVICE;
 const BACKUP_ITERATIONS = 600000;
 
 export class SecureBackup {

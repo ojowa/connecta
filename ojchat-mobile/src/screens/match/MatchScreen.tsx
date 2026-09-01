@@ -17,22 +17,9 @@ import { apiClient } from '../../services/api/apiClient';
 import { ENDPOINTS } from '../../constants/endpoints';
 import { logger } from '../../utils/logger';
 import { CompatibilityScore } from '../../components/dating/CompatibilityScore';
+import type { RootStackScreenProps } from '../../navigation/types';
 
-interface MatchScreenProps {
-  navigation?: any;
-  route?: {
-    params?: {
-      matchedUser?: {
-        userId: string;
-        fullName: string;
-        avatar?: string;
-      };
-      conversationId?: string;
-    };
-  };
-}
-
-const MatchScreen: React.FC<MatchScreenProps> = ({ navigation, route }) => {
+const MatchScreen: React.FC<RootStackScreenProps<'Match'>> = ({ navigation, route }) => {
   const { matchedUser, conversationId } = route?.params || {};
   const { width: screenWidth } = useWindowDimensions();
   const avatarSize = Math.min(100, screenWidth * 0.25);

@@ -17,6 +17,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { apiClient } from '../../services/api/apiClient';
 import { ENDPOINTS } from '../../constants/endpoints';
 import { useAppStore } from '../../store';
+import { CONFIG_URLS } from '../../constants/config';
 import { useAuth } from '../../hooks/useAuth';
 import { colors } from '../../theme/colors';
 import { typography } from '../../theme/typography';
@@ -233,7 +234,7 @@ const SettingsScreen: React.FC = () => {
         <View style={styles.section}>
           <SettingsRow
             label="Help Center"
-            onPress={() => handleOpenUrl('https://ojchat.ng/help', 'Help Center')}
+            onPress={() => handleOpenUrl(CONFIG_URLS.HELP, 'Help Center')}
           />
           <SettingsRow
             label="Report a Problem"
@@ -241,7 +242,7 @@ const SettingsScreen: React.FC = () => {
           />
           <SettingsRow
             label="Community Guidelines"
-            onPress={() => handleOpenUrl('https://ojchat.ng/guidelines', 'Community Guidelines')}
+            onPress={() => handleOpenUrl(CONFIG_URLS.GUIDELINES, 'Community Guidelines')}
           />
         </View>
 
@@ -253,11 +254,11 @@ const SettingsScreen: React.FC = () => {
           />
           <SettingsRow
             label="Terms of Service"
-            onPress={() => handleOpenUrl('https://ojchat.ng/terms', 'Terms of Service')}
+            onPress={() => handleOpenUrl(CONFIG_URLS.TERMS, 'Terms of Service')}
           />
           <SettingsRow
             label="Privacy Policy"
-            onPress={() => handleOpenUrl('https://ojchat.ng/privacy', 'Privacy Policy')}
+            onPress={() => handleOpenUrl(CONFIG_URLS.PRIVACY, 'Privacy Policy')}
           />
         </View>
 

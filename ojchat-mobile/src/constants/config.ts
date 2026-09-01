@@ -9,3 +9,10 @@ export const CONFIG = {
   TYPING_TIMEOUT: 3000,
   SESSION_REFRESH_THRESHOLD: 300000,
 };
+
+export const CONFIG_URLS = {
+  HELP: 'https://ojchat.ng/help',
+  GUIDELINES: 'https://ojchat.ng/guidelines',
+  TERMS: 'https://ojchat.ng/terms',
+  PRIVACY: 'https://ojchat.ng/privacy',
+};

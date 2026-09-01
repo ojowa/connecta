@@ -18,11 +18,12 @@ import {
   ed25519Sign,
   ed25519Verify,
 } from './primitives';
+import { STORAGE_KEYS } from '../../constants/storageKeys';
 
-const KEY_SERVICE = 'com.ojchat.crypto';
-const DB_KEY_NAME = 'com.ojchat.crypto.db-key';
-const SIGNING_KEY_NAME = 'com.ojchat.crypto.signing-key';
-const SPK_SIGNATURE_CONTEXT = 'ojchat-spk';
+const KEY_SERVICE = STORAGE_KEYS.CRYPTO_SERVICE;
+const DB_KEY_NAME = STORAGE_KEYS.DB_KEY;
+const SIGNING_KEY_NAME = STORAGE_KEYS.SIGNING_KEY;
+const SPK_SIGNATURE_CONTEXT = STORAGE_KEYS.SPK_LABEL;
 
 let dbEncryptionKey: string | null = null;
 

@@ -21,11 +21,11 @@ export default function DevicesScreen() {
   const queryClient = useQueryClient();
   const { data: devices = [], isLoading } = useQuery({
     queryKey: ['devices'],
-    queryFn: () => apiClient.get('/auth/devices').then((r) => r.data?.devices || []),
+    queryFn: () => apiClient.get(ENDPOINTS.AUTH.DEVICES).then((r) => r.data?.devices || []),
   });
 
   const removeMutation = useMutation({
-    mutationFn: (deviceId: string) => apiClient.delete(`/auth/devices/${deviceId}`),
+    mutationFn: (deviceId: string) => apiClient.delete(ENDPOINTS.AUTH.DELETE_DEVICE(deviceId)),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['devices'] });
       Alert.alert('Removed', 'Device has been removed.');

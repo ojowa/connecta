@@ -12,6 +12,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Button } from '../../components/common/Button';
 import { apiClient } from '../../services/api/apiClient';
+import { ENDPOINTS } from '../../constants/endpoints';
 import { colors } from '../../theme/colors';
 import { typography } from '../../theme/typography';
 import { spacing } from '../../theme/spacing';
@@ -43,7 +44,7 @@ const ReportScreen: React.FC<ReportScreenProps> = ({ route, navigation }) => {
     if (!selectedType) return;
     setLoading(true);
     try {
-      await apiClient.post(`/users/${userId}/report`, { reportType: selectedType, description });
+      await apiClient.post(ENDPOINTS.USERS.REPORT(userId), { reportType: selectedType, description });
       Alert.alert('Thank you for your report', '', [
         { text: 'OK', onPress: () => navigation.goBack() },
       ]);

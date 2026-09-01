@@ -1,5 +1,6 @@
 import * as LocalAuthentication from 'expo-local-authentication';
 import * as Keychain from 'react-native-keychain';
+import { STORAGE_KEYS } from '../../constants/storageKeys';
 
 export class BiometricAuthService {
   static async isAvailable(): Promise<boolean> {
@@ -41,7 +42,7 @@ export class BiometricAuthService {
   static async storeCredentials(username: string, password: string): Promise<boolean> {
     try {
       await Keychain.setGenericPassword(username, password, {
-        service: 'com.ojchat.auth',
+        service: STORAGE_KEYS.BIOMETRIC_AUTH,
         accessible: Keychain.ACCESSIBLE.WHEN_UNLOCKED_THIS_DEVICE_ONLY,
         securityLevel: Keychain.SECURITY_LEVEL.SECURE_HARDWARE,
       });
@@ -54,7 +55,7 @@ export class BiometricAuthService {
   static async retrieveCredentials(): Promise<{ username: string; password: string } | null> {
     try {
       const credentials = await Keychain.getGenericPassword({
-        service: 'com.ojchat.auth',
+        service: STORAGE_KEYS.BIOMETRIC_AUTH,
         authenticationPrompt: {
           title: 'Authenticate to sign in',
           subtitle: 'Verify your identity',
@@ -69,7 +70,7 @@ export class BiometricAuthService {
 
   static async deleteCredentials(): Promise<boolean> {
     try {
-      return await Keychain.resetGenericPassword({ service: 'com.ojchat.auth' });
+      return await Keychain.resetGenericPassword({ service: STORAGE_KEYS.BIOMETRIC_AUTH });
     } catch {
       return false;
     }

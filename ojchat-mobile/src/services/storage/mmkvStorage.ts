@@ -3,8 +3,9 @@ import { Platform } from 'react-native';
 import * as Crypto from 'expo-crypto';
 import { secureStorage, SecureStorageError } from './secureStorage';
 import { logger } from '../../utils/logger';
+import { STORAGE_KEYS } from '../../constants/storageKeys';
 
-const MMKV_KEY_NAME = 'com.ojchat.mmkv.encryption';
+const MMKV_KEY_NAME = STORAGE_KEYS.MMKV_ENCRYPTION_KEY;
 
 function bytesToHex(bytes: Uint8Array): string {
   return Array.from(bytes)
@@ -59,11 +60,11 @@ export function initMMKV(): Promise<void> {
 
   initPromise = (async () => {
     if (Platform.OS === 'web') {
-      storage = createMMKV({ id: 'ojchat-secure' });
+      storage = createMMKV({ id: STORAGE_KEYS.MMKV_ID });
     } else {
       const key = await getOrCreateEncryptionKey();
       storage = createMMKV({
-        id: 'ojchat-secure',
+        id: STORAGE_KEYS.MMKV_ID,
         encryptionKey: key,
         encryptionType: 'AES-256',
       });

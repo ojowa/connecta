@@ -10,11 +10,11 @@ import {
   Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { useMatches } from '../../hooks/useMatch';
 import { LoadingSpinner } from '../../components/common/LoadingSpinner';
 import { ErrorState } from '../../components/common/ErrorState';
+import { Avatar } from '../../components/common/Avatar';
 import type { MainTabScreenProps } from '../../navigation/types';
 import { colors } from '../../theme/colors';
 import { typography } from '../../theme/typography';
@@ -23,8 +23,7 @@ import { borderRadius } from '../../theme/borderRadius';
 import { Match } from '../../types/match';
 import { matchApi } from '../../services/api/matchApi';
 
-export const MatchesScreen: React.FC<MainTabScreenProps<'Matches'>> = () => {
-  const navigation = useNavigation();
+export const MatchesScreen: React.FC<MainTabScreenProps<'Matches'>> = ({ navigation }) => {
   const { data, isLoading, isError, refetch } = useMatches();
   const [refreshing, setRefreshing] = useState(false);
 
@@ -78,14 +77,14 @@ export const MatchesScreen: React.FC<MainTabScreenProps<'Matches'>> = () => {
         <View style={styles.actionButtons}>
           <TouchableOpacity
             style={styles.likesButton}
-            onPress={() => (navigation as any).navigate('LikesYou')}
+            onPress={() => navigation.navigate('LikesYou')}
           >
             <Ionicons name="heart" size={16} color={colors.white} />
             <Text style={styles.likesButtonText}>Likes You</Text>
           </TouchableOpacity>
           <TouchableOpacity
             style={styles.myLikesButton}
-            onPress={() => (navigation as any).navigate('MyLikes')}
+            onPress={() => navigation.navigate('MyLikes')}
           >
             <Ionicons name="arrow-forward" size={16} color={colors.primary} />
             <Text style={styles.myLikesButtonText}>Your Likes</Text>
@@ -106,7 +105,7 @@ export const MatchesScreen: React.FC<MainTabScreenProps<'Matches'>> = () => {
             contentContainerStyle={styles.list}
             renderItem={({ item }) => {
               const otherId = item.otherUser?.id;
-              const conversationId = (item as any).conversationId;
+              const conversationId = item.conversationId;
               const otherName = item.otherUser?.fullName || 'Unknown';
               return (
                 <View style={styles.matchRow}>
@@ -115,7 +114,7 @@ export const MatchesScreen: React.FC<MainTabScreenProps<'Matches'>> = () => {
                       style={styles.matchInfo}
                       onPress={() =>
                         otherId &&
-                        (navigation as any).navigate('UserProfile', {
+                        navigation.navigate('UserProfile', {
                           userId: otherId,
                           isMatched: true,
                         })
@@ -125,11 +124,7 @@ export const MatchesScreen: React.FC<MainTabScreenProps<'Matches'>> = () => {
                       {item.otherUser?.avatarUrl ? (
                         <Image source={{ uri: item.otherUser.avatarUrl }} style={styles.avatar} />
                       ) : (
-                        <View style={[styles.avatar, styles.avatarPlaceholder]}>
-                          <Text style={styles.avatarText}>
-                            {item.otherUser?.fullName?.charAt(0) || '?'}
-                          </Text>
-                        </View>
+                        <Avatar uri={item.otherUser?.avatarUrl} size={48} name={item.otherUser?.fullName} />
                       )}
                       <View style={styles.matchDetails}>
                         <Text style={styles.matchName} numberOfLines={1}>
@@ -147,14 +142,14 @@ export const MatchesScreen: React.FC<MainTabScreenProps<'Matches'>> = () => {
                       onPress={() => {
                         if (!otherId) return;
                         if (conversationId) {
-                          (navigation as any).navigate('Conversation', {
+                          navigation.navigate('Conversation', {
                             conversationId,
                             otherUserId: otherId,
                             otherName: item.otherUser?.fullName || 'Unknown',
                             otherAvatar: item.otherUser?.avatarUrl,
                           });
                         } else {
-                          (navigation as any).navigate('UserProfile', {
+                          navigation.navigate('UserProfile', {
                             userId: otherId,
                             isMatched: true,
                           });

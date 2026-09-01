@@ -24,11 +24,11 @@ import { LoadingSpinner } from '../../components/common/LoadingSpinner';
 const DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 
 const STREAK_REWARDS = [
-  { day: 3, reward: '1 Super Like', icon: 'star' as const, color: '#F59E0B' },
-  { day: 5, reward: '10 Credits', icon: 'wallet' as const, color: '#8B5CF6' },
-  { day: 7, reward: '1 Free Boost', icon: 'rocket' as const, color: '#EC4899' },
-  { day: 14, reward: '3 Super Likes', icon: 'star' as const, color: '#F59E0B' },
-  { day: 30, reward: '1 Day Premium', icon: 'diamond' as const, color: '#06B6D4' },
+  { day: 3, reward: '1 Super Like', icon: 'star' as const, color: colors.warning },
+  { day: 5, reward: '10 Credits', icon: 'wallet' as const, color: colors.purple },
+  { day: 7, reward: '1 Free Boost', icon: 'rocket' as const, color: colors.pink },
+  { day: 14, reward: '3 Super Likes', icon: 'star' as const, color: colors.warning },
+  { day: 30, reward: '1 Day Premium', icon: 'diamond' as const, color: colors.cyan },
 ];
 
 interface StreakData {
@@ -136,9 +136,9 @@ export const DailyStreakScreen: React.FC<{ navigation: any }> = ({ navigation })
 
         {/* Streak Hero */}
         <View style={styles.heroSection}>
-          <LinearGradient colors={['#FFF7ED', '#FEF3C7', '#FDE68A']} style={styles.heroGradient}>
+          <LinearGradient colors={[colors.amberSoft, colors.amberLight, colors.amberMedium]} style={styles.heroGradient}>
             <Animated.View style={[styles.flameContainer, { transform: [{ scale: flameScale }] }]}>
-              <LinearGradient colors={['#F97316', '#EF4444']} style={styles.flameGradient}>
+              <LinearGradient colors={[colors.orange, colors.error]} style={styles.flameGradient}>
                 <Ionicons name="flame" size={48} color={colors.white} />
               </LinearGradient>
             </Animated.View>
@@ -275,8 +275,8 @@ export const DailyStreakScreen: React.FC<{ navigation: any }> = ({ navigation })
                     <Text style={styles.claimedText}>Claimed</Text>
                   </View>
                 ) : isAchieved ? (
-                  <View style={[styles.claimedBadge, { backgroundColor: '#FEF3C7' }]}>
-                    <Ionicons name="gift" size={18} color="#F59E0B" />
+                  <View style={[styles.claimedBadge, { backgroundColor: colors.amberLight }]}>
+                    <Ionicons name="gift" size={18} color={colors.warning} />
                   </View>
                 ) : (
                   <View style={styles.lockedBadge}>
@@ -381,16 +381,16 @@ const styles = StyleSheet.create({
   streakCount: {
     fontSize: 56,
     fontWeight: '800',
-    color: '#F97316',
+    color: colors.orange,
   },
   streakLabel: {
     ...typography.h3,
-    color: '#92400E',
+    color: colors.orangeDark,
     marginTop: -spacing.xs,
   },
   bestStreak: {
     ...typography.caption,
-    color: '#B45309',
+    color: colors.amberDark,
     marginTop: spacing.xs,
   },
 
@@ -481,7 +481,7 @@ const styles = StyleSheet.create({
     marginHorizontal: spacing.md,
     marginTop: spacing.md,
     paddingVertical: spacing.md,
-    backgroundColor: '#ECFDF5',
+    backgroundColor: colors.greenLight,
     borderRadius: borderRadius.card,
   },
   checkedInText: {
@@ -589,7 +589,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
-    backgroundColor: '#ECFDF5',
+    backgroundColor: colors.greenLight,
     paddingHorizontal: spacing.sm,
     paddingVertical: 3,
     borderRadius: borderRadius.full,

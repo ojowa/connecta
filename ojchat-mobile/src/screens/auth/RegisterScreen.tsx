@@ -18,6 +18,7 @@ import { getPasswordStrength } from '../../utils/validators';
 import { colors } from '../../theme/colors';
 import { typography } from '../../theme/typography';
 import { spacing } from '../../theme/spacing';
+import { CONFIG_URLS } from '../../constants/config';
 import { borderRadius } from '../../theme/borderRadius';
 import { DOBPicker } from '../../components/common/DOBPicker';
 
@@ -264,14 +265,14 @@ export const RegisterScreen: React.FC<RegisterScreenProps> = ({ navigation }) =>
               I agree to the{' '}
               <Text
                 style={styles.termsLink}
-                onPress={() => Linking.openURL('https://ojchat.ng/terms')}
+                onPress={() => Linking.openURL(CONFIG_URLS.TERMS)}
               >
                 Terms of Service
               </Text>{' '}
               and{' '}
               <Text
                 style={styles.termsLink}
-                onPress={() => Linking.openURL('https://ojchat.ng/privacy')}
+                onPress={() => Linking.openURL(CONFIG_URLS.PRIVACY)}
               >
                 Privacy Policy
               </Text>

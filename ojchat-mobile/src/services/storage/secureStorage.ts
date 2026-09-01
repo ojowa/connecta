@@ -1,6 +1,7 @@
 import * as Keychain from 'react-native-keychain';
+import { STORAGE_KEYS } from '../../constants/storageKeys';
 
-const SERVICE_NAME = 'com.ojchat.secure';
+const SERVICE_NAME = STORAGE_KEYS.SECURE_SERVICE;
 
 export class SecureStorageError extends Error {
   constructor(

@@ -1033,7 +1033,7 @@ export class MatchingService {
       skip: (page - 1) * limit,
       take: limit,
     });
-    const user = await this.userRepo.findOne({ where: { id: userId }, select: ['id', 'fullName', 'avatarUrl'] });
+    const user = await this.userRepo.findOne({ where: { id: userId }, select: ['id', 'fullName'] });
     return {
       moments: moments.map((m) => ({
         ...m,

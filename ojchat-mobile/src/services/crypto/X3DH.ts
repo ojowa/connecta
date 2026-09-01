@@ -1,8 +1,9 @@
 import { KeyManager } from './KeyManager';
 import { PreKeyBundle, X3DHResult } from '../../types/crypto';
 import { bytesToHex, hexToBytes, stringToBytes, concatBytes, hkdfSha256 } from './primitives';
+import { STORAGE_KEYS } from '../../constants/storageKeys';
 
-const X3DH_SALT = 'ojchat-x3dh-salt';
+const X3DH_SALT = STORAGE_KEYS.X3DH_SALT;
 
 export class X3DH {
   static async performKeyExchange(

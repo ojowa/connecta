@@ -2,6 +2,7 @@ import * as ImagePicker from 'expo-image-picker';
 import * as ImageManipulator from 'expo-image-manipulator';
 import { File } from 'expo-file-system';
 import { apiClient } from '../services/api/apiClient';
+import { ENDPOINTS } from '../constants/endpoints';
 import { ProcessedImage } from '../types/media';
 
 export class ImageProcessor {
@@ -56,7 +57,7 @@ export class ImageProcessor {
       type: processedImage.mimeType,
       name: `photo_${Date.now()}.jpg`,
     } as unknown as Blob);
-    const response = await apiClient.post('/media/upload', formData, {
+    const response = await apiClient.post(ENDPOINTS.MEDIA.UPLOAD, formData, {
       headers: { 'Content-Type': 'multipart/form-data' },
       onUploadProgress: (e) => {
         if (onProgress && e.total) onProgress(Math.round((e.loaded * 100) / e.total));

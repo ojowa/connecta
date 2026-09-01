@@ -8,6 +8,7 @@ import {
   useWindowDimensions,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { SOCKET_EVENTS } from '../../constants/socketEvents';
 import SocketManager from '../../socket/SocketManager';
 import { colors } from '../../theme/colors';
 import { typography } from '../../theme/typography';
@@ -16,6 +17,7 @@ import { useAppStore } from '../../store';
 import { apiClient } from '../../services/api/apiClient';
 import { ENDPOINTS } from '../../constants/endpoints';
 import { logger } from '../../utils/logger';
+import { Avatar } from '../../components/common/Avatar';
 
 interface IncomingCallScreenProps {
   navigation?: any;
@@ -46,7 +48,7 @@ export const IncomingCallScreen: React.FC<IncomingCallScreenProps> = ({ navigati
 
   const handleDecline = () => {
     if (callId) {
-      SocketManager.getInstance().emit('call.rejected', { callId, reason: 'declined' });
+      SocketManager.getInstance().emit(SOCKET_EVENTS.CALL_REJECTED, { callId, reason: 'declined' });
     }
     if (conversationId) {
       const label = callType === 'video' ? 'Missed video call' : 'Missed voice call';
@@ -62,7 +64,7 @@ export const IncomingCallScreen: React.FC<IncomingCallScreenProps> = ({ navigati
   };
 
   const handleAccept = () => {
-    SocketManager.getInstance().emit('call.answered', { callId });
+    SocketManager.getInstance().emit(SOCKET_EVENTS.CALL_ANSWERED, { callId });
     const params: any = { ...route?.params, isInitiator: false };
     if (callType === 'video') {
       navigation.replace('ActiveVideoCall', params);
@@ -94,7 +96,7 @@ export const IncomingCallScreen: React.FC<IncomingCallScreenProps> = ({ navigati
                   imageStyle={[styles.avatarImageInner, { borderRadius: avatarSize / 2 }]}
                 />
               ) : (
-                <Text style={styles.avatarInitial}>{callerName.charAt(0).toUpperCase()}</Text>
+                <Avatar uri={callerAvatar} size={avatarSize} name={callerName} />
               )}
             </View>
           </View>

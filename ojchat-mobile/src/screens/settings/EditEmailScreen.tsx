@@ -4,6 +4,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Input } from '../../components/common/Input';
 import { Button } from '../../components/common/Button';
 import { apiClient } from '../../services/api/apiClient';
+import { ENDPOINTS } from '../../constants/endpoints';
 import { colors } from '../../theme/colors';
 import { typography } from '../../theme/typography';
 import { spacing } from '../../theme/spacing';
@@ -15,7 +16,7 @@ export default function EditEmailScreen({ navigation }: any) {
     if (!email) return;
     setLoading(true);
     try {
-      await apiClient.patch('/users/me', { email });
+      await apiClient.patch(ENDPOINTS.USERS.ME, { email });
       Alert.alert('Success', 'Email updated');
       navigation.goBack();
     } catch {

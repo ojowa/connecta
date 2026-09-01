@@ -23,6 +23,7 @@ import { LoadingSpinner } from '../../components/common/LoadingSpinner';
 import { ErrorState } from '../../components/common/ErrorState';
 import { Photo } from '../../types/match';
 import type { RootStackScreenProps } from '../../navigation/types';
+import { formatRelativeTime } from '../../utils/dateUtils';
 
 interface LikeYouItem {
   id: string;
@@ -123,17 +124,6 @@ const LikesYouScreen: React.FC<RootStackScreenProps<'LikesYou'>> = ({ navigation
   const getPrimaryPhoto = (photos: Photo[]): string | undefined => {
     const primary = photos?.find((p) => p.isPrimary);
     return primary?.url || photos?.[0]?.url;
-  };
-
-  const formatTime = (dateStr: string) => {
-    const diff = Date.now() - new Date(dateStr).getTime();
-    const mins = Math.floor(diff / 60000);
-    if (mins < 1) return 'Just now';
-    if (mins < 60) return `${mins}m ago`;
-    const hours = Math.floor(mins / 60);
-    if (hours < 24) return `${hours}h ago`;
-    const days = Math.floor(hours / 24);
-    return `${days}d ago`;
   };
 
   const renderBlurredGrid = () => (
@@ -246,7 +236,7 @@ const LikesYouScreen: React.FC<RootStackScreenProps<'LikesYou'>> = ({ navigation
             )}
             <View style={styles.cardTopInfo}>
               <Text style={styles.cardName}>{item.user.fullName}</Text>
-              <Text style={styles.cardTime}>{formatTime(item.createdAt)}</Text>
+              <Text style={styles.cardTime}>{formatRelativeTime(item.createdAt)}</Text>
             </View>
           </TouchableOpacity>
 
@@ -426,7 +416,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   superStatCard: {
-    backgroundColor: '#FEF3C7',
+    backgroundColor: colors.amberLight,
   },
   statNumber: {
     ...typography.h2,
@@ -494,7 +484,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.warning,
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: '#000',
+    shadowColor: colors.black,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.2,
     shadowRadius: 4,
