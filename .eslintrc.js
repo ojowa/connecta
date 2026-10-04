@@ -17,7 +17,6 @@ module.exports = {
   },
   ignorePatterns: [
     '.eslintrc.js',
-    'apps/admin-web',
     'apps/auth-service',
     'apps/user-service',
     'apps/profile-service',

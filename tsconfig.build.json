@@ -9,9 +9,6 @@
     "node_modules",
     "test",
     "dist",
-    "connecta-mobile",
-    "ojchat-mobile",
-    "apps/admin-web",
     "**/*spec.ts",
     "**/*e2e-spec.ts"
   ]
