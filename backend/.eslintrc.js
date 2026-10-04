@@ -17,8 +17,6 @@ module.exports = {
   },
   ignorePatterns: [
     '.eslintrc.js',
-    'admin-web',
-    'ojchat-mobile',
     'apps/auth-service',
     'apps/user-service',
     'apps/profile-service',

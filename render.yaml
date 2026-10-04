@@ -4,8 +4,8 @@ services:
     runtime: node
     plan: free
     healthCheckPath: /v1/health
-    buildCommand: npm install && npm run build:all
-    startCommand: npm run start:monolith
+    buildCommand: cd backend && npm install && npm run build:all
+    startCommand: cd backend && npm run start:monolith
     envVars:
       - key: NODE_ENV
         value: production

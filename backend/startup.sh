@@ -7,7 +7,7 @@ set -e
 echo "Starting OJChat monolith services..."
 
 # Ensure we're in the right directory
-cd /home/site/wwwroot
+cd /home/site/wwwroot/backend
 
 # Check if dist exists
 if [ ! -d "dist" ]; then

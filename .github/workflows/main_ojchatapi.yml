@@ -4,15 +4,7 @@ on:
   push:
     branches: [main]
     paths:
-      - 'apps/**'
-      - 'libs/**'
-      - 'migrations/**'
-      - 'package*.json'
-      - 'tsconfig*.json'
-      - 'nest-cli.json'
-      - 'ormconfig.ts'
-      - '!admin-web/**'
-      - '!ojchat-mobile/**'
+      - 'backend/**'
       - '.github/workflows/main_ojchatapi.yml'
   workflow_dispatch:
 
@@ -41,26 +33,30 @@ jobs:
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: 'npm'
+          cache-dependency-path: backend/package-lock.json
 
       - name: Install dependencies
         run: npm ci
+        working-directory: backend
 
       - name: Build all services
         run: npm run build:all 2>&1 | tee build.log || (cat build.log && exit 1)
+        working-directory: backend
 
       - name: Install production dependencies for deployment
         run: npm ci --omit=dev
+        working-directory: backend
 
       - name: Upload deployment artifact
         uses: actions/upload-artifact@v4
         with:
           name: deploy-package
           path: |
-            dist
-            package*.json
-            libs
-            node_modules
-            startup.sh
+            backend/dist
+            backend/package*.json
+            backend/libs
+            backend/node_modules
+            backend/startup.sh
           retention-days: 1
 
       - name: Upload build log
@@ -68,7 +64,7 @@ jobs:
         if: always()
         with:
           name: build-log
-          path: build.log
+          path: backend/build.log
           retention-days: 1
 
   deploy:
@@ -97,7 +93,7 @@ jobs:
           app-name: ${{ env.AZURE_WEBAPP_NAME }}
           resource-group: ${{ env.AZURE_WEBAPP_RESOURCE_GROUP }}
           package: .
-          startup-command: bash startup.sh
+          startup-command: bash backend/startup.sh
 
       - name: Configure App Settings
         run: |
