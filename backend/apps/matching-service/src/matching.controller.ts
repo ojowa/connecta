@@ -1,4 +1,14 @@
-import { Controller, Get, Post, Delete, Body, Param, Query, Headers, HttpCode } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Delete,
+  Body,
+  Param,
+  Query,
+  Headers,
+  HttpCode,
+} from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { MatchingService } from './matching.service';
 import { MatchingEnhancementService } from './matching-enhancement.service';
@@ -20,8 +30,16 @@ export class MatchingController {
 
   @Get('feed')
   @ApiOperation({ summary: 'Get discovery feed' })
-  getFeed(@Headers('x-user-id') userId: string, @Query('page') page?: string, @Query('limit') limit?: string) {
-    return this.matchingService.getFeed(userId, page ? parseInt(page, 10) : 1, limit ? parseInt(limit, 10) : 20);
+  getFeed(
+    @Headers('x-user-id') userId: string,
+    @Query('page') page?: string,
+    @Query('limit') limit?: string,
+  ) {
+    return this.matchingService.getFeed(
+      userId,
+      page ? parseInt(page, 10) : 1,
+      limit ? parseInt(limit, 10) : 20,
+    );
   }
 
   @Post('like/:userId')
@@ -74,13 +92,20 @@ export class MatchingController {
 
   @Post('passport')
   @ApiOperation({ summary: 'Update passport location' })
-  updatePassport(@Headers('x-user-id') userId: string, @Body() body: { latitude: number; longitude: number; enabled: boolean }) {
+  updatePassport(
+    @Headers('x-user-id') userId: string,
+    @Body() body: { latitude: number; longitude: number; enabled: boolean },
+  ) {
     return this.matchingService.updatePassport(userId, body.latitude, body.longitude, body.enabled);
   }
 
   @Post('photos/:photoId/like')
   @ApiOperation({ summary: 'Like a photo' })
-  likePhoto(@Headers('x-user-id') userId: string, @Param('photoId') photoId: string, @Body() body: { profileId: string }) {
+  likePhoto(
+    @Headers('x-user-id') userId: string,
+    @Param('photoId') photoId: string,
+    @Body() body: { profileId: string },
+  ) {
     return this.matchingService.likePhoto(userId, photoId, body.profileId);
   }
 
@@ -92,8 +117,16 @@ export class MatchingController {
 
   @Get('matches')
   @ApiOperation({ summary: 'Get matches' })
-  getMatches(@Headers('x-user-id') userId: string, @Query('page') page?: string, @Query('limit') limit?: string) {
-    return this.matchingService.getMatches(userId, page ? parseInt(page, 10) : 1, limit ? parseInt(limit, 10) : 20);
+  getMatches(
+    @Headers('x-user-id') userId: string,
+    @Query('page') page?: string,
+    @Query('limit') limit?: string,
+  ) {
+    return this.matchingService.getMatches(
+      userId,
+      page ? parseInt(page, 10) : 1,
+      limit ? parseInt(limit, 10) : 20,
+    );
   }
 
   @Delete('matches/:matchId')
@@ -104,14 +137,30 @@ export class MatchingController {
 
   @Get('liked-you')
   @ApiOperation({ summary: 'Get users who liked you' })
-  getLikedYou(@Headers('x-user-id') userId: string, @Query('page') page?: string, @Query('limit') limit?: string) {
-    return this.matchingService.getLikedYou(userId, page ? parseInt(page, 10) : 1, limit ? parseInt(limit, 10) : 20);
+  getLikedYou(
+    @Headers('x-user-id') userId: string,
+    @Query('page') page?: string,
+    @Query('limit') limit?: string,
+  ) {
+    return this.matchingService.getLikedYou(
+      userId,
+      page ? parseInt(page, 10) : 1,
+      limit ? parseInt(limit, 10) : 20,
+    );
   }
 
   @Get('my-likes')
-  @ApiOperation({ summary: 'Get users you liked who haven\'t liked you back' })
-  getMyLikes(@Headers('x-user-id') userId: string, @Query('page') page?: string, @Query('limit') limit?: string) {
-    return this.matchingService.getMyLikes(userId, page ? parseInt(page, 10) : 1, limit ? parseInt(limit, 10) : 20);
+  @ApiOperation({ summary: "Get users you liked who haven't liked you back" })
+  getMyLikes(
+    @Headers('x-user-id') userId: string,
+    @Query('page') page?: string,
+    @Query('limit') limit?: string,
+  ) {
+    return this.matchingService.getMyLikes(
+      userId,
+      page ? parseInt(page, 10) : 1,
+      limit ? parseInt(limit, 10) : 20,
+    );
   }
 
   @Post('profile-view/:profileId')
@@ -155,7 +204,12 @@ export class MatchingController {
     @Headers('x-user-id') userId: string,
     @Body() body: { mediaUrl?: string; caption?: string; mediaType?: string },
   ) {
-    return this.matchingService.createMoment(userId, body.mediaUrl || '', body.caption, body.mediaType);
+    return this.matchingService.createMoment(
+      userId,
+      body.mediaUrl || '',
+      body.caption,
+      body.mediaType,
+    );
   }
 
   @Get('moments/mine')
@@ -165,7 +219,11 @@ export class MatchingController {
     @Query('page') page?: string,
     @Query('limit') limit?: string,
   ) {
-    return this.matchingService.getMyMoments(userId, page ? parseInt(page) : 1, limit ? parseInt(limit) : 20);
+    return this.matchingService.getMyMoments(
+      userId,
+      page ? parseInt(page) : 1,
+      limit ? parseInt(limit) : 20,
+    );
   }
 
   @Get('moments')
@@ -175,7 +233,11 @@ export class MatchingController {
     @Query('page') page?: string,
     @Query('limit') limit?: string,
   ) {
-    return this.matchingService.getMoments(userId, page ? parseInt(page) : 1, limit ? parseInt(limit) : 20);
+    return this.matchingService.getMoments(
+      userId,
+      page ? parseInt(page) : 1,
+      limit ? parseInt(limit) : 20,
+    );
   }
 
   @Post('moments/:id/view')

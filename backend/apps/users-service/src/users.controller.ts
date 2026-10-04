@@ -1,4 +1,15 @@
-import { Controller, Get, Patch, Put, Post, Delete, Body, Param, Query, Headers } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Patch,
+  Put,
+  Post,
+  Delete,
+  Body,
+  Param,
+  Query,
+  Headers,
+} from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { UsersService } from './users.service';
 
@@ -40,7 +51,11 @@ export class UsersController {
 
   @Get('me/blocks')
   @ApiOperation({ summary: 'List blocked users' })
-  getBlockedUsers(@Headers('x-user-id') userId: string, @Query('page') page?: number, @Query('limit') limit?: number) {
+  getBlockedUsers(
+    @Headers('x-user-id') userId: string,
+    @Query('page') page?: number,
+    @Query('limit') limit?: number,
+  ) {
     return this.usersService.getBlockedUsers(userId, page, limit);
   }
 
@@ -136,7 +151,10 @@ export class UsersController {
 
   @Post('me/appeal')
   @ApiOperation({ summary: 'Submit an appeal' })
-  submitAppeal(@Headers('x-user-id') userId: string, @Body() body: { reason: string; description?: string; evidenceUrls?: string[] }) {
+  submitAppeal(
+    @Headers('x-user-id') userId: string,
+    @Body() body: { reason: string; description?: string; evidenceUrls?: string[] },
+  ) {
     return this.usersService.submitAppeal(userId, body);
   }
 
@@ -148,12 +166,21 @@ export class UsersController {
 
   @Post('verification/request')
   @ApiOperation({ summary: 'Submit verification request' })
-  requestVerification(@Headers('x-user-id') userId: string, @Body() body: {
-    selfieUrl: string;
-    faceWidth?: number; faceHeight?: number; faceConfidence?: number;
-    livenessScore?: number; imageWidth?: number; imageHeight?: number;
-    fileSize?: number; faceLandmarks?: Record<string, unknown>;
-  }) {
+  requestVerification(
+    @Headers('x-user-id') userId: string,
+    @Body()
+    body: {
+      selfieUrl: string;
+      faceWidth?: number;
+      faceHeight?: number;
+      faceConfidence?: number;
+      livenessScore?: number;
+      imageWidth?: number;
+      imageHeight?: number;
+      fileSize?: number;
+      faceLandmarks?: Record<string, unknown>;
+    },
+  ) {
     const { selfieUrl, ...faceMetadata } = body;
     return this.usersService.requestVerification(userId, selfieUrl, faceMetadata);
   }

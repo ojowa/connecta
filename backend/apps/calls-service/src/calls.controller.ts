@@ -40,7 +40,19 @@ export class CallsController {
 
   @Get('history')
   @ApiOperation({ summary: 'Call history' })
-  history(@Headers('x-user-id') userId: string, @Query('page') page?: string, @Query('limit') limit?: string, @Query('call_type') callType?: string, @Query('direction') direction?: string) {
-    return this.callsService.getHistory(userId, parseInt(page || '1'), parseInt(limit || '20'), callType, direction);
+  history(
+    @Headers('x-user-id') userId: string,
+    @Query('page') page?: string,
+    @Query('limit') limit?: string,
+    @Query('call_type') callType?: string,
+    @Query('direction') direction?: string,
+  ) {
+    return this.callsService.getHistory(
+      userId,
+      parseInt(page || '1'),
+      parseInt(limit || '20'),
+      callType,
+      direction,
+    );
   }
 }

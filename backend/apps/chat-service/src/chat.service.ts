@@ -2,13 +2,24 @@ import { Injectable, NotFoundException, BadRequestException } from '@nestjs/comm
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, In } from 'typeorm';
 import { EventEmitter2 } from '@nestjs/event-emitter';
-import { Conversation, ConversationParticipant, Message, MessageReaction, ReadReceipt, User, Match, Subscription, Plan } from '@app/common/entities';
+import {
+  Conversation,
+  ConversationParticipant,
+  Message,
+  MessageReaction,
+  ReadReceipt,
+  User,
+  Match,
+  Subscription,
+  Plan,
+} from '@app/common/entities';
 
 @Injectable()
 export class ChatService {
   constructor(
     @InjectRepository(Conversation) private convRepo: Repository<Conversation>,
-    @InjectRepository(ConversationParticipant) private partRepo: Repository<ConversationParticipant>,
+    @InjectRepository(ConversationParticipant)
+    private partRepo: Repository<ConversationParticipant>,
     @InjectRepository(Message) private msgRepo: Repository<Message>,
     @InjectRepository(MessageReaction) private reactionRepo: Repository<MessageReaction>,
     @InjectRepository(ReadReceipt) private readRepo: Repository<ReadReceipt>,
@@ -22,14 +33,19 @@ export class ChatService {
   async createConversation(userId: string, otherUserId: string) {
     const allParts = await this.partRepo.find({ where: { userId } });
     for (const p of allParts) {
-      const other = await this.partRepo.findOne({ where: { conversationId: p.conversationId, userId: otherUserId } });
+      const other = await this.partRepo.findOne({
+        where: { conversationId: p.conversationId, userId: otherUserId },
+      });
       if (other) {
         const conv = await this.convRepo.findOne({ where: { id: p.conversationId } });
         if (conv) return { id: conv.id, alreadyExisted: true };
       }
     }
 
-    const sub = await this.subRepo.findOne({ where: { userId, status: 'active' }, relations: ['plan'] });
+    const sub = await this.subRepo.findOne({
+      where: { userId, status: 'active' },
+      relations: ['plan'],
+    });
     const isPlatinum = sub?.plan?.name === 'platinum';
 
     if (!isPlatinum) {
@@ -40,7 +56,9 @@ export class ChatService {
         ],
       });
       if (!match) {
-        throw new BadRequestException('You must match with this user before messaging. Upgrade to Platinum to message anyone!');
+        throw new BadRequestException(
+          'You must match with this user before messaging. Upgrade to Platinum to message anyone!',
+        );
       }
     }
 
@@ -53,7 +71,12 @@ export class ChatService {
   }
 
   async getConversations(userId: string, page = 1, limit = 20) {
-    const participations = await this.partRepo.find({ where: { userId }, order: { lastReadAt: 'DESC' }, skip: (page - 1) * limit, take: limit });
+    const participations = await this.partRepo.find({
+      where: { userId },
+      order: { lastReadAt: 'DESC' },
+      skip: (page - 1) * limit,
+      take: limit,
+    });
     const convIds = participations.map((p) => p.conversationId);
     if (convIds.length === 0) return { conversations: [], meta: { page, limit, hasMore: false } };
 
@@ -71,11 +94,19 @@ export class ChatService {
       convParticipantMap.set(p.conversationId, list);
     }
 
-    const users = allParticipantIds.size > 0 ? await this.userRepo.find({ where: { id: In([...allParticipantIds]) } }) : [];
+    const users =
+      allParticipantIds.size > 0
+        ? await this.userRepo.find({ where: { id: In([...allParticipantIds]) } })
+        : [];
     const userMap = new Map(users.map((u) => [u.id, u]));
 
-    const lastMessageIds = conversations.filter((c) => c.lastMessageId).map((c) => c.lastMessageId!);
-    const lastMessages = lastMessageIds.length > 0 ? await this.msgRepo.find({ where: { id: In(lastMessageIds) } }) : [];
+    const lastMessageIds = conversations
+      .filter((c) => c.lastMessageId)
+      .map((c) => c.lastMessageId!);
+    const lastMessages =
+      lastMessageIds.length > 0
+        ? await this.msgRepo.find({ where: { id: In(lastMessageIds) } })
+        : [];
     const lastMsgMap = new Map(lastMessages.map((m) => [m.id, m]));
 
     const partMap = new Map(participations.map((p) => [p.conversationId, p]));
@@ -97,7 +128,15 @@ export class ChatService {
           participantIds,
           participantNames,
           participantAvatars,
-          lastMessage: lastMsg ? { id: lastMsg.id, content: lastMsg.content, senderId: lastMsg.senderId, type: lastMsg.type, createdAt: lastMsg.createdAt } : null,
+          lastMessage: lastMsg
+            ? {
+                id: lastMsg.id,
+                content: lastMsg.content,
+                senderId: lastMsg.senderId,
+                type: lastMsg.type,
+                createdAt: lastMsg.createdAt,
+              }
+            : null,
           unreadCount: part?.unreadCount || 0,
           createdAt: c.createdAt,
           updatedAt: c.lastMessageAt || c.createdAt,
@@ -110,7 +149,12 @@ export class ChatService {
   async getMessages(userId: string, conversationId: string, page = 1, limit = 50) {
     const participation = await this.partRepo.findOne({ where: { conversationId, userId } });
     if (!participation) throw new BadRequestException('Not a participant');
-    const messages = await this.msgRepo.find({ where: { conversationId }, order: { createdAt: 'DESC' }, skip: (page - 1) * limit, take: limit });
+    const messages = await this.msgRepo.find({
+      where: { conversationId },
+      order: { createdAt: 'DESC' },
+      skip: (page - 1) * limit,
+      take: limit,
+    });
     return { messages, meta: { page, limit, hasMore: messages.length === limit } };
   }
 
@@ -122,11 +166,16 @@ export class ChatService {
       senderId: userId,
       content: data.content,
       type: data.type || 'text',
-      mediaUrl: ['voice', 'video', 'gif'].includes(data.type) ? data.mediaUrl || data.content : undefined,
+      mediaUrl: ['voice', 'video', 'gif'].includes(data.type)
+        ? data.mediaUrl || data.content
+        : undefined,
       duration: data.duration || null,
     });
     const saved = await this.msgRepo.save(message);
-    await this.partRepo.update({ conversationId, userId: { not: userId } as any }, { unreadCount: () => '"unreadCount" + 1' });
+    await this.partRepo.update(
+      { conversationId, userId: { not: userId } as any },
+      { unreadCount: () => '"unreadCount" + 1' },
+    );
     this.eventEmitter.emit('chat.message_sent', { conversationId, message: saved });
 
     const otherParticipants = await this.partRepo.find({
@@ -139,7 +188,12 @@ export class ChatService {
           userId: p.userId,
           type: 'new_message',
           title: sender?.fullName || 'New Message',
-          body: data.type === 'text' ? (data.content?.length > 100 ? data.content.substring(0, 100) + '...' : data.content) : `Sent a ${data.type}`,
+          body:
+            data.type === 'text'
+              ? data.content?.length > 100
+                ? data.content.substring(0, 100) + '...'
+                : data.content
+              : `Sent a ${data.type}`,
           data: { conversationId, senderId: userId, messageId: saved.id },
         });
       }
@@ -160,14 +214,20 @@ export class ChatService {
     const message = await this.msgRepo.findOne({ where: { id: messageId, conversationId } });
     if (!message) throw new NotFoundException('Message not found');
     const existing = await this.reactionRepo.findOne({ where: { messageId, userId } });
-    if (existing) { await this.reactionRepo.remove(existing); return { reacted: false }; }
+    if (existing) {
+      await this.reactionRepo.remove(existing);
+      return { reacted: false };
+    }
     const reaction = this.reactionRepo.create({ messageId, userId, emoji: data.emoji });
     await this.reactionRepo.save(reaction);
     return { reacted: true, emoji: data.emoji };
   }
 
   async markAsRead(userId: string, conversationId: string) {
-    await this.partRepo.update({ conversationId, userId }, { unreadCount: 0, lastReadAt: new Date() });
+    await this.partRepo.update(
+      { conversationId, userId },
+      { unreadCount: 0, lastReadAt: new Date() },
+    );
     return { marked: true };
   }
 
@@ -193,10 +253,13 @@ export class ChatService {
   }
 
   async searchMessages(userId: string, query: string, conversationId?: string) {
-    const myConvIds = (await this.partRepo.find({ where: { userId } })).map((p) => p.conversationId);
+    const myConvIds = (await this.partRepo.find({ where: { userId } })).map(
+      (p) => p.conversationId,
+    );
     if (myConvIds.length === 0) return { messages: [] };
 
-    const qb = this.msgRepo.createQueryBuilder('m')
+    const qb = this.msgRepo
+      .createQueryBuilder('m')
       .where('m.content ILIKE :query', { query: `%${query}%` })
       .andWhere('m.conversationId IN (:...convIds)', { convIds: myConvIds });
     if (conversationId) qb.andWhere('m.conversationId = :conversationId', { conversationId });

@@ -12,7 +12,8 @@ export class EloScore {
   @Column({ type: 'int', default: 0 }) totalConversations: number;
   @Column({ type: 'decimal', precision: 5, scale: 2, default: 0 }) responseRate: number;
   @Column({ type: 'int', default: 0 }) avgResponseTimeMinutes: number;
-  @Column({ type: 'decimal', precision: 5, scale: 2, default: 0.5 }) attractivenessPercentile: number;
+  @Column({ type: 'decimal', precision: 5, scale: 2, default: 0.5 })
+  attractivenessPercentile: number;
   @Column({ type: 'int', default: 0 }) profileViews: number;
   @UpdateDateColumn() updatedAt: Date;
 }

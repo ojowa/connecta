@@ -22,11 +22,16 @@ export class SearchService {
       .getMany();
 
     const userIds = users.map((u) => u.id);
-    const profiles = userIds.length > 0 ? await this.profileRepo.find({ where: { userId: In(userIds) } }) : [];
+    const profiles =
+      userIds.length > 0 ? await this.profileRepo.find({ where: { userId: In(userIds) } }) : [];
     const profileMap = new Map(profiles.map((p) => [p.userId, p]));
 
     return {
-      users: users.map((u) => ({ id: u.id, fullName: u.fullName, profile: profileMap.get(u.id) || null })),
+      users: users.map((u) => ({
+        id: u.id,
+        fullName: u.fullName,
+        profile: profileMap.get(u.id) || null,
+      })),
       meta: { page, limit, hasMore: users.length === limit },
     };
   }

@@ -18,7 +18,7 @@ export class S3StorageProvider implements StorageProvider {
   }
 
   async upload(file: Express.Multer.File, userId: string): Promise<StorageUploadResult> {
-    const ext = (file.originalname.split('.').pop() || 'bin');
+    const ext = file.originalname.split('.').pop() || 'bin';
     const key = `uploads/${userId}/${uuid()}.${ext}`;
     // TODO: Install @aws-sdk/client-s3 and implement real upload
     // const { S3Client, PutObjectCommand } = require('@aws-sdk/client-s3');

@@ -51,7 +51,11 @@ export class PaymentsController {
   @Get('history')
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Payment history' })
-  history(@Headers('x-user-id') userId: string, @Query('page') page?: number, @Query('limit') limit?: number) {
+  history(
+    @Headers('x-user-id') userId: string,
+    @Query('page') page?: number,
+    @Query('limit') limit?: number,
+  ) {
     return this.paymentsService.getPaymentHistory(userId, page, limit);
   }
 
@@ -65,7 +69,11 @@ export class PaymentsController {
   @Get('transactions')
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Get transaction history' })
-  transactions(@Headers('x-user-id') userId: string, @Query('page') page?: number, @Query('limit') limit?: number) {
+  transactions(
+    @Headers('x-user-id') userId: string,
+    @Query('page') page?: number,
+    @Query('limit') limit?: number,
+  ) {
     return this.paymentsService.getTransactions(userId, page, limit);
   }
 
@@ -79,7 +87,11 @@ export class PaymentsController {
   @Post('refund/:transactionId')
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Request refund' })
-  refund(@Headers('x-user-id') userId: string, @Param('transactionId') txnId: string, @Body() body: any) {
+  refund(
+    @Headers('x-user-id') userId: string,
+    @Param('transactionId') txnId: string,
+    @Body() body: any,
+  ) {
     return this.paymentsService.requestRefund(userId, txnId, body);
   }
 

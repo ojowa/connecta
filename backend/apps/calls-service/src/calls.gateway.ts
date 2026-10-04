@@ -69,10 +69,7 @@ export class CallsGateway implements OnGatewayConnection, OnGatewayDisconnect {
   }
 
   @SubscribeMessage('call.answered')
-  handleCallAnswered(
-    @ConnectedSocket() client: Socket,
-    @MessageBody() data: { callId: string },
-  ) {
+  handleCallAnswered(@ConnectedSocket() client: Socket, @MessageBody() data: { callId: string }) {
     const room = this.callRooms.get(data.callId);
     if (room) {
       room.calleeSocketId = client.id;
@@ -102,10 +99,7 @@ export class CallsGateway implements OnGatewayConnection, OnGatewayDisconnect {
   }
 
   @SubscribeMessage('call.ended')
-  handleCallEnded(
-    @ConnectedSocket() client: Socket,
-    @MessageBody() data: { callId: string },
-  ) {
+  handleCallEnded(@ConnectedSocket() client: Socket, @MessageBody() data: { callId: string }) {
     const room = this.callRooms.get(data.callId);
     if (room) {
       if (room.callerSocketId && room.callerSocketId !== client.id) {

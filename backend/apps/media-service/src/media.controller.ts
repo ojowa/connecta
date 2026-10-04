@@ -1,8 +1,20 @@
-import { Controller, Get, Post, Delete, Body, Param, Headers, UseInterceptors, UploadedFile, Res } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Delete,
+  Body,
+  Param,
+  Headers,
+  UseInterceptors,
+  UploadedFile,
+  Res,
+} from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { ApiTags, ApiOperation, ApiBearerAuth, ApiConsumes } from '@nestjs/swagger';
 import { Response } from 'express';
 import * as fs from 'fs';
+import * as path from 'path';
 import { MediaService } from './media.service';
 
 @ApiTags('Media')
@@ -15,7 +27,11 @@ export class MediaController {
   @ApiOperation({ summary: 'Upload file' })
   @ApiConsumes('multipart/form-data')
   @UseInterceptors(FileInterceptor('photo'))
-  upload(@Headers('x-user-id') userId: string, @UploadedFile() file: Express.Multer.File, @Body() body: any) {
+  upload(
+    @Headers('x-user-id') userId: string,
+    @UploadedFile() file: Express.Multer.File,
+    @Body() body: any,
+  ) {
     return this.mediaService.upload(userId, body, file);
   }
 
@@ -40,7 +56,6 @@ export class MediaController {
   @Get('files/:key(*)')
   @ApiOperation({ summary: 'Serve local file' })
   serveFile(@Param('key') key: string, @Res() res: Response) {
-    const path = require('path');
     const uploadDir = path.join(process.cwd(), 'uploads');
     const filePath = path.join(uploadDir, key);
     if (!fs.existsSync(filePath)) {

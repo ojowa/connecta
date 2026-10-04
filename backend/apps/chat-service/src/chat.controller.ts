@@ -10,37 +10,71 @@ export class ChatController {
 
   @Post('conversations')
   @ApiOperation({ summary: 'Create or find conversation' })
-  createConversation(@Headers('x-user-id') userId: string, @Body('otherUserId') otherUserId: string) {
+  createConversation(
+    @Headers('x-user-id') userId: string,
+    @Body('otherUserId') otherUserId: string,
+  ) {
     return this.chatService.createConversation(userId, otherUserId);
   }
 
   @Get('conversations')
   @ApiOperation({ summary: 'Get conversations' })
-  getConversations(@Headers('x-user-id') userId: string, @Query('page') page?: string, @Query('limit') limit?: string) {
-    return this.chatService.getConversations(userId, page ? parseInt(page, 10) : 1, limit ? parseInt(limit, 10) : 20);
+  getConversations(
+    @Headers('x-user-id') userId: string,
+    @Query('page') page?: string,
+    @Query('limit') limit?: string,
+  ) {
+    return this.chatService.getConversations(
+      userId,
+      page ? parseInt(page, 10) : 1,
+      limit ? parseInt(limit, 10) : 20,
+    );
   }
 
   @Get('conversations/:id/messages')
   @ApiOperation({ summary: 'Get messages' })
-  getMessages(@Headers('x-user-id') userId: string, @Param('id') conversationId: string, @Query('page') page?: string, @Query('limit') limit?: string) {
-    return this.chatService.getMessages(userId, conversationId, page ? parseInt(page, 10) : 1, limit ? parseInt(limit, 10) : 50);
+  getMessages(
+    @Headers('x-user-id') userId: string,
+    @Param('id') conversationId: string,
+    @Query('page') page?: string,
+    @Query('limit') limit?: string,
+  ) {
+    return this.chatService.getMessages(
+      userId,
+      conversationId,
+      page ? parseInt(page, 10) : 1,
+      limit ? parseInt(limit, 10) : 50,
+    );
   }
 
   @Post('conversations/:id/messages')
   @ApiOperation({ summary: 'Send message' })
-  sendMessage(@Headers('x-user-id') userId: string, @Param('id') conversationId: string, @Body() body: any) {
+  sendMessage(
+    @Headers('x-user-id') userId: string,
+    @Param('id') conversationId: string,
+    @Body() body: any,
+  ) {
     return this.chatService.sendMessage(userId, conversationId, body);
   }
 
   @Delete('conversations/:id/messages/:messageId')
   @ApiOperation({ summary: 'Delete message' })
-  deleteMessage(@Headers('x-user-id') userId: string, @Param('id') conversationId: string, @Param('messageId') messageId: string) {
+  deleteMessage(
+    @Headers('x-user-id') userId: string,
+    @Param('id') conversationId: string,
+    @Param('messageId') messageId: string,
+  ) {
     return this.chatService.deleteMessage(userId, conversationId, messageId);
   }
 
   @Post('conversations/:id/messages/:messageId/reactions')
   @ApiOperation({ summary: 'React to message' })
-  reactToMessage(@Headers('x-user-id') userId: string, @Param('id') conversationId: string, @Param('messageId') messageId: string, @Body() body: any) {
+  reactToMessage(
+    @Headers('x-user-id') userId: string,
+    @Param('id') conversationId: string,
+    @Param('messageId') messageId: string,
+    @Body() body: any,
+  ) {
     return this.chatService.reactToMessage(userId, conversationId, messageId, body);
   }
 
@@ -64,13 +98,21 @@ export class ChatController {
 
   @Post('conversations/:id/messages/:messageId/read')
   @ApiOperation({ summary: 'Mark message as read' })
-  markMessageAsRead(@Headers('x-user-id') userId: string, @Param('id') conversationId: string, @Param('messageId') messageId: string) {
+  markMessageAsRead(
+    @Headers('x-user-id') userId: string,
+    @Param('id') conversationId: string,
+    @Param('messageId') messageId: string,
+  ) {
     return this.chatService.markMessageAsRead(userId, conversationId, messageId);
   }
 
   @Get('messages/search')
   @ApiOperation({ summary: 'Search messages' })
-  searchMessages(@Headers('x-user-id') userId: string, @Query('q') query: string, @Query('conversationId') conversationId?: string) {
+  searchMessages(
+    @Headers('x-user-id') userId: string,
+    @Query('q') query: string,
+    @Query('conversationId') conversationId?: string,
+  ) {
     return this.chatService.searchMessages(userId, query, conversationId);
   }
 

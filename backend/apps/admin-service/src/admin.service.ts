@@ -1,7 +1,32 @@
-import { Injectable, UnauthorizedException, NotFoundException, BadRequestException } from '@nestjs/common';
+import {
+  Injectable,
+  UnauthorizedException,
+  NotFoundException,
+  BadRequestException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, In, MoreThan, IsNull } from 'typeorm';
-import { AdminUser, User, Report, Notification, Subscription, Transaction, Plan, Like, Match, Message, Session, NotificationDelivery, Appeal, SystemSetting, Moment, MomentView, VerificationRequest, Profile, Photo } from '@app/common/entities';
+import {
+  AdminUser,
+  User,
+  Report,
+  Notification,
+  Subscription,
+  Transaction,
+  Plan,
+  Like,
+  Match,
+  Message,
+  Session,
+  NotificationDelivery,
+  Appeal,
+  SystemSetting,
+  Moment,
+  MomentView,
+  VerificationRequest,
+  Profile,
+  Photo,
+} from '@app/common/entities';
 import * as bcrypt from 'bcryptjs';
 import * as jwt from 'jsonwebtoken';
 import { v4 as uuid } from 'uuid';
@@ -24,12 +49,14 @@ export class AdminService {
     @InjectRepository(Message) private msgRepo: Repository<Message>,
     @InjectRepository(Session) private sessionRepo: Repository<Session>,
     @InjectRepository(Plan) private planRepo: Repository<Plan>,
-    @InjectRepository(NotificationDelivery) private notifDeliveryRepo: Repository<NotificationDelivery>,
+    @InjectRepository(NotificationDelivery)
+    private notifDeliveryRepo: Repository<NotificationDelivery>,
     @InjectRepository(Appeal) private appealRepo: Repository<Appeal>,
     @InjectRepository(SystemSetting) private settingsRepo: Repository<SystemSetting>,
     @InjectRepository(Moment) private momentRepo: Repository<Moment>,
     @InjectRepository(MomentView) private momentViewRepo: Repository<MomentView>,
-    @InjectRepository(VerificationRequest) private verificationRepo: Repository<VerificationRequest>,
+    @InjectRepository(VerificationRequest)
+    private verificationRepo: Repository<VerificationRequest>,
     @InjectRepository(Profile) private profileRepo: Repository<Profile>,
     @InjectRepository(Photo) private photoRepo: Repository<Photo>,
   ) {}
@@ -39,9 +66,19 @@ export class AdminService {
     if (!admin) throw new UnauthorizedException('Invalid credentials');
     const valid = await bcrypt.compare(password, admin.passwordHash);
     if (!valid) throw new UnauthorizedException('Invalid credentials');
-    const accessToken = jwt.sign({ sub: admin.id, email: admin.email, role: admin.role }, JWT_SECRET, { expiresIn: '24h' });
+    const accessToken = jwt.sign(
+      { sub: admin.id, email: admin.email, role: admin.role },
+      JWT_SECRET,
+      { expiresIn: '24h' },
+    );
     return {
-      admin: { id: admin.id, email: admin.email, name: admin.name || admin.email, role: admin.role, isActive: admin.isActive },
+      admin: {
+        id: admin.id,
+        email: admin.email,
+        name: admin.name || admin.email,
+        role: admin.role,
+        isActive: admin.isActive,
+      },
       tokens: { accessToken },
     };
   }
@@ -82,8 +119,18 @@ export class AdminService {
   async getUsers(page = 1, limit = 20, status?: string) {
     const qb = this.userRepo.createQueryBuilder('u');
     if (status) qb.where('u.status = :status', { status });
-    const [users, total] = await qb.orderBy('u.createdAt', 'DESC').skip((page - 1) * limit).take(limit).getManyAndCount();
-    return { users: users.map((u) => { const { passwordHash, ...rest } = u; return rest; }), meta: { page, limit, total, hasMore: total > page * limit } };
+    const [users, total] = await qb
+      .orderBy('u.createdAt', 'DESC')
+      .skip((page - 1) * limit)
+      .take(limit)
+      .getManyAndCount();
+    return {
+      users: users.map((u) => {
+        const { passwordHash, ...rest } = u;
+        return rest;
+      }),
+      meta: { page, limit, total, hasMore: total > page * limit },
+    };
   }
 
   async suspendUser(userId: string, reason: string) {
@@ -109,12 +156,22 @@ export class AdminService {
   }
 
   async getReports(page = 1, limit = 20) {
-    const [reports, total] = await this.reportRepo.findAndCount({ order: { createdAt: 'DESC' }, skip: (page - 1) * limit, take: limit });
+    const [reports, total] = await this.reportRepo.findAndCount({
+      order: { createdAt: 'DESC' },
+      skip: (page - 1) * limit,
+      take: limit,
+    });
     return { reports, meta: { page, limit, total, hasMore: total > page * limit } };
   }
 
-  async resolveReport(reportId: string, data: { resolution: string; notes?: string; actionTaken?: string }) {
-    await this.reportRepo.update(reportId, { status: data.resolution as any, actionTaken: data.actionTaken });
+  async resolveReport(
+    reportId: string,
+    data: { resolution: string; notes?: string; actionTaken?: string },
+  ) {
+    await this.reportRepo.update(reportId, {
+      status: data.resolution as any,
+      actionTaken: data.actionTaken,
+    });
     return { resolved: true, reportId, resolution: data.resolution };
   }
 
@@ -166,7 +223,13 @@ export class AdminService {
       record.value = updated;
       await this.settingsRepo.save(record);
     } else {
-      await this.settingsRepo.save(this.settingsRepo.create({ key: this.SETTINGS_KEY, value: updated, description: 'Platform settings managed by admin panel' }));
+      await this.settingsRepo.save(
+        this.settingsRepo.create({
+          key: this.SETTINGS_KEY,
+          value: updated,
+          description: 'Platform settings managed by admin panel',
+        }),
+      );
     }
     return { updatedAt: new Date().toISOString() };
   }
@@ -176,17 +239,30 @@ export class AdminService {
   }
 
   async getAnalytics(period?: string) {
-    const periodDays = period === '24h' ? 1 : period === '7d' ? 7 : period === '90d' ? 90 : period === '1y' ? 365 : 30;
+    const periodDays =
+      period === '24h'
+        ? 1
+        : period === '7d'
+          ? 7
+          : period === '90d'
+            ? 90
+            : period === '1y'
+              ? 365
+              : 30;
     const since = new Date(Date.now() - periodDays * 24 * 60 * 60 * 1000);
 
     const totalUsers = await this.userRepo.count();
-    const newUsers = await this.userRepo.createQueryBuilder('u').where('u.createdAt >= :since', { since }).getCount();
+    const newUsers = await this.userRepo
+      .createQueryBuilder('u')
+      .where('u.createdAt >= :since', { since })
+      .getCount();
     const growthRate = totalUsers > 0 ? `${((newUsers / totalUsers) * 100).toFixed(1)}%` : '0%';
 
     const totalReports = await this.reportRepo.count();
     const pendingReports = await this.reportRepo.count({ where: { status: 'pending' as any } });
     const resolvedReports = await this.reportRepo.count({ where: { status: 'resolved' as any } });
-    const resolutionRate = totalReports > 0 ? `${((resolvedReports / totalReports) * 100).toFixed(1)}%` : '0%';
+    const resolutionRate =
+      totalReports > 0 ? `${((resolvedReports / totalReports) * 100).toFixed(1)}%` : '0%';
 
     let totalRevenue = 0;
     try {
@@ -205,18 +281,28 @@ export class AdminService {
     for (let i = periodDays; i >= 0; i--) {
       const dayStart = new Date(Date.now() - i * 24 * 60 * 60 * 1000);
       const dayEnd = new Date(dayStart.getTime() + 24 * 60 * 60 * 1000);
-      const dayUsers = await this.userRepo.createQueryBuilder('u').where('u.createdAt >= :start AND u.createdAt < :end', { start: dayStart, end: dayEnd }).getCount();
+      const dayUsers = await this.userRepo
+        .createQueryBuilder('u')
+        .where('u.createdAt >= :start AND u.createdAt < :end', { start: dayStart, end: dayEnd })
+        .getCount();
       let dayRevenue = 0;
       try {
         const dayRev = await this.txnRepo
           .createQueryBuilder('t')
           .select('SUM(t.amount)', 'total')
           .where('t.status = :status', { status: 'completed' })
-          .andWhere('t.createdAt >= :start AND t.createdAt < :end', { start: dayStart, end: dayEnd })
+          .andWhere('t.createdAt >= :start AND t.createdAt < :end', {
+            start: dayStart,
+            end: dayEnd,
+          })
           .getRawOne();
         dayRevenue = parseFloat(dayRev?.total) || 0;
       } catch {}
-      dataPoints.push({ date: dayStart.toISOString().split('T')[0], users: dayUsers, revenue: dayRevenue });
+      dataPoints.push({
+        date: dayStart.toISOString().split('T')[0],
+        users: dayUsers,
+        revenue: dayRevenue,
+      });
     }
 
     return {
@@ -234,23 +320,28 @@ export class AdminService {
     const since1h = new Date(Date.now() - 60 * 60 * 1000);
     const since24h = new Date(Date.now() - 24 * 60 * 60 * 1000);
 
-    const [likes5min, matches1h, messages1h, activeSessions, reports24h, newUsers24h] = await Promise.all([
-      this.likeRepo.count({ where: { createdAt: MoreThan(since5min) } }),
-      this.matchRepo.count({ where: { matchedAt: MoreThan(since1h) } }),
-      this.msgRepo.count({ where: { createdAt: MoreThan(since1h) } }),
-      this.sessionRepo.count({ where: { isActive: true } }),
-      this.reportRepo.count({ where: { createdAt: MoreThan(since24h) } }),
-      this.userRepo.createQueryBuilder('u').where('u.createdAt >= :since', { since: since24h }).getCount(),
-    ]);
+    const [likes5min, matches1h, messages1h, activeSessions, reports24h, newUsers24h] =
+      await Promise.all([
+        this.likeRepo.count({ where: { createdAt: MoreThan(since5min) } }),
+        this.matchRepo.count({ where: { matchedAt: MoreThan(since1h) } }),
+        this.msgRepo.count({ where: { createdAt: MoreThan(since1h) } }),
+        this.sessionRepo.count({ where: { isActive: true } }),
+        this.reportRepo.count({ where: { createdAt: MoreThan(since24h) } }),
+        this.userRepo
+          .createQueryBuilder('u')
+          .where('u.createdAt >= :since', { since: since24h })
+          .getCount(),
+      ]);
 
     const recentMatches = await this.matchRepo.find({ order: { matchedAt: 'DESC' }, take: 10 });
-    const matchUserIds = recentMatches.flatMap(m => [m.user1Id, m.user2Id]);
-    const matchUsers = matchUserIds.length > 0 ? await this.userRepo.find({ where: { id: In(matchUserIds) } }) : [];
-    const matchUserMap = new Map(matchUsers.map(u => [u.id, u]));
+    const matchUserIds = recentMatches.flatMap((m) => [m.user1Id, m.user2Id]);
+    const matchUsers =
+      matchUserIds.length > 0 ? await this.userRepo.find({ where: { id: In(matchUserIds) } }) : [];
+    const matchUserMap = new Map(matchUsers.map((u) => [u.id, u]));
 
     return {
       counts: { likes5min, matches1h, messages1h, activeSessions, reports24h, newUsers24h },
-      recentMatches: recentMatches.map(m => ({
+      recentMatches: recentMatches.map((m) => ({
         id: m.id,
         matchedAt: m.matchedAt,
         user1: matchUserMap.get(m.user1Id),
@@ -263,8 +354,14 @@ export class AdminService {
     const periodDays = period === '24h' ? 1 : period === '7d' ? 7 : period === '90d' ? 90 : 30;
     const since = new Date(Date.now() - periodDays * 24 * 60 * 60 * 1000);
 
-    const totalMatches = await this.matchRepo.createQueryBuilder('m').where('m.matchedAt >= :since', { since }).getCount();
-    const totalLikes = await this.likeRepo.createQueryBuilder('l').where('l.createdAt >= :since', { since }).getCount();
+    const totalMatches = await this.matchRepo
+      .createQueryBuilder('m')
+      .where('m.matchedAt >= :since', { since })
+      .getCount();
+    const totalLikes = await this.likeRepo
+      .createQueryBuilder('l')
+      .where('l.createdAt >= :since', { since })
+      .getCount();
     const totalUsers = await this.userRepo.count();
 
     const matchRate = totalLikes > 0 ? `${((totalMatches / totalLikes) * 100).toFixed(1)}%` : '0%';
@@ -273,9 +370,19 @@ export class AdminService {
     for (let i = periodDays; i >= 0; i--) {
       const dayStart = new Date(Date.now() - i * 24 * 60 * 60 * 1000);
       const dayEnd = new Date(dayStart.getTime() + 24 * 60 * 60 * 1000);
-      const dayMatches = await this.matchRepo.createQueryBuilder('m').where('m.matchedAt >= :start AND m.matchedAt < :end', { start: dayStart, end: dayEnd }).getCount();
-      const dayLikes = await this.likeRepo.createQueryBuilder('l').where('l.createdAt >= :start AND l.createdAt < :end', { start: dayStart, end: dayEnd }).getCount();
-      dataPoints.push({ date: dayStart.toISOString().split('T')[0], matches: dayMatches, likes: dayLikes });
+      const dayMatches = await this.matchRepo
+        .createQueryBuilder('m')
+        .where('m.matchedAt >= :start AND m.matchedAt < :end', { start: dayStart, end: dayEnd })
+        .getCount();
+      const dayLikes = await this.likeRepo
+        .createQueryBuilder('l')
+        .where('l.createdAt >= :start AND l.createdAt < :end', { start: dayStart, end: dayEnd })
+        .getCount();
+      dataPoints.push({
+        date: dayStart.toISOString().split('T')[0],
+        matches: dayMatches,
+        likes: dayLikes,
+      });
     }
 
     return {
@@ -295,9 +402,18 @@ export class AdminService {
     let totalRevenue = 0;
     let periodRevenue = 0;
     try {
-      const totalResult = await this.txnRepo.createQueryBuilder('t').select('SUM(t.amount)', 'total').where('t.status = :status', { status: 'completed' }).getRawOne();
+      const totalResult = await this.txnRepo
+        .createQueryBuilder('t')
+        .select('SUM(t.amount)', 'total')
+        .where('t.status = :status', { status: 'completed' })
+        .getRawOne();
       totalRevenue = parseFloat(totalResult?.total) || 0;
-      const periodResult = await this.txnRepo.createQueryBuilder('t').select('SUM(t.amount)', 'total').where('t.status = :status', { status: 'completed' }).andWhere('t.createdAt >= :since', { since }).getRawOne();
+      const periodResult = await this.txnRepo
+        .createQueryBuilder('t')
+        .select('SUM(t.amount)', 'total')
+        .where('t.status = :status', { status: 'completed' })
+        .andWhere('t.createdAt >= :since', { since })
+        .getRawOne();
       periodRevenue = parseFloat(periodResult?.total) || 0;
     } catch {}
 
@@ -306,10 +422,19 @@ export class AdminService {
 
     let failedRevenue = 0;
     try {
-      const failedResult = await this.txnRepo.createQueryBuilder('t').select('SUM(t.amount)', 'total').where('t.status = :status', { status: 'failed' }).andWhere('t.createdAt >= :since', { since }).getRawOne();
+      const failedResult = await this.txnRepo
+        .createQueryBuilder('t')
+        .select('SUM(t.amount)', 'total')
+        .where('t.status = :status', { status: 'failed' })
+        .andWhere('t.createdAt >= :since', { since })
+        .getRawOne();
       failedRevenue = parseFloat(failedResult?.total) || 0;
     } catch {}
-    const failedCount = await this.txnRepo.createQueryBuilder('t').where('t.status = :status', { status: 'failed' }).andWhere('t.createdAt >= :since', { since }).getCount();
+    const failedCount = await this.txnRepo
+      .createQueryBuilder('t')
+      .where('t.status = :status', { status: 'failed' })
+      .andWhere('t.createdAt >= :since', { since })
+      .getCount();
 
     const dataPoints: Array<{ date: string; revenue: number; failed: number }> = [];
     for (let i = periodDays; i >= 0; i--) {
@@ -318,12 +443,32 @@ export class AdminService {
       let dayRevenue = 0;
       let dayFailed = 0;
       try {
-        const dr = await this.txnRepo.createQueryBuilder('t').select('SUM(t.amount)', 'total').where('t.status = :status', { status: 'completed' }).andWhere('t.createdAt >= :start AND t.createdAt < :end', { start: dayStart, end: dayEnd }).getRawOne();
+        const dr = await this.txnRepo
+          .createQueryBuilder('t')
+          .select('SUM(t.amount)', 'total')
+          .where('t.status = :status', { status: 'completed' })
+          .andWhere('t.createdAt >= :start AND t.createdAt < :end', {
+            start: dayStart,
+            end: dayEnd,
+          })
+          .getRawOne();
         dayRevenue = parseFloat(dr?.total) || 0;
-        const df = await this.txnRepo.createQueryBuilder('t').select('SUM(t.amount)', 'total').where('t.status = :status', { status: 'failed' }).andWhere('t.createdAt >= :start AND t.createdAt < :end', { start: dayStart, end: dayEnd }).getRawOne();
+        const df = await this.txnRepo
+          .createQueryBuilder('t')
+          .select('SUM(t.amount)', 'total')
+          .where('t.status = :status', { status: 'failed' })
+          .andWhere('t.createdAt >= :start AND t.createdAt < :end', {
+            start: dayStart,
+            end: dayEnd,
+          })
+          .getRawOne();
         dayFailed = parseFloat(df?.total) || 0;
       } catch {}
-      dataPoints.push({ date: dayStart.toISOString().split('T')[0], revenue: dayRevenue, failed: dayFailed });
+      dataPoints.push({
+        date: dayStart.toISOString().split('T')[0],
+        revenue: dayRevenue,
+        failed: dayFailed,
+      });
     }
 
     return {
@@ -340,7 +485,8 @@ export class AdminService {
   }
 
   async getGeoAnalytics() {
-    const cityDistribution = await this.userRepo.createQueryBuilder('u')
+    const cityDistribution = await this.userRepo
+      .createQueryBuilder('u')
       .select('p.city', 'city')
       .addSelect('COUNT(*)', 'count')
       .innerJoin('profiles', 'p', 'p."userId" = u.id')
@@ -350,7 +496,8 @@ export class AdminService {
       .limit(20)
       .getRawMany();
 
-    const genderDistribution = await this.userRepo.createQueryBuilder('u')
+    const genderDistribution = await this.userRepo
+      .createQueryBuilder('u')
       .select('p.gender', 'gender')
       .addSelect('COUNT(*)', 'count')
       .innerJoin('profiles', 'p', 'p."userId" = u.id')
@@ -358,7 +505,8 @@ export class AdminService {
       .groupBy('p.gender')
       .getRawMany();
 
-    const ageDistribution = await this.userRepo.createQueryBuilder('u')
+    const ageDistribution = await this.userRepo
+      .createQueryBuilder('u')
       .select('FLOOR(EXTRACT(YEAR FROM AGE(u."dateOfBirth")) / 5) * 5', 'ageGroup')
       .addSelect('COUNT(*)', 'count')
       .where('u."dateOfBirth" IS NOT NULL')
@@ -390,29 +538,48 @@ export class AdminService {
     const checks = await Promise.all(
       services.map(async (s) => {
         try {
-          const res = await fetch(`http://localhost:${s.port}/health`, { signal: AbortSignal.timeout(2000) });
-          return { name: s.name, port: s.port, status: res.ok ? 'healthy' : 'degraded', statusCode: res.status };
+          const res = await fetch(`http://localhost:${s.port}/health`, {
+            signal: AbortSignal.timeout(2000),
+          });
+          return {
+            name: s.name,
+            port: s.port,
+            status: res.ok ? 'healthy' : 'degraded',
+            statusCode: res.status,
+          };
         } catch {
           return { name: s.name, port: s.port, status: 'down', statusCode: 0 };
         }
       }),
     );
 
-    const healthy = checks.filter(c => c.status === 'healthy').length;
-    const degraded = checks.filter(c => c.status === 'degraded').length;
-    const down = checks.filter(c => c.status === 'down').length;
+    const healthy = checks.filter((c) => c.status === 'healthy').length;
+    const degraded = checks.filter((c) => c.status === 'degraded').length;
+    const down = checks.filter((c) => c.status === 'down').length;
 
     return { services: checks, summary: { total: checks.length, healthy, degraded, down } };
   }
 
-  async getNotificationHistory(page = 1, limit = 50, filters?: { type?: string; status?: string; channel?: string; startDate?: string; endDate?: string }) {
+  async getNotificationHistory(
+    page = 1,
+    limit = 50,
+    filters?: {
+      type?: string;
+      status?: string;
+      channel?: string;
+      startDate?: string;
+      endDate?: string;
+    },
+  ) {
     const qb = this.notifDeliveryRepo.createQueryBuilder('nd');
 
     if (filters?.type) qb.andWhere('nd.type = :type', { type: filters.type });
     if (filters?.status) qb.andWhere('nd.status = :status', { status: filters.status });
     if (filters?.channel) qb.andWhere('nd.channel = :channel', { channel: filters.channel });
-    if (filters?.startDate) qb.andWhere('nd.createdAt >= :startDate', { startDate: new Date(filters.startDate) });
-    if (filters?.endDate) qb.andWhere('nd.createdAt <= :endDate', { endDate: new Date(filters.endDate) });
+    if (filters?.startDate)
+      qb.andWhere('nd.createdAt >= :startDate', { startDate: new Date(filters.startDate) });
+    if (filters?.endDate)
+      qb.andWhere('nd.createdAt <= :endDate', { endDate: new Date(filters.endDate) });
 
     const [notifications, total] = await qb
       .orderBy('nd.createdAt', 'DESC')
@@ -430,22 +597,33 @@ export class AdminService {
     const days = period === '24h' ? 1 : period === '7d' ? 7 : period === '90d' ? 90 : 30;
     const since = new Date(Date.now() - days * 24 * 60 * 60 * 1000);
 
-    const total = await this.notifDeliveryRepo.createQueryBuilder('nd')
-      .where('nd.createdAt >= :since', { since }).getCount();
+    const total = await this.notifDeliveryRepo
+      .createQueryBuilder('nd')
+      .where('nd.createdAt >= :since', { since })
+      .getCount();
 
-    const delivered = await this.notifDeliveryRepo.createQueryBuilder('nd')
-      .where('nd.createdAt >= :since AND nd.delivered = true', { since }).getCount();
+    const delivered = await this.notifDeliveryRepo
+      .createQueryBuilder('nd')
+      .where('nd.createdAt >= :since AND nd.delivered = true', { since })
+      .getCount();
 
-    const opened = await this.notifDeliveryRepo.createQueryBuilder('nd')
-      .where('nd.createdAt >= :since AND nd.opened = true', { since }).getCount();
+    const opened = await this.notifDeliveryRepo
+      .createQueryBuilder('nd')
+      .where('nd.createdAt >= :since AND nd.opened = true', { since })
+      .getCount();
 
-    const clicked = await this.notifDeliveryRepo.createQueryBuilder('nd')
-      .where('nd.createdAt >= :since AND nd.clicked = true', { since }).getCount();
+    const clicked = await this.notifDeliveryRepo
+      .createQueryBuilder('nd')
+      .where('nd.createdAt >= :since AND nd.clicked = true', { since })
+      .getCount();
 
-    const failed = await this.notifDeliveryRepo.createQueryBuilder('nd')
-      .where('nd.createdAt >= :since AND nd.status = :status', { since, status: 'failed' }).getCount();
+    const failed = await this.notifDeliveryRepo
+      .createQueryBuilder('nd')
+      .where('nd.createdAt >= :since AND nd.status = :status', { since, status: 'failed' })
+      .getCount();
 
-    const byType = await this.notifDeliveryRepo.createQueryBuilder('nd')
+    const byType = await this.notifDeliveryRepo
+      .createQueryBuilder('nd')
       .select('nd.type', 'type')
       .addSelect('COUNT(*)', 'count')
       .addSelect('SUM(CASE WHEN nd.delivered = true THEN 1 ELSE 0 END)', 'delivered')
@@ -455,7 +633,8 @@ export class AdminService {
       .groupBy('nd.type')
       .getRawMany();
 
-    const byChannel = await this.notifDeliveryRepo.createQueryBuilder('nd')
+    const byChannel = await this.notifDeliveryRepo
+      .createQueryBuilder('nd')
       .select('nd.channel', 'channel')
       .addSelect('COUNT(*)', 'count')
       .addSelect('SUM(CASE WHEN nd.delivered = true THEN 1 ELSE 0 END)', 'delivered')
@@ -463,7 +642,8 @@ export class AdminService {
       .groupBy('nd.channel')
       .getRawMany();
 
-    const byPlatform = await this.notifDeliveryRepo.createQueryBuilder('nd')
+    const byPlatform = await this.notifDeliveryRepo
+      .createQueryBuilder('nd')
       .select('nd.platform', 'platform')
       .addSelect('COUNT(*)', 'count')
       .addSelect('SUM(CASE WHEN nd.delivered = true THEN 1 ELSE 0 END)', 'delivered')
@@ -471,16 +651,17 @@ export class AdminService {
       .groupBy('nd.platform')
       .getRawMany();
 
-    const daily = await this.notifDeliveryRepo.createQueryBuilder('nd')
-      .select("DATE(nd.createdAt)", 'date')
+    const daily = await this.notifDeliveryRepo
+      .createQueryBuilder('nd')
+      .select('DATE(nd.createdAt)', 'date')
       .addSelect('COUNT(*)', 'total')
       .addSelect('SUM(CASE WHEN nd.delivered = true THEN 1 ELSE 0 END)', 'delivered')
       .addSelect('SUM(CASE WHEN nd.opened = true THEN 1 ELSE 0 END)', 'opened')
       .addSelect('SUM(CASE WHEN nd.clicked = true THEN 1 ELSE 0 END)', 'clicked')
-      .addSelect('SUM(CASE WHEN nd.status = \'failed\' THEN 1 ELSE 0 END)', 'failed')
+      .addSelect("SUM(CASE WHEN nd.status = 'failed' THEN 1 ELSE 0 END)", 'failed')
       .where('nd.createdAt >= :since', { since })
-      .groupBy("DATE(nd.createdAt)")
-      .orderBy("DATE(nd.createdAt)", 'ASC')
+      .groupBy('DATE(nd.createdAt)')
+      .orderBy('DATE(nd.createdAt)', 'ASC')
       .getRawMany();
 
     return {
@@ -508,14 +689,20 @@ export class AdminService {
     return notification;
   }
 
-  async getSubscriptions(page = 1, limit = 50, filters?: { status?: string; planId?: string; search?: string }) {
-    const qb = this.subRepo.createQueryBuilder('s')
-      .leftJoinAndSelect('s.plan', 'plan');
+  async getSubscriptions(
+    page = 1,
+    limit = 50,
+    filters?: { status?: string; planId?: string; search?: string },
+  ) {
+    const qb = this.subRepo.createQueryBuilder('s').leftJoinAndSelect('s.plan', 'plan');
 
     if (filters?.status) qb.andWhere('s.status = :status', { status: filters.status });
     if (filters?.planId) qb.andWhere('s.planId = :planId', { planId: filters.planId });
     if (filters?.search) {
-      qb.andWhere('s.userId IN (SELECT id FROM users WHERE email ILIKE :search OR fullName ILIKE :search)', { search: `%${filters.search}%` });
+      qb.andWhere(
+        's.userId IN (SELECT id FROM users WHERE email ILIKE :search OR fullName ILIKE :search)',
+        { search: `%${filters.search}%` },
+      );
     }
 
     const [subscriptions, total] = await qb
@@ -526,7 +713,10 @@ export class AdminService {
 
     const subsWithUser = await Promise.all(
       subscriptions.map(async (s) => {
-        const user = await this.userRepo.findOne({ where: { id: s.userId }, select: ['id', 'email', 'fullName'] });
+        const user = await this.userRepo.findOne({
+          where: { id: s.userId },
+          select: ['id', 'email', 'fullName'],
+        });
         return { ...s, user };
       }),
     );
@@ -540,8 +730,15 @@ export class AdminService {
   async getSubscriptionDetail(id: string) {
     const sub = await this.subRepo.findOne({ where: { id }, relations: ['plan'] });
     if (!sub) throw new NotFoundException('Subscription not found');
-    const user = await this.userRepo.findOne({ where: { id: sub.userId }, select: ['id', 'email', 'fullName', 'phone'] });
-    const transactions = await this.txnRepo.find({ where: { subscriptionId: id }, order: { createdAt: 'DESC' }, take: 20 });
+    const user = await this.userRepo.findOne({
+      where: { id: sub.userId },
+      select: ['id', 'email', 'fullName', 'phone'],
+    });
+    const transactions = await this.txnRepo.find({
+      where: { subscriptionId: id },
+      order: { createdAt: 'DESC' },
+      take: 20,
+    });
     return { subscription: sub, user, transactions };
   }
 
@@ -627,7 +824,12 @@ export class AdminService {
     });
     await this.txnRepo.save(txn);
 
-    return { granted: true, subscription: sub, plan: plan.displayName, expiresAt: sub.currentPeriodEnd };
+    return {
+      granted: true,
+      subscription: sub,
+      plan: plan.displayName,
+      expiresAt: sub.currentPeriodEnd,
+    };
   }
 
   async getSubscriptionAnalytics(period = '30d') {
@@ -638,26 +840,39 @@ export class AdminService {
     const totalCancelled = await this.subRepo.count({ where: { status: 'cancelled' } });
     const totalRefunded = await this.subRepo.count({ where: { status: 'refunded' } });
 
-    const newSubscriptions = await this.subRepo.createQueryBuilder('s')
-      .where('s.createdAt >= :since', { since }).getCount();
+    const newSubscriptions = await this.subRepo
+      .createQueryBuilder('s')
+      .where('s.createdAt >= :since', { since })
+      .getCount();
 
-    const cancellations = await this.subRepo.createQueryBuilder('s')
-      .where('s.cancelledAt >= :since AND s.status = :status', { since, status: 'cancelled' }).getCount();
+    const cancellations = await this.subRepo
+      .createQueryBuilder('s')
+      .where('s.cancelledAt >= :since AND s.status = :status', { since, status: 'cancelled' })
+      .getCount();
 
-    const refunds = await this.txnRepo.createQueryBuilder('t')
-      .where('t.createdAt >= :since AND t.type = :type', { since, type: 'refund' }).getCount();
+    const refunds = await this.txnRepo
+      .createQueryBuilder('t')
+      .where('t.createdAt >= :since AND t.type = :type', { since, type: 'refund' })
+      .getCount();
 
-    const revenue = await this.txnRepo.createQueryBuilder('t')
-      .where('t.createdAt >= :since AND t.type = :type AND t.status = :status', { since, type: 'subscription', status: 'completed' })
+    const revenue = await this.txnRepo
+      .createQueryBuilder('t')
+      .where('t.createdAt >= :since AND t.type = :type AND t.status = :status', {
+        since,
+        type: 'subscription',
+        status: 'completed',
+      })
       .select('SUM(t.amount)', 'total')
       .getRawOne();
 
-    const refundAmount = await this.txnRepo.createQueryBuilder('t')
+    const refundAmount = await this.txnRepo
+      .createQueryBuilder('t')
       .where('t.createdAt >= :since AND t.type = :type', { since, type: 'refund' })
       .select('SUM(t.amount)', 'total')
       .getRawOne();
 
-    const byPlan = await this.subRepo.createQueryBuilder('s')
+    const byPlan = await this.subRepo
+      .createQueryBuilder('s')
       .leftJoin('s.plan', 'plan')
       .select('plan.displayName', 'planName')
       .addSelect('COUNT(*)', 'count')
@@ -665,12 +880,13 @@ export class AdminService {
       .groupBy('plan.displayName')
       .getRawMany();
 
-    const daily = await this.subRepo.createQueryBuilder('s')
-      .select("DATE(s.createdAt)", 'date')
+    const daily = await this.subRepo
+      .createQueryBuilder('s')
+      .select('DATE(s.createdAt)', 'date')
       .addSelect('COUNT(*)', 'new')
       .where('s.createdAt >= :since', { since })
-      .groupBy("DATE(s.createdAt)")
-      .orderBy("DATE(s.createdAt)", 'ASC')
+      .groupBy('DATE(s.createdAt)')
+      .orderBy('DATE(s.createdAt)', 'ASC')
       .getRawMany();
 
     return {
@@ -725,7 +941,10 @@ export class AdminService {
     if (!plan) throw new NotFoundException('Plan not found');
     if (plan.name === 'free') throw new BadRequestException('Cannot delete the free plan');
     const activeSubs = await this.subRepo.count({ where: { planId, status: 'active' } });
-    if (activeSubs > 0) throw new BadRequestException(`Cannot delete plan with ${activeSubs} active subscribers. Deactivate it instead.`);
+    if (activeSubs > 0)
+      throw new BadRequestException(
+        `Cannot delete plan with ${activeSubs} active subscribers. Deactivate it instead.`,
+      );
     await this.planRepo.remove(plan);
     return { deleted: true };
   }
@@ -741,7 +960,10 @@ export class AdminService {
 
     const appealsWithUser = await Promise.all(
       appeals.map(async (a) => {
-        const user = await this.userRepo.findOne({ where: { id: a.userId }, select: ['id', 'email', 'fullName', 'phone', 'status'] });
+        const user = await this.userRepo.findOne({
+          where: { id: a.userId },
+          select: ['id', 'email', 'fullName', 'phone', 'status'],
+        });
         return { ...a, user };
       }),
     );
@@ -752,7 +974,11 @@ export class AdminService {
     };
   }
 
-  async reviewAppeal(appealId: string, data: { decision: string; notes?: string }, adminId: string) {
+  async reviewAppeal(
+    appealId: string,
+    data: { decision: string; notes?: string },
+    adminId: string,
+  ) {
     const appeal = await this.appealRepo.findOne({ where: { id: appealId } });
     if (!appeal) throw new NotFoundException('Appeal not found');
     if (appeal.status !== 'pending') throw new Error('This appeal has already been reviewed');
@@ -783,18 +1009,26 @@ export class AdminService {
     });
 
     const userIds = [...new Set(moments.map((m) => m.userId))];
-    const users = userIds.length > 0 ? await this.userRepo.find({ where: { id: In(userIds) }, select: ['id', 'fullName', 'email'] }) : [];
+    const users =
+      userIds.length > 0
+        ? await this.userRepo.find({
+            where: { id: In(userIds) },
+            select: ['id', 'fullName', 'email'],
+          })
+        : [];
     const userMap = new Map(users.map((u) => [u.id, u]));
 
     const momentIds = moments.map((m) => m.id);
-    const viewCounts = momentIds.length > 0
-      ? await this.momentViewRepo.createQueryBuilder('mv')
-        .select('mv."momentId"', 'momentId')
-        .addSelect('COUNT(*)', 'views')
-        .where('mv."momentId" IN (:...ids)', { ids: momentIds })
-        .groupBy('mv."momentId"')
-        .getRawMany()
-      : [];
+    const viewCounts =
+      momentIds.length > 0
+        ? await this.momentViewRepo
+            .createQueryBuilder('mv')
+            .select('mv."momentId"', 'momentId')
+            .addSelect('COUNT(*)', 'views')
+            .where('mv."momentId" IN (:...ids)', { ids: momentIds })
+            .groupBy('mv."momentId"')
+            .getRawMany()
+        : [];
     const viewMap = new Map(viewCounts.map((v: any) => [v.momentId, parseInt(v.views)]));
 
     return {
@@ -818,11 +1052,15 @@ export class AdminService {
 
   async getMomentStats() {
     const total = await this.momentRepo.count({ where: { deletedAt: IsNull() } });
-    const active = await this.momentRepo.count({ where: { expiresAt: MoreThan(new Date()), deletedAt: IsNull() } });
+    const active = await this.momentRepo.count({
+      where: { expiresAt: MoreThan(new Date()), deletedAt: IsNull() },
+    });
     const expired = total - active;
     const today = new Date();
     today.setHours(0, 0, 0, 0);
-    const todayCount = await this.momentRepo.count({ where: { createdAt: MoreThan(today), deletedAt: IsNull() } });
+    const todayCount = await this.momentRepo.count({
+      where: { createdAt: MoreThan(today), deletedAt: IsNull() },
+    });
 
     return { total, active, expired, todayCount };
   }
@@ -844,16 +1082,21 @@ export class AdminService {
     const userMap = new Map(users.map((u) => [u.id, u]));
     const profileMap = new Map(profiles.map((p) => [p.userId, p]));
 
-    const requestsWithDetails = await Promise.all(requests.map(async (r) => {
-      const user = userMap.get(r.userId);
-      const profile = profileMap.get(r.userId);
-      const photos = await this.photoRepo.find({ where: { profileId: profile?.id || '' }, order: { order: 'ASC' } });
-      return {
-        ...r,
-        user: user ? { id: user.id, fullName: user.fullName, email: user.email } : null,
-        profilePhotos: photos.map((p) => p.url),
-      };
-    }));
+    const requestsWithDetails = await Promise.all(
+      requests.map(async (r) => {
+        const user = userMap.get(r.userId);
+        const profile = profileMap.get(r.userId);
+        const photos = await this.photoRepo.find({
+          where: { profileId: profile?.id || '' },
+          order: { order: 'ASC' },
+        });
+        return {
+          ...r,
+          user: user ? { id: user.id, fullName: user.fullName, email: user.email } : null,
+          profilePhotos: photos.map((p) => p.url),
+        };
+      }),
+    );
 
     return {
       requests: requestsWithDetails,
@@ -869,7 +1112,12 @@ export class AdminService {
     return { total, pending, approved, rejected };
   }
 
-  async reviewVerification(requestId: string, adminId: string, action: 'approved' | 'rejected', reason?: string) {
+  async reviewVerification(
+    requestId: string,
+    adminId: string,
+    action: 'approved' | 'rejected',
+    reason?: string,
+  ) {
     const request = await this.verificationRepo.findOne({ where: { id: requestId } });
     if (!request) throw new NotFoundException('Verification request not found');
     if (request.status !== 'pending') throw new BadRequestException('Request already reviewed');
@@ -892,4 +1140,3 @@ export class AdminService {
     return { request, profileVerified: action === 'approved' };
   }
 }
-

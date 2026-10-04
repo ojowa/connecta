@@ -14,12 +14,15 @@ async function bootstrap() {
   console.log('Notifications Service running on port 3008');
 
   const notifService = app.get(NotificationsService);
-  setInterval(async () => {
-    try {
-      await notifService.cleanupOldNotifications();
-    } catch (e) {
-      console.error('Notification cleanup failed:', e);
-    }
-  }, 24 * 60 * 60 * 1000);
+  setInterval(
+    async () => {
+      try {
+        await notifService.cleanupOldNotifications();
+      } catch (e) {
+        console.error('Notification cleanup failed:', e);
+      }
+    },
+    24 * 60 * 60 * 1000,
+  );
 }
 bootstrap();

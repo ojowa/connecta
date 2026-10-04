@@ -1,23 +1,36 @@
-# Render CLI
+# Connecta
 
-## Installation
+Monorepo for the **OJChat / Connecta** dating platform.
 
-- [Homebrew](https://render.com/docs/cli#homebrew-macos-linux)
-- [Direct Download](https://render.com/docs/cli#direct-download)
+## Repository layout
 
-## Documentation
+| Path | What it is |
+|---|---|
+| [`backend/`](backend/) | Standalone NestJS backend — 13 services behind an API gateway, TypeORM/PostgreSQL, Redis, Socket.IO. **Start here:** [`backend/README.md`](backend/README.md) |
+| [`admin-web/`](admin-web/) | Next.js admin dashboard (own `package.json`; deploys to Azure Static Web Apps) |
+| [`ojchat-mobile/`](ojchat-mobile/) | Expo / React Native mobile app (own `package.json`) |
+| [`docs/`](docs/) | Numbered product & technical specs (01 executive summary … 23 code audit) |
 
-Documentation is hosted at https://render.com/docs/cli.
+Each app owns its own dependencies and tooling — install and run them
+independently:
 
-## Contributing
+```bash
+# backend
+cd backend && npm ci && npm run dev
 
-To create a new command, use the `cmd/template.go` template file as a starting point. Reference the [CLI Style Guide](docs/STYLE.md) to learn more about command naming, flags, arguments, and help text conventions.
+# admin web
+cd admin-web && npm ci && npm run dev   # Next.js on :3013
 
-### Dev setup
+# mobile
+cd ojchat-mobile && npm ci && npx expo start
+```
 
-We use [prek](https://prek.j178.dev/) to run precommit-compatible checks locally and in CI.
+## CI/CD
 
-- If you didn't install `prek` following the [dev setup guide](https://slab.render.com/posts/dev-setup-guide-ect5drdb), do so now (e.g., `brew install prek`)
-- Set up prek git hooks with `prek install`.
+- **Backend** → Azure Web App `ojchatapi` via
+  `.github/workflows/main_ojchatapi.yml` (triggers on `backend/**` changes)
+- **Admin web** → Azure Static Web Apps (configured in the Azure portal / SWA CLI)
+- **Mobile** → EAS builds (`ojchat-mobile/eas.json`)
 
-Read [AGENTS.md](AGENTS.md) for common dev commands. It's written for humans too!
+See [`backend/README.md`](backend/README.md) for env vars, scripts, and
+architecture details.

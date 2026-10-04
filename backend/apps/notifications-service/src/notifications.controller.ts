@@ -10,7 +10,11 @@ export class NotificationsController {
 
   @Get()
   @ApiOperation({ summary: 'Get notifications' })
-  getNotifications(@Headers('x-user-id') userId: string, @Query('page') page?: number, @Query('limit') limit?: number) {
+  getNotifications(
+    @Headers('x-user-id') userId: string,
+    @Query('page') page?: number,
+    @Query('limit') limit?: number,
+  ) {
     return this.notificationsService.getNotifications(userId, page, limit);
   }
 

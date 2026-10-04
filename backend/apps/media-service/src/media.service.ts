@@ -24,7 +24,10 @@ export class MediaService implements OnModuleInit {
     const settings = record?.value || {};
     const storageConfig: StorageConfig = {
       provider: settings.storageProvider || 'local',
-      local: { uploadDir: settings.storageLocal?.uploadDir, baseUrl: settings.storageLocal?.baseUrl || 'http://localhost:3006/media/files' },
+      local: {
+        uploadDir: settings.storageLocal?.uploadDir,
+        baseUrl: settings.storageLocal?.baseUrl || 'http://localhost:3006/media/files',
+      },
       s3: settings.storageS3,
       r2: settings.storageR2,
     };
@@ -62,7 +65,11 @@ export class MediaService implements OnModuleInit {
     }
 
     const media = this.mediaRepo.create({
-      userId, url, key, mimeType, sizeBytes,
+      userId,
+      url,
+      key,
+      mimeType,
+      sizeBytes,
       purpose: data.purpose || 'profile',
       metadata: data.metadata,
       thumbnailUrl: data.thumbnailUrl,
@@ -101,8 +108,8 @@ export class MediaService implements OnModuleInit {
     return {
       activeProvider: settings.storageProvider || 'local',
       local: { configured: true },
-      s3: { configured: !!(settings.storageS3?.accessKeyId) },
-      r2: { configured: !!(settings.storageR2?.accessKeyId) },
+      s3: { configured: !!settings.storageS3?.accessKeyId },
+      r2: { configured: !!settings.storageR2?.accessKeyId },
     };
   }
 }

@@ -10,13 +10,7 @@ export interface FakeProfileResult {
   confidence: number;
 }
 
-const STOCK_PHOTO_SIGNALS = [
-  /model/i,
-  /stock/i,
-  /professional/i,
-  /headshot/i,
-  /studio/i,
-];
+const STOCK_PHOTO_SIGNALS = [/model/i, /stock/i, /professional/i, /headshot/i, /studio/i];
 
 const BOT_MESSAGE_PATTERNS = [
   /\b(hi|hello|hey)\s+(dear|baby|sweetie|honey|beautiful|handsome)\b/i,
@@ -40,7 +34,8 @@ export class FakeProfileDetector {
 
   async analyze(userId: string): Promise<FakeProfileResult> {
     const user = await this.userRepo.findOne({ where: { id: userId } });
-    if (!user) return { isLikelyFake: true, riskScore: 1, flags: ['user_not_found'], confidence: 1 };
+    if (!user)
+      return { isLikelyFake: true, riskScore: 1, flags: ['user_not_found'], confidence: 1 };
 
     const profile = await this.profileRepo.findOne({ where: { userId } });
     const flags: string[] = [];
@@ -129,7 +124,10 @@ export class FakeProfileDetector {
     }
 
     if (profile?.prompts && Array.isArray(profile.prompts)) {
-      const totalLength = profile.prompts.reduce((sum: number, p: any) => sum + (p.answer?.length || 0), 0);
+      const totalLength = profile.prompts.reduce(
+        (sum: number, p: any) => sum + (p.answer?.length || 0),
+        0,
+      );
       if (profile.prompts.length > 0 && totalLength < 20) {
         flags.push('low_effort_prompts');
         riskScore += 0.1;

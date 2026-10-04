@@ -10,7 +10,12 @@ export class SearchController {
 
   @Get('users')
   @ApiOperation({ summary: 'Search users' })
-  search(@Headers('x-user-id') userId: string, @Query('q') query: string, @Query('page') page?: number, @Query('limit') limit?: number) {
+  search(
+    @Headers('x-user-id') userId: string,
+    @Query('q') query: string,
+    @Query('page') page?: number,
+    @Query('limit') limit?: number,
+  ) {
     return this.searchService.searchUsers(userId, query, page, limit);
   }
 

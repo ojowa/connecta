@@ -1,7 +1,14 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { UserBehavior, EloScore, PhotoAnalytic, ConversationSignal, Photo, Match } from '@app/common/entities';
+import {
+  UserBehavior,
+  EloScore,
+  PhotoAnalytic,
+  ConversationSignal,
+  Photo,
+  Match,
+} from '@app/common/entities';
 
 @Injectable()
 export class MatchingEnhancementService {
@@ -62,16 +69,22 @@ export class MatchingEnhancementService {
 
     for (const b of behaviors) {
       if (b.targetAge) ageCounts.set(b.targetAge, (ageCounts.get(b.targetAge) || 0) + 1);
-      if (b.targetGender) genderCounts.set(b.targetGender, (genderCounts.get(b.targetGender) || 0) + 1);
+      if (b.targetGender)
+        genderCounts.set(b.targetGender, (genderCounts.get(b.targetGender) || 0) + 1);
       if (b.targetInterests) {
         for (const interest of b.targetInterests) {
           interestCounts.set(interest, (interestCounts.get(interest) || 0) + 1);
         }
       }
-      if (b.targetJobTitle) jobCounts.set(b.targetJobTitle, (jobCounts.get(b.targetJobTitle) || 0) + 1);
-      if (b.targetSchool) schoolCounts.set(b.targetSchool, (schoolCounts.get(b.targetSchool) || 0) + 1);
+      if (b.targetJobTitle)
+        jobCounts.set(b.targetJobTitle, (jobCounts.get(b.targetJobTitle) || 0) + 1);
+      if (b.targetSchool)
+        schoolCounts.set(b.targetSchool, (schoolCounts.get(b.targetSchool) || 0) + 1);
       if (b.targetCity) cityCounts.set(b.targetCity, (cityCounts.get(b.targetCity) || 0) + 1);
-      if (b.distanceKm) { totalDistance += b.distanceKm; distanceCount++; }
+      if (b.distanceKm) {
+        totalDistance += b.distanceKm;
+        distanceCount++;
+      }
     }
 
     const avgAge = behaviors.reduce((sum, b) => sum + (b.targetAge || 0), 0) / behaviors.length;
@@ -80,10 +93,22 @@ export class MatchingEnhancementService {
     return {
       avgLikedAge: Math.round(avgAge),
       avgLikedDistance: Math.round(avgDistance),
-      topInterests: [...interestCounts.entries()].sort((a, b) => b[1] - a[1]).slice(0, 10).map(([k]) => k),
-      topJobs: [...jobCounts.entries()].sort((a, b) => b[1] - a[1]).slice(0, 5).map(([k]) => k),
-      topSchools: [...schoolCounts.entries()].sort((a, b) => b[1] - a[1]).slice(0, 5).map(([k]) => k),
-      topCities: [...cityCounts.entries()].sort((a, b) => b[1] - a[1]).slice(0, 5).map(([k]) => k),
+      topInterests: [...interestCounts.entries()]
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 10)
+        .map(([k]) => k),
+      topJobs: [...jobCounts.entries()]
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 5)
+        .map(([k]) => k),
+      topSchools: [...schoolCounts.entries()]
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 5)
+        .map(([k]) => k),
+      topCities: [...cityCounts.entries()]
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 5)
+        .map(([k]) => k),
       preferredGender: [...genderCounts.entries()].sort((a, b) => b[1] - a[1])[0]?.[0],
     };
   }
@@ -101,12 +126,16 @@ export class MatchingEnhancementService {
     let score = 0.5;
 
     if (candidateBehaviors.length > 0) {
-      const likesOnCandidate = candidateBehaviors.filter((b) => b.action === 'like' || b.action === 'super_like').length;
+      const likesOnCandidate = candidateBehaviors.filter(
+        (b) => b.action === 'like' || b.action === 'super_like',
+      ).length;
       const popularScore = Math.min(likesOnCandidate / 10, 1);
       score += popularScore * 0.2;
     }
 
-    const passRate = candidateBehaviors.filter((b) => b.action === 'pass').length / Math.max(candidateBehaviors.length, 1);
+    const passRate =
+      candidateBehaviors.filter((b) => b.action === 'pass').length /
+      Math.max(candidateBehaviors.length, 1);
     score -= passRate * 0.15;
 
     return Math.max(0, Math.min(1, score));
@@ -211,7 +240,8 @@ export class MatchingEnhancementService {
       analytics = this.photoAnalyticsRepo.create({ photoId, userId });
     }
     analytics.totalViews++;
-    const totalDuration = Number(analytics.avgViewDurationMs) * (analytics.totalViews - 1) + viewDurationMs;
+    const totalDuration =
+      Number(analytics.avgViewDurationMs) * (analytics.totalViews - 1) + viewDurationMs;
     analytics.avgViewDurationMs = totalDuration / analytics.totalViews;
     analytics.updatedAt = new Date();
     await this.photoAnalyticsRepo.save(analytics);
@@ -223,9 +253,8 @@ export class MatchingEnhancementService {
       analytics = this.photoAnalyticsRepo.create({ photoId, userId });
     }
     analytics.likesReceived++;
-    analytics.conversionRate = analytics.totalViews > 0
-      ? analytics.likesReceived / analytics.totalViews
-      : 0;
+    analytics.conversionRate =
+      analytics.totalViews > 0 ? analytics.likesReceived / analytics.totalViews : 0;
     analytics.updatedAt = new Date();
     await this.photoAnalyticsRepo.save(analytics);
   }
@@ -236,9 +265,8 @@ export class MatchingEnhancementService {
       analytics = this.photoAnalyticsRepo.create({ photoId, userId });
     }
     analytics.passesAfterView++;
-    analytics.conversionRate = analytics.totalViews > 0
-      ? analytics.likesReceived / analytics.totalViews
-      : 0;
+    analytics.conversionRate =
+      analytics.totalViews > 0 ? analytics.likesReceived / analytics.totalViews : 0;
     analytics.updatedAt = new Date();
     await this.photoAnalyticsRepo.save(analytics);
   }
@@ -260,13 +288,17 @@ export class MatchingEnhancementService {
     return analytics.map((a) => a.photoId);
   }
 
-  async trackConversationSignal(userId: string, matchId: string, data: {
-    messagesSent?: number;
-    messagesReceived?: number;
-    avgMessageLength?: number;
-    avgResponseTimeMinutes?: number;
-    responseRate?: number;
-  }) {
+  async trackConversationSignal(
+    userId: string,
+    matchId: string,
+    data: {
+      messagesSent?: number;
+      messagesReceived?: number;
+      avgMessageLength?: number;
+      avgResponseTimeMinutes?: number;
+      responseRate?: number;
+    },
+  ) {
     let signal = await this.convSignalRepo.findOne({ where: { userId, matchId } });
     if (!signal) {
       signal = this.convSignalRepo.create({ userId, matchId });
@@ -274,7 +306,8 @@ export class MatchingEnhancementService {
     if (data.messagesSent !== undefined) signal.messagesSent += data.messagesSent;
     if (data.messagesReceived !== undefined) signal.messagesReceived += data.messagesReceived;
     if (data.avgMessageLength !== undefined) signal.avgMessageLength = data.avgMessageLength;
-    if (data.avgResponseTimeMinutes !== undefined) signal.avgResponseTimeMinutes = data.avgResponseTimeMinutes;
+    if (data.avgResponseTimeMinutes !== undefined)
+      signal.avgResponseTimeMinutes = data.avgResponseTimeMinutes;
     if (data.responseRate !== undefined) signal.responseRate = data.responseRate;
     signal.updatedAt = new Date();
     await this.convSignalRepo.save(signal);
@@ -292,7 +325,9 @@ export class MatchingEnhancementService {
 
     const matchId = matches[0].id;
     const mySignals = await this.convSignalRepo.findOne({ where: { userId, matchId } });
-    const theirSignals = await this.convSignalRepo.findOne({ where: { userId: candidateId, matchId } });
+    const theirSignals = await this.convSignalRepo.findOne({
+      where: { userId: candidateId, matchId },
+    });
 
     if (!mySignals && !theirSignals) return 0.5;
 
@@ -311,23 +346,28 @@ export class MatchingEnhancementService {
     return Math.max(0, Math.min(1, score));
   }
 
-  async calculateOverallScore(userId: string, candidateId: string, compatibilityScore: number): Promise<number> {
-    const [behavioralScore, mutualScore, activityScore, eloScore, conversationScore] = await Promise.all([
-      this.calculateBehavioralScore(userId, candidateId),
-      this.calculateMutualScore(userId, candidateId),
-      this.calculateActivityScore(candidateId),
-      this.calculateEloScore(candidateId),
-      this.calculateConversationQualityScore(userId, candidateId),
-    ]);
+  async calculateOverallScore(
+    userId: string,
+    candidateId: string,
+    compatibilityScore: number,
+  ): Promise<number> {
+    const [behavioralScore, mutualScore, activityScore, eloScore, conversationScore] =
+      await Promise.all([
+        this.calculateBehavioralScore(userId, candidateId),
+        this.calculateMutualScore(userId, candidateId),
+        this.calculateActivityScore(candidateId),
+        this.calculateEloScore(candidateId),
+        this.calculateConversationQualityScore(userId, candidateId),
+      ]);
 
     const eloNormalized = Math.max(0, Math.min(1, (eloScore - 800) / 800));
 
     const overallScore =
-      compatibilityScore * 0.30 +
-      behavioralScore * 0.20 +
-      mutualScore * 0.20 +
+      compatibilityScore * 0.3 +
+      behavioralScore * 0.2 +
+      mutualScore * 0.2 +
       activityScore * 0.15 +
-      eloNormalized * 0.10 +
+      eloNormalized * 0.1 +
       conversationScore * 0.05;
 
     return Math.max(0, Math.min(1, overallScore));

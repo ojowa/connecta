@@ -6,8 +6,20 @@ import { R2StorageProvider } from './r2-storage.provider';
 export interface StorageConfig {
   provider: 'local' | 's3' | 'r2';
   local?: { uploadDir?: string; baseUrl?: string };
-  s3?: { region: string; accessKeyId: string; secretAccessKey: string; bucket: string; endpoint?: string };
-  r2?: { accountId: string; accessKeyId: string; secretAccessKey: string; bucket: string; publicUrl?: string };
+  s3?: {
+    region: string;
+    accessKeyId: string;
+    secretAccessKey: string;
+    bucket: string;
+    endpoint?: string;
+  };
+  r2?: {
+    accountId: string;
+    accessKeyId: string;
+    secretAccessKey: string;
+    bucket: string;
+    publicUrl?: string;
+  };
 }
 
 export function createStorageProvider(config: StorageConfig): StorageProvider {

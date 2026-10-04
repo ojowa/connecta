@@ -19,7 +19,11 @@ export class NotificationEventsHandler {
   async handleNotificationSend(event: NotificationEvent) {
     try {
       await this.notificationsService.createAndPush(
-        event.userId, event.type, event.title, event.body, event.data,
+        event.userId,
+        event.type,
+        event.title,
+        event.body,
+        event.data,
       );
     } catch (error) {
       this.logger.error(`Failed to send notification: ${error}`);
@@ -31,7 +35,11 @@ export class NotificationEventsHandler {
     for (const event of events) {
       try {
         await this.notificationsService.createAndPush(
-          event.userId, event.type, event.title, event.body, event.data,
+          event.userId,
+          event.type,
+          event.title,
+          event.body,
+          event.data,
         );
       } catch (error) {
         this.logger.error(`Failed to send bulk notification: ${error}`);

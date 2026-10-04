@@ -1,4 +1,15 @@
-import { Controller, Get, Post, Put, Delete, Body, Query, Param, Headers, UnauthorizedException } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Put,
+  Delete,
+  Body,
+  Query,
+  Param,
+  Headers,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { ApiTags, ApiOperation } from '@nestjs/swagger';
 import { AdminService } from './admin.service';
 
@@ -43,7 +54,12 @@ export class AdminController {
 
   @Get('users')
   @ApiOperation({ summary: 'Get all users' })
-  getUsers(@Headers('authorization') auth: string, @Query('page') page?: string, @Query('limit') limit?: string, @Query('status') status?: string) {
+  getUsers(
+    @Headers('authorization') auth: string,
+    @Query('page') page?: string,
+    @Query('limit') limit?: string,
+    @Query('status') status?: string,
+  ) {
     this.verifyAuth(auth);
     return this.adminService.getUsers(parseInt(page || '1'), parseInt(limit || '20'), status);
   }
@@ -85,14 +101,22 @@ export class AdminController {
 
   @Get('reports')
   @ApiOperation({ summary: 'Get all reports' })
-  getReports(@Headers('authorization') auth: string, @Query('page') page?: string, @Query('limit') limit?: string) {
+  getReports(
+    @Headers('authorization') auth: string,
+    @Query('page') page?: string,
+    @Query('limit') limit?: string,
+  ) {
     this.verifyAuth(auth);
     return this.adminService.getReports(parseInt(page || '1'), parseInt(limit || '20'));
   }
 
   @Post('reports/:id/resolve')
   @ApiOperation({ summary: 'Resolve a report' })
-  resolveReport(@Headers('authorization') auth: string, @Param('id') id: string, @Body() body: any) {
+  resolveReport(
+    @Headers('authorization') auth: string,
+    @Param('id') id: string,
+    @Body() body: any,
+  ) {
     this.verifyAuth(auth);
     return this.adminService.resolveReport(id, body);
   }
@@ -127,7 +151,11 @@ export class AdminController {
 
   @Get('audit-log')
   @ApiOperation({ summary: 'Get audit log' })
-  getAuditLog(@Headers('authorization') auth: string, @Query('page') page?: string, @Query('limit') limit?: string) {
+  getAuditLog(
+    @Headers('authorization') auth: string,
+    @Query('page') page?: string,
+    @Query('limit') limit?: string,
+  ) {
     this.verifyAuth(auth);
     return this.adminService.getAuditLog(parseInt(page || '1'), parseInt(limit || '50'));
   }
@@ -189,7 +217,10 @@ export class AdminController {
 
   @Get('notification-analytics')
   @ApiOperation({ summary: 'Get notification analytics' })
-  getNotificationAnalytics(@Headers('authorization') auth: string, @Query('period') period?: string) {
+  getNotificationAnalytics(
+    @Headers('authorization') auth: string,
+    @Query('period') period?: string,
+  ) {
     this.verifyAuth(auth);
     return this.adminService.getNotificationAnalytics(period);
   }
@@ -240,12 +271,19 @@ export class AdminController {
     @Query('search') search?: string,
   ) {
     this.verifyAuth(auth);
-    return this.adminService.getSubscriptions(parseInt(page || '1'), parseInt(limit || '50'), { status, planId, search });
+    return this.adminService.getSubscriptions(parseInt(page || '1'), parseInt(limit || '50'), {
+      status,
+      planId,
+      search,
+    });
   }
 
   @Get('subscriptions/analytics')
   @ApiOperation({ summary: 'Get subscription analytics' })
-  getSubscriptionAnalytics(@Headers('authorization') auth: string, @Query('period') period?: string) {
+  getSubscriptionAnalytics(
+    @Headers('authorization') auth: string,
+    @Query('period') period?: string,
+  ) {
     this.verifyAuth(auth);
     return this.adminService.getSubscriptionAnalytics(period);
   }
@@ -259,21 +297,32 @@ export class AdminController {
 
   @Post('subscriptions/:id/cancel')
   @ApiOperation({ summary: 'Cancel subscription' })
-  cancelSubscription(@Headers('authorization') auth: string, @Param('id') id: string, @Body() body: { reason?: string }) {
+  cancelSubscription(
+    @Headers('authorization') auth: string,
+    @Param('id') id: string,
+    @Body() body: { reason?: string },
+  ) {
     this.verifyAuth(auth);
     return this.adminService.cancelSubscription(id, body.reason);
   }
 
   @Post('subscriptions/:id/refund')
   @ApiOperation({ summary: 'Refund subscription' })
-  refundSubscription(@Headers('authorization') auth: string, @Param('id') id: string, @Body() body: { reason?: string }) {
+  refundSubscription(
+    @Headers('authorization') auth: string,
+    @Param('id') id: string,
+    @Body() body: { reason?: string },
+  ) {
     this.verifyAuth(auth);
     return this.adminService.refundSubscription(id, body.reason);
   }
 
   @Post('subscriptions/grant')
   @ApiOperation({ summary: 'Grant premium to user' })
-  grantPremium(@Headers('authorization') auth: string, @Body() body: { userId: string; planId: string; durationDays?: number }) {
+  grantPremium(
+    @Headers('authorization') auth: string,
+    @Body() body: { userId: string; planId: string; durationDays?: number },
+  ) {
     this.verifyAuth(auth);
     return this.adminService.grantPremium(body.userId, body.planId, body.durationDays);
   }
@@ -303,10 +352,19 @@ export class AdminController {
 
   @Get('moments')
   @ApiOperation({ summary: 'Get all moments (admin moderation)' })
-  getMoments(@Headers('authorization') auth: string, @Query('page') page?: string, @Query('limit') limit?: string, @Query('userId') userId?: string) {
+  getMoments(
+    @Headers('authorization') auth: string,
+    @Query('page') page?: string,
+    @Query('limit') limit?: string,
+    @Query('userId') userId?: string,
+  ) {
     const payload = this.verifyAuth(auth);
     this.requireRole(payload, ['moderator', 'admin']);
-    return this.adminService.getMoments(page ? parseInt(page) : 1, limit ? parseInt(limit) : 50, userId);
+    return this.adminService.getMoments(
+      page ? parseInt(page) : 1,
+      limit ? parseInt(limit) : 50,
+      userId,
+    );
   }
 
   @Get('moments/stats')
