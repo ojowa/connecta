@@ -1,6 +1,10 @@
 # Dependencies
 node_modules/
 
+# Standalone frontends (own build/lifecycle)
+admin-web/
+ojchat-mobile/
+
 # Build outputs
 dist/
 .next/

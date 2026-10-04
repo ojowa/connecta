@@ -9,6 +9,8 @@
     "node_modules",
     "test",
     "dist",
+    "admin-web",
+    "ojchat-mobile",
     "**/*spec.ts",
     "**/*e2e-spec.ts"
   ]

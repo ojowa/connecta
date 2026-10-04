@@ -1,0 +1,313 @@
+import React, { useState, useCallback } from 'react';
+import {
+  View,
+  Text,
+  StyleSheet,
+  FlatList,
+  RefreshControl,
+  TouchableOpacity,
+  Image,
+  Alert,
+} from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { Ionicons } from '@expo/vector-icons';
+import { useMatches } from '../../hooks/useMatch';
+import { LoadingSpinner } from '../../components/common/LoadingSpinner';
+import { ErrorState } from '../../components/common/ErrorState';
+import { Avatar } from '../../components/common/Avatar';
+import type { MainTabScreenProps } from '../../navigation/types';
+import { colors } from '../../theme/colors';
+import { typography } from '../../theme/typography';
+import { spacing } from '../../theme/spacing';
+import { borderRadius } from '../../theme/borderRadius';
+import { Match } from '../../types/match';
+import { matchApi } from '../../services/api/matchApi';
+
+export const MatchesScreen: React.FC<MainTabScreenProps<'Matches'>> = ({ navigation }) => {
+  const { data, isLoading, isError, refetch } = useMatches();
+  const [refreshing, setRefreshing] = useState(false);
+
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true);
+    await refetch();
+    setRefreshing(false);
+  }, [refetch]);
+
+  const handleUnmatch = useCallback(
+    async (matchId: string, otherName: string) => {
+      Alert.alert(
+        'Unmatch',
+        `Are you sure you want to unmatch ${otherName}? This cannot be undone.`,
+        [
+          { text: 'Cancel', style: 'cancel' },
+          {
+            text: 'Unmatch',
+            style: 'destructive',
+            onPress: async () => {
+              try {
+                await matchApi.unmatch(matchId);
+                await refetch();
+              } catch (err) {
+                Alert.alert('Error', 'Failed to unmatch. Please try again.');
+              }
+            },
+          },
+        ],
+      );
+    },
+    [refetch],
+  );
+
+  if (isLoading) return <LoadingSpinner />;
+  const matches = data?.matches || [];
+
+  if (isError) {
+    return (
+      <SafeAreaView style={styles.safeArea}>
+        <ErrorState message="Couldn't load your matches." onRetry={onRefresh} />
+      </SafeAreaView>
+    );
+  }
+
+  return (
+    <SafeAreaView style={styles.safeArea}>
+      <View style={styles.container}>
+        <Text style={styles.title}>Matches</Text>
+
+        <View style={styles.actionButtons}>
+          <TouchableOpacity
+            style={styles.likesButton}
+            onPress={() => navigation.navigate('LikesYou')}
+          >
+            <Ionicons name="heart" size={16} color={colors.white} />
+            <Text style={styles.likesButtonText}>Likes You</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.myLikesButton}
+            onPress={() => navigation.navigate('MyLikes')}
+          >
+            <Ionicons name="arrow-forward" size={16} color={colors.primary} />
+            <Text style={styles.myLikesButtonText}>Your Likes</Text>
+          </TouchableOpacity>
+        </View>
+        {matches.length === 0 ? (
+          <View style={styles.empty}>
+            <View style={styles.emptyCircle}>
+              <Ionicons name="people-outline" size={56} color={colors.primary} />
+            </View>
+            <Text style={styles.emptyText}>No matches yet</Text>
+            <Text style={styles.emptySubtext}>Keep swiping to find your match!</Text>
+          </View>
+        ) : (
+          <FlatList
+            data={matches}
+            keyExtractor={(item: Match) => item.id}
+            contentContainerStyle={styles.list}
+            renderItem={({ item }) => {
+              const otherId = item.otherUser?.id;
+              const conversationId = item.conversationId;
+              const otherName = item.otherUser?.fullName || 'Unknown';
+              return (
+                <View style={styles.matchRow}>
+                  <View style={styles.matchRowContent}>
+                    <TouchableOpacity
+                      style={styles.matchInfo}
+                      onPress={() =>
+                        otherId &&
+                        navigation.navigate('UserProfile', {
+                          userId: otherId,
+                          isMatched: true,
+                        })
+                      }
+                      activeOpacity={0.7}
+                    >
+                      {item.otherUser?.avatarUrl ? (
+                        <Image source={{ uri: item.otherUser.avatarUrl }} style={styles.avatar} />
+                      ) : (
+                        <Avatar uri={item.otherUser?.avatarUrl} size={48} name={item.otherUser?.fullName} />
+                      )}
+                      <View style={styles.matchDetails}>
+                        <Text style={styles.matchName} numberOfLines={1}>
+                          {item.otherUser?.fullName}
+                        </Text>
+                        <Text style={styles.matchTime}>
+                          {item.matchedAt
+                            ? new Date(item.matchedAt).toLocaleDateString()
+                            : 'New match'}
+                        </Text>
+                      </View>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      style={styles.messageButton}
+                      onPress={() => {
+                        if (!otherId) return;
+                        if (conversationId) {
+                          navigation.navigate('Conversation', {
+                            conversationId,
+                            otherUserId: otherId,
+                            otherName: item.otherUser?.fullName || 'Unknown',
+                            otherAvatar: item.otherUser?.avatarUrl,
+                          });
+                        } else {
+                          navigation.navigate('UserProfile', {
+                            userId: otherId,
+                            isMatched: true,
+                          });
+                        }
+                      }}
+                      activeOpacity={0.7}
+                    >
+                      <Ionicons name="chatbubble" size={18} color={colors.white} />
+                      <Text style={styles.messageButtonText}>Message</Text>
+                    </TouchableOpacity>
+                  </View>
+                  <TouchableOpacity
+                    style={styles.unmatchButton}
+                    onPress={() => handleUnmatch(item.id, otherName)}
+                    activeOpacity={0.7}
+                  >
+                    <Ionicons name="person-remove-outline" size={20} color={colors.white} />
+                  </TouchableOpacity>
+                </View>
+              );
+            }}
+            refreshControl={
+              <RefreshControl
+                refreshing={refreshing}
+                onRefresh={onRefresh}
+                tintColor={colors.primary}
+              />
+            }
+          />
+        )}
+      </View>
+    </SafeAreaView>
+  );
+};
+
+const styles = StyleSheet.create({
+  safeArea: { flex: 1, backgroundColor: colors.white },
+  container: { flex: 1, backgroundColor: colors.white },
+  title: { ...typography.h2, padding: spacing.md },
+  actionButtons: {
+    flexDirection: 'row',
+    paddingHorizontal: spacing.md,
+    marginBottom: spacing.md,
+    gap: spacing.sm,
+  },
+  likesButton: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: spacing.md,
+    backgroundColor: colors.primary,
+    borderRadius: borderRadius.button,
+    gap: spacing.xs,
+  },
+  likesButtonText: {
+    ...typography.button,
+    color: colors.white,
+    fontSize: 13,
+  },
+  myLikesButton: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: spacing.md,
+    backgroundColor: colors.surface,
+    borderRadius: borderRadius.button,
+    borderWidth: 1,
+    borderColor: colors.border,
+    gap: spacing.xs,
+  },
+  myLikesButtonText: {
+    ...typography.button,
+    color: colors.primary,
+    fontSize: 13,
+  },
+  list: { paddingHorizontal: spacing.md, paddingBottom: spacing.xxl },
+  matchRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: spacing.sm,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.gray100,
+    overflow: 'hidden',
+  },
+  matchRowContent: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  unmatchButton: {
+    width: 80,
+    height: '100%',
+    backgroundColor: colors.error,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  matchInfo: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+  },
+  avatar: {
+    width: 52,
+    height: 52,
+    borderRadius: 26,
+    backgroundColor: colors.gray100,
+  },
+  avatarPlaceholder: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.primaryOverlay,
+  },
+  avatarText: {
+    ...typography.button,
+    color: colors.primary,
+    fontSize: 18,
+  },
+  matchDetails: {
+    flex: 1,
+  },
+  matchName: {
+    ...typography.body,
+    fontWeight: '600',
+    color: colors.textPrimary,
+  },
+  matchTime: {
+    ...typography.caption,
+    color: colors.textSecondary,
+    marginTop: 2,
+  },
+  messageButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.primary,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    borderRadius: borderRadius.button,
+    gap: spacing.xs,
+  },
+  messageButtonText: {
+    ...typography.button,
+    color: colors.white,
+    fontSize: 13,
+  },
+  empty: { flex: 1, justifyContent: 'center', alignItems: 'center' },
+  emptyCircle: {
+    width: 100,
+    height: 100,
+    borderRadius: 50,
+    backgroundColor: colors.primaryLight,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: spacing.lg,
+  },
+  emptyText: { ...typography.h3, marginBottom: spacing.xs },
+  emptySubtext: { ...typography.body, color: colors.textSecondary },
+});

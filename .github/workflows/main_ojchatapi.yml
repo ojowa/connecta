@@ -11,6 +11,8 @@ on:
       - 'tsconfig*.json'
       - 'nest-cli.json'
       - 'ormconfig.ts'
+      - '!admin-web/**'
+      - '!ojchat-mobile/**'
       - '.github/workflows/main_ojchatapi.yml'
   workflow_dispatch:
 
