@@ -14,6 +14,7 @@
     "build:watch": "nest build api-gateway --watch",
     "format": "prettier --write \"apps/**/*.ts\" \"libs/**/*.ts\"",
     "lint": "eslint \"apps/**/*.ts\" \"libs/**/*.ts\" --fix",
+    "package:cpanel": "node scripts/package-cpanel.js",
     "typecheck": "tsc --noEmit",
     "start": "nest start api-gateway",
     "start:dev": "nest start api-gateway --watch",

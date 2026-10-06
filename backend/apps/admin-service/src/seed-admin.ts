@@ -1,9 +1,8 @@
 import { DataSource } from 'typeorm';
 import * as bcrypt from 'bcryptjs';
 import { config } from 'dotenv';
-import { resolve } from 'path';
 
-config({ path: resolve(__dirname, '../../.env') });
+config();
 
 function getDbConfig() {
   const url = process.env.DATABASE_URL;
@@ -24,8 +23,8 @@ function getDbConfig() {
     host: process.env.DB_HOST || 'localhost',
     port: parseInt(process.env.DB_PORT || '5432'),
     username: process.env.DB_USERNAME || 'postgres',
-    password: process.env.DB_PASSWORD || 'Aarinola',
-    database: process.env.DB_DATABASE || 'ojchat_db',
+    password: process.env.DB_PASSWORD || '',
+    database: process.env.DB_NAME || 'ojchat_db',
   };
 }
 

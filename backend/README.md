@@ -2,7 +2,7 @@
 
 Standalone backend service for the OJChat/Connecta dating platform. NestJS
 monolith split into 13 microservices behind a single API gateway, with
-PostgreSQL (TypeORM), Redis, and Socket.IO.
+PostgreSQL (TypeORM) and Socket.IO.
 
 > This folder is fully self-contained: it has its own `package.json`,
 > `tsconfig*`, `nest-cli.json`, migrations, and deploy scripts. It can be
@@ -42,8 +42,8 @@ backend/
 ## Requirements
 
 - Node.js >= 22, npm >= 10
-- PostgreSQL 15+ (set `DATABASE_URL`)
-- Redis (set `REDIS_URL`)
+- PostgreSQL — [Neon](https://neon.tech) recommended (set `DATABASE_URL` with
+  `?sslmode=require`). No local/cPanel database needed; Redis is not used.
 
 ## Getting started
 
@@ -62,6 +62,7 @@ npm run build:all    # compile all 13 services to dist/
 | `npm run build:all` | Build all 13 services |
 | `npm run typecheck` | `tsc --noEmit` over apps + libs |
 | `npm run lint` | ESLint (all apps + libs) with `--fix` |
+| `npm run package:cpanel` | Assemble a cPanel-ready bundle in `out/cpanel/` (`--zip` to archive) |
 | `npm test` / `test:watch` / `test:cov` | Jest unit tests |
 | `npm run migration:run` | Apply pending TypeORM migrations |
 | `npm run migration:revert` | Revert last migration |
@@ -72,10 +73,9 @@ npm run build:all    # compile all 13 services to dist/
 
 | Variable | Required | Notes |
 |---|---|---|
-| `DATABASE_URL` | yes* | `postgresql://user:pass@host:5432/db` (*or `DB_HOST`/`DB_USERNAME`/`DB_PASSWORD`/`DB_NAME`) |
+| `DATABASE_URL` | yes* | Neon: `postgresql://user:pass@ep-xxx.neon.tech/neondb?sslmode=require` (*or `DB_HOST`/`DB_USERNAME`/`DB_PASSWORD`/`DB_NAME`) |
 | `JWT_SECRET` | yes | signing secret for access/refresh tokens |
 | `ADMIN_JWT_SECRET` | yes | separate secret for admin tokens |
-| `REDIS_URL` | yes | `redis://host:6379` |
 | `PORT` / `APP_PORT` | no | HTTP port, default `3000` |
 | `NODE_ENV` | no | `development` / `production` |
 | `EXPO_PUSH_TOKEN` | for prod | Expo push notifications |
@@ -94,4 +94,8 @@ Local development uses `.env` (loaded via `dotenv` in each service entrypoint).
 - **Deploy (Azure):** `.github/workflows/main_ojchatapi.yml` builds
   `backend/**` on pushes to `main` and deploys to Azure Web App `ojchatapi`,
   starting via `backend/startup.sh` (runs migrations, then all 13 services).
+- **Deploy (cPanel):** `npm run package:cpanel` builds `out/cpanel/` — upload
+  it to a cPanel Node.js app with `server.js` as the startup file (full
+  checklist in the generated `DEPLOY.txt`). Database is external (Neon); no
+  cPanel MySQL/Postgres needed.
 - **Deploy (Render):** `../render.yaml` blueprint runs `cd backend && …`.

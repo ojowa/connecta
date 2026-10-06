@@ -9,6 +9,7 @@
     "node_modules",
     "test",
     "dist",
+    "out",
     "**/*spec.ts",
     "**/*e2e-spec.ts"
   ]
