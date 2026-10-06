@@ -2,14 +2,13 @@ services:
   - type: web
     name: ojchat
     runtime: node
+    rootDir: backend
     plan: free
     healthCheckPath: /v1/health
-    buildCommand: cd backend && npm install && npm run build:all
-    startCommand: cd backend && npm run start:monolith
+    buildCommand: npm install && npm run build:all
+    startCommand: npm run start:monolith
     envVars:
       - key: NODE_ENV
         value: production
       - key: PORT
         value: "3000"
-      - key: REDIS_URL
-        value: redis://localhost:6379
