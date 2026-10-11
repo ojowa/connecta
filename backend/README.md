@@ -1,8 +1,7 @@
 # Connecta Backend (OJChat)
 
-Standalone backend service for the OJChat/Connecta dating platform. NestJS
-monolith split into 13 microservices behind a single API gateway, with
-PostgreSQL (TypeORM) and Socket.IO.
+Standalone backend for the OJChat/Connecta dating platform. NestJS
+single-process monolith with PostgreSQL (TypeORM) and Socket.IO.
 
 > This folder is fully self-contained: it has its own `package.json`,
 > `tsconfig*`, `nest-cli.json`, migrations, and deploy scripts. It can be
@@ -12,32 +11,46 @@ PostgreSQL (TypeORM) and Socket.IO.
 
 ```
 backend/
-├── apps/                  # 13 NestJS services (each with src/main.ts)
-│   ├── api-gateway/       # public entrypoint — /v1 REST + proxying
-│   ├── auth-service/      # authentication, JWT, 2FA
-│   ├── users-service/     # profiles, account management
-│   ├── matching-service/  # matchmaking engine + AI scoring
-│   ├── chat-service/      # conversations, messages, Socket.IO
-│   ├── calls-service/     # WebRTC voice/video signalling
-│   ├── media-service/     # uploads (local/S3/R2)
-│   ├── payments-service/  # subscriptions, Paystack/Flutterwave
-│   ├── notifications-service/
-│   ├── search-service/
-│   ├── content-service/   # moments, feeds
-│   ├── support-service/   # tickets, appeals
-│   └── admin-service/     # moderation & admin APIs
-├── libs/                  # shared libraries (tsconfig path alias @app/*)
-│   ├── common/            # entities, constants, storage providers
-│   ├── config/            # AppConfigService (env access + validation)
-│   ├── database/          # TypeORM module/data-source
-│   └── logger/            # logger module, interceptor
-├── migrations/            # TypeORM migrations (*.ts, run by migration:run)
-│   └── archive/           # legacy raw SQL — NOT executed (see its README)
-├── config/                # non-service configuration (azure/)
-├── scripts/               # operational one-off scripts
-├── startup.sh             # Azure App Service startup (runs all 13 services)
-└── dist/                  # build output (gitignored)
+├── apps/
+│   └── monolith/            # the entire API as ONE Nest application
+│       └── src/
+│           ├── main.ts           # bootstrap (REST + Socket.IO)
+│           ├── app.module.ts     # root: DB connection, routers, globals
+│           ├── features.ts       # the 12 feature modules
+│           ├── entities.module.ts
+│           ├── gateway/          # middleware, interceptors, filters, guards
+│           ├── health/           # /v1/health
+│           └── modules/          # former services, now in-process modules:
+│               ├── auth/         # authentication, JWT, 2FA
+│               ├── users/        # profiles, account management
+│               ├── matching/     # matchmaking engine + AI scoring
+│               ├── chat/         # conversations, messages
+│               ├── calls/        # WebRTC voice/video signalling (Socket.IO)
+│               ├── media/        # uploads (local/S3/R2)
+│               ├── payments/     # subscriptions, Paystack/Flutterwave
+│               ├── notifications/
+│               ├── search/
+│               ├── content/      # moments, feeds
+│               ├── support/      # tickets, appeals
+│               └── admin/        # moderation & admin APIs
+├── libs/                    # shared libraries (tsconfig path alias @app/*)
+│   ├── common/              # entities, constants, storage providers
+│   ├── config/              # AppConfigService (env access + validation)
+│   ├── database/            # TypeORM module/data-source
+│   └── logger/              # logger module, interceptor
+├── migrations/              # TypeORM migrations (*.ts, run by migration:run)
+│   └── archive/             # legacy raw SQL — NOT executed (see its README)
+├── config/                  # non-service configuration (azure/)
+├── scripts/                 # operational one-off scripts
+├── app.js                   # cPanel/Passenger startup file
+├── startup.sh               # Azure App Service startup (migrations + app)
+└── dist/                    # build output (gitignored)
 ```
+
+Every former microservice now runs inside `apps/monolith` sharing one process
+and one database connection; each is mounted under its original prefix
+(`/v1/auth`, `/v1/users`, `/v1/matching`, …) via Nest's `RouterModule`. There
+are no child processes and no internal ports.
 
 ## Requirements
 
@@ -49,17 +62,18 @@ backend/
 
 ```bash
 npm ci
-npm run dev          # gateway (watch) + all 12 services, or:
-npm run start:dev    # gateway only, watch mode
-npm run build:all    # compile all 13 services to dist/
+npm run start:dev         # monolith in watch mode
+npm run build:monolith    # compile to dist/apps/monolith
+npm run start:prod        # run the built app
 ```
 
 ## Scripts
 
 | Script | Purpose |
 |---|---|
-| `npm run dev` | Run gateway + all services in watch mode |
-| `npm run build:all` | Build all 13 services |
+| `npm run build:monolith` (alias `build`) | Compile the monolith to `dist/` |
+| `npm run start:dev` | Run the monolith in watch mode |
+| `npm run start:prod` | Run the built monolith |
 | `npm run typecheck` | `tsc --noEmit` over apps + libs |
 | `npm run lint` | ESLint (all apps + libs) with `--fix` |
 | `npm run package:cpanel` | Assemble a cPanel-ready bundle in `out/cpanel/` (`--zip` to archive) |
@@ -67,7 +81,6 @@ npm run build:all    # compile all 13 services to dist/
 | `npm run migration:run` | Apply pending TypeORM migrations |
 | `npm run migration:revert` | Revert last migration |
 | `npm run migration:show` | List migrations and their status |
-| `npm run start:monolith` | Run all built services concurrently (prod) |
 
 ## Environment variables
 
@@ -82,20 +95,22 @@ npm run build:all    # compile all 13 services to dist/
 | `PAYSTACK_SECRET_KEY` / `PAYSTACK_PUBLIC_KEY` | for payments | |
 | `SMTP_*`, `FIREBASE_*`, `CLOUDINARY_*` | optional | see `libs/config/src/config.service.ts` |
 
-Local development uses `.env` (loaded via `dotenv` in each service entrypoint).
+Local development uses `.env` (loaded via `dotenv` in the monolith entrypoint).
 
 ## Architecture notes
 
 - **Path alias** `@app/*` → `libs/*/src`, declared in `tsconfig.json` and
   resolved at build time into relative requires (plus `tsconfig-paths/register`
   as a runtime fallback).
-- **API gateway** exposes everything under `/v1` and proxies to the other
-  services; the mobile app and admin web talk only to the gateway.
-- **Deploy (Azure):** `.github/workflows/main_ojchatapi.yml` builds
-  `backend/**` on pushes to `main` and deploys to Azure Web App `ojchatapi`,
-  starting via `backend/startup.sh` (runs migrations, then all 13 services).
-- **Deploy (cPanel):** `npm run package:cpanel` builds `out/cpanel/` — upload
-  it to a cPanel Node.js app with `server.js` as the startup file (full
-  checklist in the generated `DEPLOY.txt`). Database is external (Neon); no
-  cPanel MySQL/Postgres needed.
+- **Single public surface** — everything is exposed under `/v1` by one process
+  (`app.setGlobalPrefix('v1')`); clients (mobile app, admin web) talk only to
+  `/v1`. Auth is enforced by the gateway middleware, which bridges the verified
+  user id onto an `x-user-id` header for the controllers.
+- **Deploy (Azure):** `.github/workflows/main_ojchatapi.yml` builds `backend/**`
+  on pushes to `main` and deploys to Azure Web App `ojchatapi`, starting via
+  `backend/startup.sh` (runs migrations, then the monolith).
+- **Deploy (cPanel):** `npm run package:cpanel` builds `out/cpanel/` — upload it
+  to a cPanel Node.js app with `app.js` as the startup file (full checklist in
+  the generated `DEPLOY.txt`). Database is external (Neon); no cPanel
+  MySQL/Postgres needed.
 - **Deploy (Render):** `../render.yaml` blueprint runs `cd backend && …`.

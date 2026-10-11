@@ -23,7 +23,7 @@ const FILES = [
   'package-lock.json',
   'tsconfig.json',
   'ormconfig.ts',
-  'server.js',
+  'app.js',
   '.env.example',
 ];
 const DIRS = ['dist', 'migrations'];
@@ -32,15 +32,15 @@ const args = process.argv.slice(2);
 const forceBuild = args.includes('--build');
 const wantZip = args.includes('--zip');
 
-const gatewayEntry = path.join(ROOT, 'dist', 'apps', 'api-gateway', 'src', 'main.js');
+const monolithEntry = path.join(ROOT, 'dist', 'apps', 'monolith', 'src', 'main.js');
 
 function log(msg) {
   console.log(`[package:cpanel] ${msg}`);
 }
 
 function build() {
-  log('running npm run build:all ...');
-  const result = spawnSync('npm run build:all', {
+  log('running npm run build:monolith ...');
+  const result = spawnSync('npm run build:monolith', {
     cwd: ROOT,
     stdio: 'inherit',
     shell: true,
@@ -73,52 +73,60 @@ function dirSize(dir) {
 }
 
 function writeDeployNotes() {
-  const notes = `cPanel deployment checklist
-===========================
+  const notes = `cPanel deployment checklist (single-process monolith)
+=====================================================
+
+This bundle runs the WHOLE platform as ONE Node process (apps/monolith).
+It does not spawn child processes and does not bind ports 3001-3012, so it
+works on shared / CloudLinux (CageFS) cPanel hosting.
 
 1. Upload
    - Upload the CONTENTS of this folder to your cPanel Node app root
-     (e.g. ~/backend/), keeping this layout: server.js, dist/, package.json, ...
+     (e.g. ~/backend/), keeping this layout: app.js, dist/, package.json, ...
    - Do NOT forget package-lock.json (used by cPanel's NPM install).
 
-2. cPanel -> Setup Node.js App -> Create Application
-   - Node.js version : 22.x
+2. cPanel -> Application Manager (the old "Setup Node.js App") -> Create Application
+   - Node.js version  : 22.x
    - Application root : (folder you uploaded to)
-   - Startup file     : server.js
+   - Startup file     : app.js      <-- IMPORTANT (default Passenger name)
+   - Application URL  : your domain / subdomain
 
 3. NPM install
-   - Click "Run NPM Install" in the Node.js app screen.
-   - NOTE: for step 4 (migrations) you need devDependencies (ts-node):
-     run "npm install" (full) via cPanel Terminal instead if install was production-only.
+   - Click "Run NPM Install" in the Application Manager.
+   - Migrations use ts-node (a devDependency). If the install was
+     production-only and you need to run migrations on the host, run a full
+     "npm install" via cPanel Terminal, or run migrations from your own machine
+     against the same DATABASE_URL instead.
 
-4. Database (Neon - NO cPanel database needed)
-   - Create a project at https://neon.tech and copy the connection string
-     (Postgres -> Connection string).
+4. Database (external PostgreSQL - NO cPanel database needed)
+   - Create a project at https://neon.tech and copy the connection string.
        * App runtime: use the POOLED endpoint (host contains "-pooled.")
        * Migrations / seed: use the DIRECT endpoint
        * Keep ?sslmode=require (Neon requires TLS)
    - Copy .env.example to .env and set DATABASE_URL, JWT_SECRET, ADMIN_JWT_SECRET.
-   - If Neon IP restrictions are enabled, allow your machine (and server) IP.
    - Run migrations from the app root (your machine or cPanel Terminal):
        npm run migration:run
    - Optional first admin user:
-       npx ts-node apps/admin-service/src/seed-admin.ts
-     (args: [email] [password] ["Full Name"] [role])
+       npx ts-node apps/monolith/src/modules/admin/seed-admin.ts
 
-5. Start / Restart the application in cPanel.
+5. Restart the application in Application Manager, then check:
+   https://yourdomain.com/v1/health
+   https://yourdomain.com/docs
 
 6. Point clients at https://yourdomain.com/v1
-   - health check: https://yourdomain.com/v1/health
-   - mobile  : EXPO_PUBLIC_API_URL=https://yourdomain.com/v1
-   - admin   : NEXT_PUBLIC_API_URL=https://yourdomain.com/v1
+   - mobile : EXPO_PUBLIC_API_URL=https://yourdomain.com/v1
+   - admin  : NEXT_PUBLIC_API_URL=https://yourdomain.com/v1
 
-SECURITY: internal services listen on 0.0.0.0:3001-3012. Block ports
-3001-3012 in your firewall (CSF/WHM) so only the gateway port is public.
+WHY THIS AVOIDS ERROR 127
+-------------------------
+- Startup file is app.js (Passenger's default name) -> no "file not found".
+- No child_process.spawn()/fork() and no internal ports -> nothing for the
+  shell to fail to execute ("command not found"), and no LVE nproc/port limits.
+- Only runtime dependencies are required at boot; builds/migrations are not
+  run through npm lifecycle scripts on the host.
 
-REQUIREMENTS: Node.js >= 22 in cPanel, an external PostgreSQL database
-(Neon recommended - cPanel's local MySQL/Postgres is NOT needed), and a host
-that allows binding local ports (VPS/dedicated cPanel - shared/CageFS
-hosting usually does not).
+REQUIREMENTS: Node.js >= 22 enabled in cPanel and an external PostgreSQL
+database (Neon recommended). cPanel's local MySQL/Postgres is NOT needed.
 `;
   fs.writeFileSync(path.join(OUT, 'DEPLOY.txt'), notes, 'utf8');
 }
@@ -145,7 +153,7 @@ function makeZip() {
 
 // --- main -----------------------------------------------------------------
 
-if (forceBuild || !fs.existsSync(gatewayEntry)) {
+if (forceBuild || !fs.existsSync(monolithEntry)) {
   build();
 }
 

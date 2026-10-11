@@ -39,8 +39,8 @@ jobs:
         run: npm ci
         working-directory: backend
 
-      - name: Build all services
-        run: npm run build:all 2>&1 | tee build.log || (cat build.log && exit 1)
+      - name: Build monolith
+        run: npm run build:monolith 2>&1 | tee build.log || (cat build.log && exit 1)
         working-directory: backend
 
       - name: Install production dependencies for deployment

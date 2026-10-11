@@ -5,8 +5,8 @@ services:
     rootDir: backend
     plan: free
     healthCheckPath: /v1/health
-    buildCommand: npm install && npm run build:all
-    startCommand: npm run start:monolith
+    buildCommand: npm install && npm run build:monolith
+    startCommand: npm run start:prod
     envVars:
       - key: NODE_ENV
         value: production
