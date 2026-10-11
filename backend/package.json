@@ -25,10 +25,7 @@
     "typeorm": "ts-node -r tsconfig-paths/register ./node_modules/typeorm/cli.js",
     "migration:run": "npm run typeorm -- migration:run -d ormconfig.ts",
     "migration:revert": "npm run typeorm -- migration:revert -d ormconfig.ts",
-    "migration:show": "npm run typeorm -- migration:show -d ormconfig.ts",
-    "docker:up": "docker-compose up -d",
-    "docker:down": "docker-compose down",
-    "docker:build": "docker-compose build"
+    "migration:show": "npm run typeorm -- migration:show -d ormconfig.ts"
   },
   "dependencies": {
     "@nestjs/axios": "^3.1.0",
