@@ -114,3 +114,10 @@ Local development uses `.env` (loaded via `dotenv` in the monolith entrypoint).
   the generated `DEPLOY.txt`). Database is external (Neon); no cPanel
   MySQL/Postgres needed.
 - **Deploy (Render):** `../render.yaml` blueprint runs `cd backend && …`.
+- **Deploy (Vercel):** set the Vercel project root to `backend/`. `vercel.json`
+  builds the Nest app and routes every request to `api/index.js`, which runs the
+  compiled app as one serverless function. Configure `DATABASE_URL`,
+  `JWT_SECRET`, `ADMIN_JWT_SECRET`, and any feature env vars in Vercel. Use the
+  Neon **pooled** connection string. Vercel is serverless, so Socket.IO
+  (calls), in-process `@Cron` jobs, and local `uploads/` are not durable; use
+  external storage and an external scheduler/worker for those features.

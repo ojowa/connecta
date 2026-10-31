@@ -2,9 +2,10 @@ import 'tsconfig-paths/register';
 import 'dotenv/config';
 import { NestFactory } from '@nestjs/core';
 import { Logger, ValidationPipe } from '@nestjs/common';
-import { NestExpressApplication } from '@nestjs/platform-express';
+import { ExpressAdapter, NestExpressApplication } from '@nestjs/platform-express';
 import { IoAdapter } from '@nestjs/platform-socket.io';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
+import type { Express } from 'express';
 import helmet from 'helmet';
 import { join } from 'path';
 import { MonolithModule } from './app.module';
@@ -17,10 +18,15 @@ import { TimeoutInterceptor } from './gateway/interceptors/timeout.interceptor';
 import { ResponseTransformInterceptor } from './gateway/interceptors/response-transform.interceptor';
 import { AuditLogInterceptor } from './gateway/interceptors/audit-log.interceptor';
 
-async function bootstrap() {
-  const app = await NestFactory.create<NestExpressApplication>(MonolithModule, {
-    logger: ['error', 'warn', 'log', 'debug'],
-  });
+export async function createApp(expressInstance?: Express): Promise<NestExpressApplication> {
+  const logger: ('error' | 'warn' | 'log' | 'debug')[] = ['error', 'warn', 'log', 'debug'];
+  const app = expressInstance
+    ? await NestFactory.create<NestExpressApplication>(
+        MonolithModule,
+        new ExpressAdapter(expressInstance),
+        { logger },
+      )
+    : await NestFactory.create<NestExpressApplication>(MonolithModule, { logger });
 
   app.setGlobalPrefix('v1');
 
@@ -108,9 +114,18 @@ async function bootstrap() {
   const document = SwaggerModule.createDocument(app, config);
   SwaggerModule.setup('docs', app, document);
 
+  return app;
+}
+
+export async function bootstrap(): Promise<void> {
+  const app = await createApp();
   const port = process.env.PORT || 3000;
   await app.listen(port);
   new Logger('Monolith').log(`OJChat monolith running on port ${port}`);
 }
 
-bootstrap();
+// The Vercel serverless entrypoint sets this before requiring the compiled
+// bundle so it can reuse createApp() without binding a port.
+if (process.env.CONNECTA_SERVERLESS !== '1') {
+  void bootstrap();
+}
