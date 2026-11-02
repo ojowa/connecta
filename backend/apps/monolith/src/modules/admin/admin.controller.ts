@@ -9,6 +9,7 @@ import {
   Param,
   Headers,
   UnauthorizedException,
+  ForbiddenException,
 } from '@nestjs/common';
 import { ApiTags, ApiOperation } from '@nestjs/swagger';
 import { AdminService } from './admin.service';
@@ -34,7 +35,7 @@ export class AdminController {
 
   private requireRole(payload: any, allowedRoles: string[]) {
     if (!allowedRoles.includes(payload.role)) {
-      throw new UnauthorizedException('Insufficient permissions');
+      throw new ForbiddenException('Insufficient permissions');
     }
   }
 

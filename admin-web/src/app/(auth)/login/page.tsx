@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { ErrorBanner } from "@/components/shared/error-banner";
 import { api, setAccessToken, AdminUser } from "@/lib/api";
 
 export default function LoginPage() {
@@ -17,12 +18,12 @@ export default function LoginPage() {
   const [requires2fa, setRequires2fa] = useState(false);
   const [tempToken, setTempToken] = useState("");
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
+  const [error, setError] = useState<unknown>(null);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    setError("");
+    setError(null);
 
     try {
       const res = await api.post<{ admin?: AdminUser; tokens?: { accessToken: string }; requires2fa?: boolean; tempToken?: string }>(
@@ -41,7 +42,7 @@ export default function LoginPage() {
         router.push("/dashboard");
       }
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : "Login failed");
+      setError(err);
     } finally {
       setLoading(false);
     }
@@ -50,7 +51,7 @@ export default function LoginPage() {
   const handle2fa = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    setError("");
+    setError(null);
 
     try {
       const res = await api.post<{ admin?: AdminUser; tokens?: { accessToken: string } }>(
@@ -63,7 +64,7 @@ export default function LoginPage() {
         router.push("/dashboard");
       }
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : "Verification failed");
+      setError(err);
     } finally {
       setLoading(false);
     }
@@ -108,7 +109,7 @@ export default function LoginPage() {
                   required
                 />
               </div>
-              {error && <p className="text-sm text-destructive">{error}</p>}
+              <ErrorBanner error={error} />
               <Button type="submit" className="w-full" disabled={loading}>
                 {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
                 Sign In
@@ -129,12 +130,12 @@ export default function LoginPage() {
                 />
                 <p className="text-xs text-muted-foreground">Enter the 6-digit code from your authenticator app.</p>
               </div>
-              {error && <p className="text-sm text-destructive">{error}</p>}
+              <ErrorBanner error={error} />
               <Button type="submit" className="w-full" disabled={loading}>
                 {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
                 Verify
               </Button>
-              <Button type="button" variant="ghost" className="w-full" onClick={() => { setRequires2fa(false); setError(""); }}>
+              <Button type="button" variant="ghost" className="w-full" onClick={() => { setRequires2fa(false); setError(null); }}>
                 Back to login
               </Button>
             </form>

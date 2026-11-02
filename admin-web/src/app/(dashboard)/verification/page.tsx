@@ -10,7 +10,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Loading } from "@/components/shared/loading";
 import { EmptyState } from "@/components/shared/empty-state";
 import { Pagination } from "@/components/shared/pagination";
-import { api } from "@/lib/api";
+import { ErrorBanner } from "@/components/shared/error-banner";
+import { api, formatApiError } from "@/lib/api";
 
 interface VerificationRequest {
   id: string;
@@ -44,6 +45,7 @@ export default function VerificationPage() {
   const [meta, setMeta] = useState({ page: 1, limit: 20, total: 0, totalPages: 0, hasMore: false });
   const [stats, setStats] = useState<VerificationStats | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<unknown>(null);
   const [statusFilter, setStatusFilter] = useState("");
   const [reviewTarget, setReviewTarget] = useState<VerificationRequest | null>(null);
   const [reviewAction, setReviewAction] = useState<"approved" | "rejected">("approved");
@@ -53,6 +55,7 @@ export default function VerificationPage() {
 
   const fetchRequests = (page = 1) => {
     setLoading(true);
+    setError(null);
     api.get<{ requests: VerificationRequest[]; meta: typeof meta }>("/admin/verification", {
       page, limit: 20, status: statusFilter || undefined,
     })
@@ -61,12 +64,12 @@ export default function VerificationPage() {
         setRequests(res?.requests || []);
         setMeta({ ...m, hasMore: m.page < m.totalPages });
       })
-      .catch(console.error)
+      .catch(setError)
       .finally(() => setLoading(false));
   };
 
   const fetchStats = () => {
-    api.get<VerificationStats>("/admin/verification/stats").then(setStats).catch(console.error);
+    api.get<VerificationStats>("/admin/verification/stats").then(setStats).catch(setError);
   };
 
   useEffect(() => { fetchRequests(); fetchStats(); }, [statusFilter]);
@@ -84,7 +87,7 @@ export default function VerificationPage() {
       fetchRequests(meta.page);
       fetchStats();
     } catch (err) {
-      alert(err instanceof Error ? err.message : "Failed");
+      alert(formatApiError(err, "Failed"));
     } finally {
       setReviewLoading(false);
     }
@@ -112,6 +115,8 @@ export default function VerificationPage() {
         </h1>
         <p className="text-muted-foreground">Review selfie verification requests and approve/reject profiles.</p>
       </div>
+
+      <ErrorBanner error={error} />
 
       {stats && (
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -147,7 +152,7 @@ export default function VerificationPage() {
         ))}
       </div>
 
-      {loading ? <Loading /> : requests.length === 0 ? (
+      {loading ? <Loading /> : error ? null : requests.length === 0 ? (
         <EmptyState title="No requests" description="No verification requests found." />
       ) : (
         <>

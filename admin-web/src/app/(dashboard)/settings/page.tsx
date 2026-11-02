@@ -7,14 +7,17 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Loading } from "@/components/shared/loading";
+import { ErrorBanner } from "@/components/shared/error-banner";
 import { api } from "@/lib/api";
 import { SystemSettings } from "@/types";
 
 export default function SettingsPage() {
   const [settings, setSettings] = useState<SystemSettings>({});
   const [loading, setLoading] = useState(true);
+  const [loaded, setLoaded] = useState(false);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState("");
+  const [error, setError] = useState<unknown>(null);
   const [activeTab, setActiveTab] = useState<"paystack" | "flutterwave">("paystack");
   const [storageTab, setStorageTab] = useState<"local" | "s3" | "r2">("local");
   const [showSecrets, setShowSecrets] = useState<Record<string, boolean>>({});
@@ -45,20 +48,22 @@ export default function SettingsPage() {
   const selectedCurrency = CURRENCIES.find((c) => c.code === (settings.currency || "NGN"));
 
   useEffect(() => {
+    setError(null);
     api.get<{ settings: SystemSettings }>("/admin/settings")
-      .then((res) => setSettings(res?.settings || {}))
-      .catch(console.error)
+      .then((res) => { setSettings(res?.settings || {}); setLoaded(true); })
+      .catch(setError)
       .finally(() => setLoading(false));
   }, []);
 
   const handleSave = async () => {
     setSaving(true);
     setMessage("");
+    setError(null);
     try {
       await api.put<{ updatedAt: string }>("/admin/settings", settings);
       setMessage("Settings saved successfully.");
     } catch (err) {
-      setMessage(err instanceof Error ? err.message : "Failed to save");
+      setError(err);
     } finally {
       setSaving(false);
     }
@@ -80,6 +85,7 @@ export default function SettingsPage() {
   };
 
   if (loading) return <Loading text="Loading settings..." />;
+  if (!loaded) return <ErrorBanner error={error ?? "Failed to load settings."} />;
 
   return (
     <div className="space-y-6">
@@ -95,10 +101,11 @@ export default function SettingsPage() {
       </div>
 
       {message && (
-        <div className={`rounded-lg border p-4 text-sm ${message.includes("success") ? "bg-green-50 text-green-800 border-green-200" : "bg-red-50 text-red-800 border-red-200"}`}>
+        <div className="rounded-lg border border-green-200 bg-green-50 p-4 text-sm text-green-800">
           {message}
         </div>
       )}
+      <ErrorBanner error={error} />
 
       <div className="grid gap-6 md:grid-cols-2">
         <Card>

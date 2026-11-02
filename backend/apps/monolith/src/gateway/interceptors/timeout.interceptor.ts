@@ -1,20 +1,28 @@
-import { Injectable, NestInterceptor, ExecutionContext, CallHandler, Logger } from '@nestjs/common';
+import {
+  Injectable,
+  NestInterceptor,
+  ExecutionContext,
+  CallHandler,
+  RequestTimeoutException,
+} from '@nestjs/common';
 import { Observable } from 'rxjs';
-import { tap, catchError } from 'rxjs/operators';
-import { throwError } from 'rxjs';
 
 @Injectable()
 export class TimeoutInterceptor implements NestInterceptor {
-  private readonly logger = new Logger('TimeoutInterceptor');
   private readonly defaultTimeout = 30000;
+  private readonly maxTimeout = 300000;
 
   intercept(context: ExecutionContext, next: CallHandler): Observable<any> {
     const request = context.switchToHttp().getRequest();
-    const timeout = parseInt(request.headers['x-timeout'], 10) || this.defaultTimeout;
+    const requestedTimeout = Number(request.headers['x-timeout']);
+    const timeout =
+      Number.isFinite(requestedTimeout) && requestedTimeout > 0
+        ? Math.min(requestedTimeout, this.maxTimeout)
+        : this.defaultTimeout;
 
     return new Observable((subscriber) => {
       const timer = setTimeout(() => {
-        subscriber.error(new Error('Request timeout'));
+        subscriber.error(new RequestTimeoutException('Request timeout'));
       }, timeout);
 
       next.handle().subscribe({

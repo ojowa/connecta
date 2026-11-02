@@ -7,6 +7,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { ErrorBanner } from "@/components/shared/error-banner";
 import { api } from "@/lib/api";
 
 interface ToxicityResult {
@@ -38,7 +39,7 @@ export default function ModerationPage() {
   const [scamUserId, setScamUserId] = useState("");
   const [scamResult, setScamResult] = useState<ScamResult | null>(null);
   const [loading, setLoading] = useState<"toxicity" | "fake" | "scam" | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<unknown>(null);
 
   const checkToxicity = async () => {
     if (!toxicityText.trim()) return;
@@ -48,7 +49,7 @@ export default function ModerationPage() {
       const res = await api.post<ToxicityResult>("/matching/toxicity-check", { text: toxicityText });
       setToxicityResult(res);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to check toxicity");
+      setError(err);
     } finally {
       setLoading(null);
     }
@@ -62,7 +63,7 @@ export default function ModerationPage() {
       const res = await api.get<FakeProfileResult>(`/matching/fake-profile-check/${fakeProfileId}`);
       setFakeProfileResult(res);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to check profile");
+      setError(err);
     } finally {
       setLoading(null);
     }
@@ -76,7 +77,7 @@ export default function ModerationPage() {
       const res = await api.get<ScamResult>(`/matching/scam-check/${scamUserId}`);
       setScamResult(res);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to check scam risk");
+      setError(err);
     } finally {
       setLoading(null);
     }
@@ -110,9 +111,7 @@ export default function ModerationPage() {
         </div>
       </div>
 
-      {error && (
-        <div className="rounded-lg border border-destructive/50 bg-destructive/10 p-4 text-sm text-destructive">{error}</div>
-      )}
+      <ErrorBanner error={error} />
 
       <div className="grid gap-6 md:grid-cols-2">
         <Card>

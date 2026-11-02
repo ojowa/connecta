@@ -7,7 +7,8 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge, badgeVariant } from "@/components/ui/badge";
 import { Loading } from "@/components/shared/loading";
-import { api } from "@/lib/api";
+import { ErrorBanner } from "@/components/shared/error-banner";
+import { api, formatApiError } from "@/lib/api";
 import { UserRecord } from "@/types";
 import { formatDate } from "@/lib/utils";
 
@@ -16,12 +17,14 @@ export default function UserDetailPage({ params }: { params: { id: string } }) {
   const router = useRouter();
   const [user, setUser] = useState<UserRecord | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<unknown>(null);
   const [actionLoading, setActionLoading] = useState(false);
 
   useEffect(() => {
+    setError(null);
     api.get<{ user: UserRecord }>(`/admin/users/${id}`)
       .then((res) => setUser(res?.user || null))
-      .catch(console.error)
+      .catch(setError)
       .finally(() => setLoading(false));
   }, [id]);
 
@@ -31,7 +34,7 @@ export default function UserDetailPage({ params }: { params: { id: string } }) {
     try {
       await api.post(`/admin/users/${id}/suspend`, { reason: "other", description: "Suspended from admin panel" });
       setUser((prev) => prev ? { ...prev, status: "suspended" } : null);
-    } catch (err) { alert(err instanceof Error ? err.message : "Failed"); }
+    } catch (err) { alert(formatApiError(err, "Failed")); }
     finally { setActionLoading(false); }
   };
 
@@ -41,7 +44,7 @@ export default function UserDetailPage({ params }: { params: { id: string } }) {
     try {
       await api.post(`/admin/users/${id}/ban`, { reason: "other", description: "Banned from admin panel", permanent: true });
       setUser((prev) => prev ? { ...prev, status: "banned" } : null);
-    } catch (err) { alert(err instanceof Error ? err.message : "Failed"); }
+    } catch (err) { alert(formatApiError(err, "Failed")); }
     finally { setActionLoading(false); }
   };
 
@@ -50,12 +53,12 @@ export default function UserDetailPage({ params }: { params: { id: string } }) {
     try {
       await api.post(`/admin/users/${id}/unsuspend`);
       setUser((prev) => prev ? { ...prev, status: "active" } : null);
-    } catch (err) { alert(err instanceof Error ? err.message : "Failed"); }
+    } catch (err) { alert(formatApiError(err, "Failed")); }
     finally { setActionLoading(false); }
   };
 
   if (loading) return <Loading text="Loading user..." />;
-  if (!user) return <p className="text-muted-foreground">User not found.</p>;
+  if (!user) return <ErrorBanner error={error ?? "User not found."} />;
 
   return (
     <div className="space-y-6">

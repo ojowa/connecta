@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { StatCard } from "@/components/shared/stat-card";
 import { Loading } from "@/components/shared/loading";
+import { ErrorBanner } from "@/components/shared/error-banner";
 import { api } from "@/lib/api";
 import { AnalyticsData } from "@/types";
 import { formatCurrency } from "@/lib/utils";
@@ -15,17 +16,19 @@ export default function AnalyticsPage() {
   const [data, setData] = useState<AnalyticsData | null>(null);
   const [period, setPeriod] = useState("30d");
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<unknown>(null);
 
   useEffect(() => {
     setLoading(true);
+    setError(null);
     api.get<AnalyticsData>("/admin/analytics", { period })
       .then(setData)
-      .catch(console.error)
+      .catch(setError)
       .finally(() => setLoading(false));
   }, [period]);
 
   if (loading) return <Loading text="Loading analytics..." />;
-  if (!data) return <p className="text-muted-foreground">Failed to load analytics.</p>;
+  if (!data) return <ErrorBanner error={error ?? "Failed to load analytics."} />;
 
   return (
     <div className="space-y-6">

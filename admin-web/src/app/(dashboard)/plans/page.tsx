@@ -7,6 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Loading } from "@/components/shared/loading";
+import { ErrorBanner } from "@/components/shared/error-banner";
 import { api } from "@/lib/api";
 
 interface Plan {
@@ -45,20 +46,24 @@ const emptyPlan: Partial<Plan> = {
 export default function PlansPage() {
   const [plans, setPlans] = useState<Plan[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loaded, setLoaded] = useState(false);
   const [saving, setSaving] = useState(false);
   const [editing, setEditing] = useState<Partial<Plan> | null>(null);
   const [isNew, setIsNew] = useState(false);
   const [message, setMessage] = useState("");
+  const [error, setError] = useState<unknown>(null);
   const [featureInput, setFeatureInput] = useState("");
 
   useEffect(() => {
-    api.get<Plan[]>("/admin/plans").then(setPlans).catch(console.error).finally(() => setLoading(false));
+    setError(null);
+    api.get<Plan[]>("/admin/plans").then((res) => { setPlans(res); setLoaded(true); }).catch(setError).finally(() => setLoading(false));
   }, []);
 
   const handleSave = async () => {
     if (!editing) return;
     setSaving(true);
     setMessage("");
+    setError(null);
     try {
       if (isNew) {
         const created = await api.post<Plan>("/admin/plans", editing);
@@ -71,7 +76,7 @@ export default function PlansPage() {
       setIsNew(false);
       setMessage("Plan saved successfully.");
     } catch (err) {
-      setMessage(err instanceof Error ? err.message : "Failed to save");
+      setError(err);
     } finally {
       setSaving(false);
     }
@@ -79,21 +84,25 @@ export default function PlansPage() {
 
   const handleDelete = async (plan: Plan) => {
     if (!confirm(`Delete "${plan.displayName}"? This cannot be undone.`)) return;
+    setMessage("");
+    setError(null);
     try {
       await api.delete(`/admin/plans/${plan.id}`);
       setPlans((prev) => prev.filter((p) => p.id !== plan.id));
       setMessage("Plan deleted.");
     } catch (err) {
-      setMessage(err instanceof Error ? err.message : "Failed to delete");
+      setError(err);
     }
   };
 
   const toggleActive = async (plan: Plan) => {
+    setMessage("");
+    setError(null);
     try {
       const updated = await api.put<Plan>(`/admin/plans/${plan.id}`, { isActive: !plan.isActive });
       setPlans((prev) => prev.map((p) => (p.id === updated.id ? updated : p)));
     } catch (err) {
-      setMessage(err instanceof Error ? err.message : "Failed to update");
+      setError(err);
     }
   };
 
@@ -109,6 +118,7 @@ export default function PlansPage() {
   };
 
   if (loading) return <Loading text="Loading plans..." />;
+  if (!loaded) return <ErrorBanner error={error ?? "Failed to load plans."} />;
 
   return (
     <div className="space-y-6">
@@ -125,10 +135,11 @@ export default function PlansPage() {
       </div>
 
       {message && (
-        <div className={`rounded-lg border p-4 text-sm ${message.includes("success") || message.includes("deleted") ? "bg-green-50 text-green-800 border-green-200" : "bg-red-50 text-red-800 border-red-200"}`}>
+        <div className="rounded-lg border border-green-200 bg-green-50 p-4 text-sm text-green-800">
           {message}
         </div>
       )}
+      <ErrorBanner error={error} />
 
       {editing && (
         <Card>

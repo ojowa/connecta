@@ -7,8 +7,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Button } from "@/components/ui/button";
 import { StatCard } from "@/components/shared/stat-card";
 import { Loading } from "@/components/shared/loading";
+import { ErrorBanner } from "@/components/shared/error-banner";
 import { Badge } from "@/components/ui/badge";
-import { api } from "@/lib/api";
+import { api, formatApiError } from "@/lib/api";
 import { formatDate, formatCurrency } from "@/lib/utils";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from "recharts";
 
@@ -46,6 +47,8 @@ export default function SubscriptionsPage() {
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(true);
   const [subsLoading, setSubsLoading] = useState(true);
+  const [error, setError] = useState<unknown>(null);
+  const [subsError, setSubsError] = useState<unknown>(null);
   const [selectedSub, setSelectedSub] = useState<Subscription | null>(null);
   const [showGrant, setShowGrant] = useState(false);
   const [grantUserId, setGrantUserId] = useState("");
@@ -55,23 +58,25 @@ export default function SubscriptionsPage() {
 
   useEffect(() => {
     setLoading(true);
+    setError(null);
     Promise.all([
       api.get<SubAnalytics>("/admin/subscriptions/analytics", { period }),
       api.get<{ plans: Plan[] }>("/admin/subscriptions/plans"),
     ]).then(([a, p]) => {
       setAnalytics(a);
       setPlans(p.plans || []);
-    }).catch(console.error).finally(() => setLoading(false));
+    }).catch(setError).finally(() => setLoading(false));
   }, [period]);
 
   const loadSubs = () => {
     setSubsLoading(true);
+    setSubsError(null);
     const params: Record<string, string> = { page: String(meta.page), limit: String(meta.limit) };
     if (statusFilter !== "all") params.status = statusFilter;
     if (search) params.search = search;
     api.get<SubscriptionsResponse>("/admin/subscriptions", params)
       .then((res) => { setSubs(res.subscriptions || []); setMeta(res.meta); })
-      .catch(console.error).finally(() => setSubsLoading(false));
+      .catch(setSubsError).finally(() => setSubsLoading(false));
   };
 
   useEffect(() => { loadSubs(); }, [period, statusFilter, meta.page]);
@@ -82,7 +87,7 @@ export default function SubscriptionsPage() {
     try {
       await api.post(`/admin/subscriptions/${id}/cancel`, { reason: "Cancelled by admin" });
       loadSubs();
-    } catch (err) { alert(err instanceof Error ? err.message : "Failed"); }
+    } catch (err) { alert(formatApiError(err, "Failed")); }
     finally { setActionLoading(false); }
   };
 
@@ -92,7 +97,7 @@ export default function SubscriptionsPage() {
     try {
       await api.post(`/admin/subscriptions/${id}/refund`, { reason: "Refunded by admin" });
       loadSubs();
-    } catch (err) { alert(err instanceof Error ? err.message : "Failed"); }
+    } catch (err) { alert(formatApiError(err, "Failed")); }
     finally { setActionLoading(false); }
   };
 
@@ -104,7 +109,7 @@ export default function SubscriptionsPage() {
       setShowGrant(false);
       setGrantUserId(""); setGrantPlanId(""); setGrantDays(30);
       loadSubs();
-    } catch (err) { alert(err instanceof Error ? err.message : "Failed"); }
+    } catch (err) { alert(formatApiError(err, "Failed")); }
     finally { setActionLoading(false); }
   };
 
@@ -145,6 +150,8 @@ export default function SubscriptionsPage() {
           </Select>
         </div>
       </div>
+
+      <ErrorBanner error={error} />
 
       {showGrant && (
         <Card className="border-primary">
@@ -255,9 +262,10 @@ export default function SubscriptionsPage() {
           </div>
         </CardHeader>
         <CardContent>
+          <ErrorBanner error={subsError} />
           {subsLoading ? (
             <Loading text="Loading subscriptions..." />
-          ) : subs.length === 0 ? (
+          ) : subsError ? null : subs.length === 0 ? (
             <p className="text-muted-foreground text-center py-8">No subscriptions found.</p>
           ) : (
             <div className="space-y-3">

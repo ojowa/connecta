@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Loading } from "@/components/shared/loading";
+import { ErrorBanner } from "@/components/shared/error-banner";
 import { api } from "@/lib/api";
 import { formatDateTime } from "@/lib/utils";
 
@@ -29,13 +30,14 @@ interface LiveActivity {
 export default function ActivityPage() {
   const [data, setData] = useState<LiveActivity | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<unknown>(null);
   const [lastRefresh, setLastRefresh] = useState<Date>(new Date());
 
   const fetchData = () => {
     setLoading(true);
     api.get<LiveActivity>("/admin/live-activity")
-      .then(setData)
-      .catch(console.error)
+      .then((res) => { setData(res); setError(null); })
+      .catch(setError)
       .finally(() => { setLoading(false); setLastRefresh(new Date()); });
   };
 
@@ -71,6 +73,8 @@ export default function ActivityPage() {
           <Button variant="outline" size="sm" onClick={fetchData}><RefreshCw className="h-4 w-4 mr-1" />Refresh</Button>
         </div>
       </div>
+
+      <ErrorBanner error={error} />
 
       <div className="grid gap-4 md:grid-cols-3 lg:grid-cols-6">
         {stats.map((s) => (

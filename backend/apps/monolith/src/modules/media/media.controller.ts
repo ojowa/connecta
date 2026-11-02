@@ -9,6 +9,7 @@ import {
   UseInterceptors,
   UploadedFile,
   Res,
+  NotFoundException,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { ApiTags, ApiOperation, ApiBearerAuth, ApiConsumes } from '@nestjs/swagger';
@@ -59,7 +60,7 @@ export class MediaController {
     const uploadDir = path.join(process.cwd(), 'uploads');
     const filePath = path.join(uploadDir, key);
     if (!fs.existsSync(filePath)) {
-      return res.status(404).json({ message: 'File not found' });
+      throw new NotFoundException('File not found');
     }
     res.sendFile(filePath);
   }

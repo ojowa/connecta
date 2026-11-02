@@ -7,6 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { StatCard } from "@/components/shared/stat-card";
 import { Loading } from "@/components/shared/loading";
 import { Badge } from "@/components/ui/badge";
+import { ErrorBanner } from "@/components/shared/error-banner";
 import { api } from "@/lib/api";
 import { formatDate } from "@/lib/utils";
 import { BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from "recharts";
@@ -64,17 +65,21 @@ export default function NotificationHistoryPage() {
   const [channelFilter, setChannelFilter] = useState("all");
   const [loading, setLoading] = useState(true);
   const [historyLoading, setHistoryLoading] = useState(true);
+  const [error, setError] = useState<unknown>(null);
+  const [historyError, setHistoryError] = useState<unknown>(null);
 
   useEffect(() => {
     setLoading(true);
+    setError(null);
     api.get<NotificationAnalytics>("/admin/notification-analytics", { period })
       .then(setAnalytics)
-      .catch(console.error)
+      .catch(setError)
       .finally(() => setLoading(false));
   }, [period]);
 
   useEffect(() => {
     setHistoryLoading(true);
+    setHistoryError(null);
     const params: Record<string, string> = { page: String(meta.page), limit: String(meta.limit) };
     if (typeFilter !== "all") params.type = typeFilter;
     if (statusFilter !== "all") params.status = statusFilter;
@@ -84,7 +89,7 @@ export default function NotificationHistoryPage() {
         setHistory(res.notifications || []);
         setMeta(res.meta);
       })
-      .catch(console.error)
+      .catch(setHistoryError)
       .finally(() => setHistoryLoading(false));
   }, [period, typeFilter, statusFilter, channelFilter, meta.page]);
 
@@ -120,6 +125,8 @@ export default function NotificationHistoryPage() {
           </SelectContent>
         </Select>
       </div>
+
+      <ErrorBanner error={error} />
 
       <div className="grid gap-4 md:grid-cols-4">
         <StatCard title="Total Sent" value={analytics?.summary.total ?? 0} icon={Send} />
@@ -230,9 +237,10 @@ export default function NotificationHistoryPage() {
           </div>
         </CardHeader>
         <CardContent>
+          <ErrorBanner error={historyError} />
           {historyLoading ? (
             <Loading text="Loading history..." />
-          ) : history.length === 0 ? (
+          ) : historyError ? null : history.length === 0 ? (
             <p className="text-muted-foreground text-center py-8">No notifications found.</p>
           ) : (
             <div className="space-y-3">

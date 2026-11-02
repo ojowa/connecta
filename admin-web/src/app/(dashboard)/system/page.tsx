@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Loading } from "@/components/shared/loading";
+import { ErrorBanner } from "@/components/shared/error-banner";
 import { api } from "@/lib/api";
 
 interface SystemHealth {
@@ -16,12 +17,13 @@ interface SystemHealth {
 export default function SystemPage() {
   const [data, setData] = useState<SystemHealth | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<unknown>(null);
 
   const fetchData = () => {
     setLoading(true);
     api.get<SystemHealth>("/admin/system-health")
-      .then(setData)
-      .catch(console.error)
+      .then((res) => { setData(res); setError(null); })
+      .catch(setError)
       .finally(() => setLoading(false));
   };
 
@@ -41,6 +43,8 @@ export default function SystemPage() {
         </div>
         <Button variant="outline" onClick={fetchData}><RefreshCw className="h-4 w-4 mr-1" />Refresh</Button>
       </div>
+
+      <ErrorBanner error={error} />
 
       <div className="grid gap-4 md:grid-cols-3">
         <Card>

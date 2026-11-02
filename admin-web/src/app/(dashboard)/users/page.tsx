@@ -11,7 +11,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Loading } from "@/components/shared/loading";
 import { EmptyState } from "@/components/shared/empty-state";
 import { Pagination } from "@/components/shared/pagination";
-import { api } from "@/lib/api";
+import { ErrorBanner } from "@/components/shared/error-banner";
+import { api, formatApiError } from "@/lib/api";
 import { UserRecord, PaginatedMeta } from "@/types";
 import { formatDate } from "@/lib/utils";
 
@@ -21,12 +22,14 @@ export default function UsersPage() {
   const [search, setSearch] = useState("");
   const [status, setStatus] = useState("");
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<unknown>(null);
 
   const fetchUsers = (page = 1) => {
     setLoading(true);
+    setError(null);
     api.get<{ users: UserRecord[]; meta: PaginatedMeta }>("/admin/users", { page, limit: 20, search, status })
       .then((res) => { setUsers(res?.users || []); setMeta(res?.meta || { page: 1, limit: 20, total: 0, hasMore: false }); })
-      .catch(console.error)
+      .catch(setError)
       .finally(() => setLoading(false));
   };
 
@@ -38,7 +41,7 @@ export default function UsersPage() {
     try {
       await api.post(`/admin/users/${userId}/suspend`, { reason: "other", description: "Suspended from admin panel" });
       fetchUsers(meta.page);
-    } catch (err) { alert(err instanceof Error ? err.message : "Failed"); }
+    } catch (err) { alert(formatApiError(err, "Failed")); }
   };
 
   const handleBan = async (userId: string) => {
@@ -46,14 +49,14 @@ export default function UsersPage() {
     try {
       await api.post(`/admin/users/${userId}/ban`, { reason: "other", description: "Banned from admin panel" });
       fetchUsers(meta.page);
-    } catch (err) { alert(err instanceof Error ? err.message : "Failed"); }
+    } catch (err) { alert(formatApiError(err, "Failed")); }
   };
 
   const handleUnsuspend = async (userId: string) => {
     try {
       await api.post(`/admin/users/${userId}/unsuspend`);
       fetchUsers(meta.page);
-    } catch (err) { alert(err instanceof Error ? err.message : "Failed"); }
+    } catch (err) { alert(formatApiError(err, "Failed")); }
   };
 
   return (
@@ -88,11 +91,13 @@ export default function UsersPage() {
         <Button onClick={handleSearch}>Search</Button>
       </div>
 
+      <ErrorBanner error={error} />
+
       <Card>
         <CardContent className="p-0">
           {loading ? (
             <Loading />
-          ) : users.length === 0 ? (
+          ) : error ? null : users.length === 0 ? (
             <EmptyState title="No users found" description="Try adjusting your search or filters." />
           ) : (
             <div className="overflow-x-auto">

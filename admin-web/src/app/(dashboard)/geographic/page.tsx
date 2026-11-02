@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { Globe, MapPin } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Loading } from "@/components/shared/loading";
+import { ErrorBanner } from "@/components/shared/error-banner";
 import { api } from "@/lib/api";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend } from "recharts";
 
@@ -19,11 +20,12 @@ const COLORS = ["#ec4899", "#3b82f6", "#22c55e", "#f59e0b", "#8b5cf6"];
 export default function GeographicPage() {
   const [data, setData] = useState<GeoData | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<unknown>(null);
 
   useEffect(() => {
     api.get<GeoData>("/admin/geo-analytics")
       .then(setData)
-      .catch(console.error)
+      .catch(setError)
       .finally(() => setLoading(false));
   }, []);
 
@@ -41,6 +43,8 @@ export default function GeographicPage() {
           <p className="text-muted-foreground">User distribution by city, gender, and age.</p>
         </div>
       </div>
+
+      <ErrorBanner error={error} />
 
       <div className="grid gap-6 md:grid-cols-2">
         <Card>

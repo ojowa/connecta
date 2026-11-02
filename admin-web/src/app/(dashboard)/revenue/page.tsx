@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { StatCard } from "@/components/shared/stat-card";
 import { Loading } from "@/components/shared/loading";
+import { ErrorBanner } from "@/components/shared/error-banner";
 import { api } from "@/lib/api";
 import { formatCurrency } from "@/lib/utils";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from "recharts";
@@ -26,12 +27,14 @@ export default function RevenuePage() {
   const [data, setData] = useState<RevenueData | null>(null);
   const [period, setPeriod] = useState("30d");
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<unknown>(null);
 
   useEffect(() => {
     setLoading(true);
+    setError(null);
     api.get<RevenueData>("/admin/revenue-deep-dive", { period })
       .then(setData)
-      .catch(console.error)
+      .catch(setError)
       .finally(() => setLoading(false));
   }, [period]);
 
@@ -57,6 +60,8 @@ export default function RevenuePage() {
           </SelectContent>
         </Select>
       </div>
+
+      <ErrorBanner error={error} />
 
       <div className="grid gap-4 md:grid-cols-5">
         <StatCard title="Total Revenue" value={formatCurrency(data?.totalRevenue ?? 0)} icon={DollarSign} />

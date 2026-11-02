@@ -12,7 +12,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Loading } from "@/components/shared/loading";
 import { EmptyState } from "@/components/shared/empty-state";
 import { Pagination } from "@/components/shared/pagination";
-import { api } from "@/lib/api";
+import { ErrorBanner } from "@/components/shared/error-banner";
+import { api, formatApiError } from "@/lib/api";
 import { ReportRecord, PaginatedMeta } from "@/types";
 import { formatDateTime } from "@/lib/utils";
 
@@ -21,6 +22,7 @@ export default function ReportsPage() {
   const [meta, setMeta] = useState<PaginatedMeta>({ page: 1, limit: 20, total: 0, hasMore: false });
   const [statusFilter, setStatusFilter] = useState("all");
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<unknown>(null);
   const [resolveReport, setResolveReport] = useState<ReportRecord | null>(null);
   const [resolution, setResolution] = useState<"resolved" | "dismissed" | "escalated">("resolved");
   const [notes, setNotes] = useState("");
@@ -29,11 +31,12 @@ export default function ReportsPage() {
 
   const fetchReports = (page = 1) => {
     setLoading(true);
+    setError(null);
     api.get<{ reports: ReportRecord[]; meta: PaginatedMeta }>("/admin/reports", {
       page, limit: 20, status: statusFilter !== "all" ? statusFilter : undefined,
     })
       .then((res) => { setReports(res?.reports || []); setMeta(res?.meta || { page: 1, limit: 20, total: 0, hasMore: false }); })
-      .catch(console.error)
+      .catch(setError)
       .finally(() => setLoading(false));
   };
 
@@ -46,7 +49,7 @@ export default function ReportsPage() {
       await api.post(`/admin/reports/${resolveReport.id}/resolve`, { resolution, notes, actionTaken });
       setResolveReport(null);
       fetchReports(meta.page);
-    } catch (err) { alert(err instanceof Error ? err.message : "Failed"); }
+    } catch (err) { alert(formatApiError(err, "Failed")); }
     finally { setActionLoading(false); }
   };
 
@@ -69,9 +72,11 @@ export default function ReportsPage() {
         </SelectContent>
       </Select>
 
+      <ErrorBanner error={error} />
+
       {loading ? (
         <Loading />
-      ) : reports.length === 0 ? (
+      ) : error ? null : reports.length === 0 ? (
         <EmptyState title="No reports found" description="No reports match the current filter." />
       ) : (
         <div className="space-y-4">

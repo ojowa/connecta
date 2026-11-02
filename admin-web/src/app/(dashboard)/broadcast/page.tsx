@@ -8,6 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { ErrorBanner } from "@/components/shared/error-banner";
 import { api } from "@/lib/api";
 
 export default function BroadcastPage() {
@@ -17,12 +18,12 @@ export default function BroadcastPage() {
   const [targetAudience, setTargetAudience] = useState("all");
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<{ broadcastId: string; status: string } | null>(null);
-  const [error, setError] = useState("");
+  const [error, setError] = useState<unknown>(null);
 
   const handleSend = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    setError("");
+    setError(null);
     setResult(null);
     try {
       const res = await api.post<{ broadcastId: string; status: string }>("/admin/broadcast", {
@@ -32,7 +33,7 @@ export default function BroadcastPage() {
       setTitle("");
       setMessage("");
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to send broadcast");
+      setError(err);
     } finally {
       setLoading(false);
     }
@@ -51,11 +52,7 @@ export default function BroadcastPage() {
         </div>
       )}
 
-      {error && (
-        <div className="rounded-lg border bg-red-50 p-4 text-sm text-red-800 border-red-200">
-          {error}
-        </div>
-      )}
+      <ErrorBanner error={error} />
 
       <Card>
         <CardHeader>

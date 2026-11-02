@@ -12,7 +12,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Loading } from "@/components/shared/loading";
 import { EmptyState } from "@/components/shared/empty-state";
 import { Pagination } from "@/components/shared/pagination";
-import { api } from "@/lib/api";
+import { ErrorBanner } from "@/components/shared/error-banner";
+import { api, formatApiError } from "@/lib/api";
 import { PaginatedMeta } from "@/types";
 import { formatDateTime } from "@/lib/utils";
 
@@ -36,17 +37,19 @@ export default function AppealsPage() {
   const [meta, setMeta] = useState<PaginatedMeta>({ page: 1, limit: 20, total: 0, hasMore: false });
   const [statusFilter, setStatusFilter] = useState("all");
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<unknown>(null);
   const [reviewAppeal, setReviewAppeal] = useState<AppealRecord | null>(null);
   const [notes, setNotes] = useState("");
   const [actionLoading, setActionLoading] = useState(false);
 
   const fetchAppeals = (page = 1) => {
     setLoading(true);
+    setError(null);
     api.get<{ appeals: AppealRecord[]; meta: PaginatedMeta }>("/admin/appeals", {
       page, limit: 20, status: statusFilter !== "all" ? statusFilter : undefined,
     })
       .then((res) => { setAppeals(res?.appeals || []); setMeta(res?.meta || { page: 1, limit: 20, total: 0, hasMore: false }); })
-      .catch(console.error)
+      .catch(setError)
       .finally(() => setLoading(false));
   };
 
@@ -60,7 +63,7 @@ export default function AppealsPage() {
       setReviewAppeal(null);
       setNotes("");
       fetchAppeals(meta.page);
-    } catch (err) { alert(err instanceof Error ? err.message : "Failed"); }
+    } catch (err) { alert(formatApiError(err, "Failed")); }
     finally { setActionLoading(false); }
   };
 
@@ -82,9 +85,11 @@ export default function AppealsPage() {
         </SelectContent>
       </Select>
 
+      <ErrorBanner error={error} />
+
       {loading ? (
         <Loading />
-      ) : appeals.length === 0 ? (
+      ) : error ? null : appeals.length === 0 ? (
         <EmptyState title="No appeals found" description="No appeals match the current filter." />
       ) : (
         <div className="space-y-4">

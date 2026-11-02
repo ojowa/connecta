@@ -34,9 +34,25 @@ module.exports = async function handler(req, res) {
   } catch (err) {
     console.error('[vercel] Failed to initialize NestJS app', err);
     if (!res.headersSent) {
+      const requestIdHeader = req.headers['x-request-id'];
+      const requestId = Array.isArray(requestIdHeader) ? requestIdHeader[0] : requestIdHeader;
       res.statusCode = 500;
       res.setHeader('content-type', 'application/json');
-      res.end(JSON.stringify({ statusCode: 500, message: 'Internal server error' }));
+      res.end(
+        JSON.stringify({
+          success: false,
+          error: {
+            statusCode: 500,
+            code: 'INTERNAL_SERVER_ERROR',
+            error: 'Internal Server Error',
+            message: 'Internal server error',
+            timestamp: new Date().toISOString(),
+            path: req.originalUrl || req.url,
+            method: req.method,
+            requestId,
+          },
+        }),
+      );
     }
   }
 };

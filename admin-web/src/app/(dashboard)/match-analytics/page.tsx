@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { StatCard } from "@/components/shared/stat-card";
 import { Loading } from "@/components/shared/loading";
+import { ErrorBanner } from "@/components/shared/error-banner";
 import { api } from "@/lib/api";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from "recharts";
 
@@ -22,12 +23,14 @@ export default function MatchAnalyticsPage() {
   const [data, setData] = useState<MatchAnalyticsData | null>(null);
   const [period, setPeriod] = useState("30d");
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<unknown>(null);
 
   useEffect(() => {
     setLoading(true);
+    setError(null);
     api.get<MatchAnalyticsData>("/admin/match-analytics", { period })
       .then(setData)
-      .catch(console.error)
+      .catch(setError)
       .finally(() => setLoading(false));
   }, [period]);
 
@@ -53,6 +56,8 @@ export default function MatchAnalyticsPage() {
           </SelectContent>
         </Select>
       </div>
+
+      <ErrorBanner error={error} />
 
       <div className="grid gap-4 md:grid-cols-4">
         <StatCard title="Total Matches" value={data?.totalMatches ?? 0} icon={Users} />

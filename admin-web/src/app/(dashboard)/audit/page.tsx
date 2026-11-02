@@ -6,6 +6,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Loading } from "@/components/shared/loading";
 import { EmptyState } from "@/components/shared/empty-state";
 import { Pagination } from "@/components/shared/pagination";
+import { ErrorBanner } from "@/components/shared/error-banner";
 import { api } from "@/lib/api";
 import { AuditEntry, PaginatedMeta } from "@/types";
 import { formatDateTime } from "@/lib/utils";
@@ -14,12 +15,14 @@ export default function AuditPage() {
   const [entries, setEntries] = useState<AuditEntry[]>([]);
   const [meta, setMeta] = useState<PaginatedMeta>({ page: 1, limit: 50, total: 0, hasMore: false });
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<unknown>(null);
 
   const fetchEntries = (page = 1) => {
     setLoading(true);
+    setError(null);
     api.get<{ auditEntries: AuditEntry[]; meta: PaginatedMeta }>("/admin/audit-log", { page, limit: 50 })
       .then((res) => { setEntries(res?.auditEntries || []); setMeta(res?.meta || { page: 1, limit: 50, total: 0, hasMore: false }); })
-      .catch(console.error)
+      .catch(setError)
       .finally(() => setLoading(false));
   };
 
@@ -32,9 +35,11 @@ export default function AuditPage() {
         <p className="text-muted-foreground">Track admin actions across the platform.</p>
       </div>
 
+      <ErrorBanner error={error} />
+
       {loading ? (
         <Loading />
-      ) : entries.length === 0 ? (
+      ) : error ? null : entries.length === 0 ? (
         <EmptyState title="No audit entries" description="No actions have been recorded yet." icon={ClipboardList} />
       ) : (
         <Card>

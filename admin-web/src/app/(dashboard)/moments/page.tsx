@@ -10,7 +10,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Loading } from "@/components/shared/loading";
 import { EmptyState } from "@/components/shared/empty-state";
 import { Pagination } from "@/components/shared/pagination";
-import { api } from "@/lib/api";
+import { ErrorBanner } from "@/components/shared/error-banner";
+import { api, formatApiError } from "@/lib/api";
 
 interface MomentRecord {
   id: string;
@@ -37,12 +38,14 @@ export default function MomentsPage() {
   const [meta, setMeta] = useState({ page: 1, limit: 50, total: 0, totalPages: 0, hasMore: false });
   const [stats, setStats] = useState<MomentStats | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<unknown>(null);
   const [userIdFilter, setUserIdFilter] = useState("");
   const [deleteTarget, setDeleteTarget] = useState<MomentRecord | null>(null);
   const [deleteLoading, setDeleteLoading] = useState(false);
 
   const fetchMoments = (page = 1) => {
     setLoading(true);
+    setError(null);
     api.get<{ moments: MomentRecord[]; meta: typeof meta }>("/admin/moments", {
       page, limit: 50, userId: userIdFilter || undefined,
     })
@@ -51,12 +54,12 @@ export default function MomentsPage() {
         setMoments(res?.moments || []);
         setMeta({ ...m, hasMore: m.page < m.totalPages });
       })
-      .catch(console.error)
+      .catch(setError)
       .finally(() => setLoading(false));
   };
 
   const fetchStats = () => {
-    api.get<MomentStats>("/admin/moments/stats").then(setStats).catch(console.error);
+    api.get<MomentStats>("/admin/moments/stats").then(setStats).catch(setError);
   };
 
   useEffect(() => { fetchMoments(); fetchStats(); }, [userIdFilter]);
@@ -69,7 +72,7 @@ export default function MomentsPage() {
       setDeleteTarget(null);
       fetchMoments(meta.page);
       fetchStats();
-    } catch (err) { alert(err instanceof Error ? err.message : "Failed"); }
+    } catch (err) { alert(formatApiError(err, "Failed")); }
     finally { setDeleteLoading(false); }
   };
 
@@ -83,6 +86,8 @@ export default function MomentsPage() {
         </h1>
         <p className="text-muted-foreground">View and moderate user moments.</p>
       </div>
+
+      <ErrorBanner error={error} />
 
       {stats && (
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -115,7 +120,7 @@ export default function MomentsPage() {
         <Button variant="outline" onClick={() => { setUserIdFilter(""); }}>Clear</Button>
       </div>
 
-      {loading ? <Loading /> : moments.length === 0 ? (
+      {loading ? <Loading /> : error ? null : moments.length === 0 ? (
         <EmptyState title="No moments" description="No moments found." />
       ) : (
         <>

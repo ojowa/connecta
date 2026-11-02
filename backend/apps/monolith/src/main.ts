@@ -1,11 +1,11 @@
 import 'tsconfig-paths/register';
 import 'dotenv/config';
 import { NestFactory } from '@nestjs/core';
-import { Logger, ValidationPipe } from '@nestjs/common';
+import { HttpException, HttpStatus, Logger, ValidationPipe } from '@nestjs/common';
 import { ExpressAdapter, NestExpressApplication } from '@nestjs/platform-express';
 import { IoAdapter } from '@nestjs/platform-socket.io';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
-import type { Express } from 'express';
+import type { Express, NextFunction, Request, Response } from 'express';
 import helmet from 'helmet';
 import { join } from 'path';
 import { MonolithModule } from './app.module';
@@ -113,6 +113,31 @@ export async function createApp(expressInstance?: Express): Promise<NestExpressA
 
   const document = SwaggerModule.createDocument(app, config);
   SwaggerModule.setup('docs', app, document);
+
+  app.use((err: unknown, req: Request, res: Response, next: NextFunction) => {
+    if (res.headersSent) {
+      return next(err);
+    }
+
+    const status = err instanceof HttpException ? err.getStatus() : HttpStatus.INTERNAL_SERVER_ERROR;
+    const statusName = HttpStatus[status] as unknown as string | undefined;
+    const requestIdHeader = req.headers['x-request-id'];
+    const requestId = Array.isArray(requestIdHeader) ? requestIdHeader[0] : requestIdHeader;
+
+    res.status(status).json({
+      success: false,
+      error: {
+        statusCode: status,
+        code: statusName ?? 'HTTP_ERROR',
+        error: statusName ?? 'Error',
+        message: err instanceof Error ? err.message : 'Internal server error',
+        timestamp: new Date().toISOString(),
+        path: req.originalUrl || req.url,
+        method: req.method,
+        requestId,
+      },
+    });
+  });
 
   return app;
 }

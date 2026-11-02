@@ -3,6 +3,7 @@ import {
   UnauthorizedException,
   NotFoundException,
   BadRequestException,
+  ConflictException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, In, MoreThan, IsNull } from 'typeorm';
@@ -981,7 +982,9 @@ export class AdminService {
   ) {
     const appeal = await this.appealRepo.findOne({ where: { id: appealId } });
     if (!appeal) throw new NotFoundException('Appeal not found');
-    if (appeal.status !== 'pending') throw new Error('This appeal has already been reviewed');
+    if (appeal.status !== 'pending') {
+      throw new ConflictException('This appeal has already been reviewed');
+    }
 
     const { decision, notes } = data;
     await this.appealRepo.update(appealId, {

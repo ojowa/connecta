@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { StatCard } from "@/components/shared/stat-card";
 import { Loading } from "@/components/shared/loading";
+import { ErrorBanner } from "@/components/shared/error-banner";
 import { api } from "@/lib/api";
 import { DashboardMetrics } from "@/types";
 import { formatCurrency } from "@/lib/utils";
@@ -15,17 +16,19 @@ export default function DashboardPage() {
   const [metrics, setMetrics] = useState<DashboardMetrics | null>(null);
   const [period, setPeriod] = useState("7d");
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<unknown>(null);
 
   useEffect(() => {
     setLoading(true);
+    setError(null);
     api.get<DashboardMetrics>("/admin/dashboard", { period })
       .then(setMetrics)
-      .catch(console.error)
+      .catch(setError)
       .finally(() => setLoading(false));
   }, [period]);
 
   if (loading) return <Loading text="Loading dashboard..." />;
-  if (!metrics) return <p className="text-muted-foreground">Failed to load dashboard.</p>;
+  if (!metrics) return <ErrorBanner error={error ?? "Failed to load dashboard."} />;
 
   return (
     <div className="space-y-6">
